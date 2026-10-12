@@ -236,7 +236,7 @@ namespace StrmAssistant.Options.Store
                             ?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                             .Select(s =>
                                 Enum.TryParse(s.Trim(), true, out ModOptions.SearchItemType type)
-                                    ? type.GetDescription()
+                                    ? Utility.GetEnumDescription(type)
                                     : null)
                             .Where(d => d != null) ?? Enumerable.Empty<string>());
                     _logger.Info("EnhanceChineseSearch - SearchScope is set to {0}",

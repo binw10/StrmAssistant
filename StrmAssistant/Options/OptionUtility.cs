@@ -1,5 +1,4 @@
-﻿using Emby.Media.Common.Extensions;
-using MediaBrowser.Controller.Entities;
+﻿using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
@@ -8,6 +7,7 @@ using MediaBrowser.Controller.Playlists;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using static StrmAssistant.Options.GeneralOptions;
 using static StrmAssistant.Options.IntroSkipOptions;
@@ -25,6 +25,21 @@ namespace StrmAssistant.Options
         private static HashSet<string> _selectedCatchupTasks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static HashSet<string> _selectedIntroSkipPreferences = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static string[] _includeItemTypes = Array.Empty<string>();
+
+        // 读取枚举成员的本地化描述（DescriptionL）。
+        // Emby 4.10 起 Emby.Media.Common.Extensions.EnumExtensions.GetDescription 经由 EnumCache
+        // 按属性的精确类型查找，无法命中 DescriptionAttribute 的派生类（DescriptionLAttribute），
+        // 会回退为裸枚举名；此处改为按基类匹配，与 4.9 的行为保持一致。
+        public static string GetEnumDescription(Enum value)
+        {
+            var field = value.GetType().GetField(value.ToString());
+            var description = field?
+                .GetCustomAttributes(typeof(DescriptionAttribute), false)
+                .OfType<DescriptionAttribute>()
+                .FirstOrDefault()?.Description;
+
+            return description ?? value.ToString();
+        }
 
         public static void InitializeOptionCache()
         {
@@ -109,7 +124,7 @@ namespace StrmAssistant.Options
                             : (ExclusiveControl?)null)
                     .Where(type => type.HasValue)
                     .OrderBy(type => type)
-                    .Select(type => type.Value.GetDescription()));
+                    .Select(type => GetEnumDescription(type.Value)));
         }
 
         public static void UpdateCatchupScope(string currentScope)
@@ -134,7 +149,7 @@ namespace StrmAssistant.Options
                             : (CatchupTask?)null)
                     .Where(type => type.HasValue)
                     .OrderBy(type => type)
-                    .Select(type => type.Value.GetDescription()));
+                    .Select(type => GetEnumDescription(type.Value)));
         }
 
         public static void UpdateIntroSkipPreferences(string currentPreferences)
@@ -159,7 +174,7 @@ namespace StrmAssistant.Options
                             : (IntroSkipPreference?)null)
                     .Where(type => type.HasValue)
                     .OrderBy(type => type)
-                    .Select(type => type.Value.GetDescription()));
+                    .Select(type => GetEnumDescription(type.Value)));
         }
 
         public static void UpdateSearchScope(string currentScope)

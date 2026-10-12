@@ -1,4 +1,4 @@
-﻿using Emby.Media.Common.Extensions;
+using Emby.Media.Common.Extensions;
 using Emby.Web.GenericEdit.PropertyDiff;
 using MediaBrowser.Common;
 using MediaBrowser.Model.Logging;
@@ -223,7 +223,7 @@ namespace StrmAssistant.Options.Store
                     options.EpisodeRefreshScope?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                         .Select(s =>
                             Enum.TryParse(s.Trim(), true, out EpisodeRefreshOption option)
-                                ? option.GetDescription()
+                                ? Utility.GetEnumDescription(option)
                                 : null)
                         .Where(d => d != null) ?? Enumerable.Empty<string>());
                 _logger.Info("EpisodeRefreshScope is set to {0}", episodeRefreshScope);

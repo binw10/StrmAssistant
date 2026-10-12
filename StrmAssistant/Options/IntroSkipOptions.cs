@@ -1,4 +1,4 @@
-﻿using Emby.Media.Common.Extensions;
+using Emby.Media.Common.Extensions;
 using Emby.Web.GenericEdit;
 using Emby.Web.GenericEdit.Common;
 using Emby.Web.GenericEdit.Elements;
@@ -239,7 +239,7 @@ namespace StrmAssistant.Options
                 var selectPreference = new EditorSelectOption
                 {
                     Value = item.ToString(),
-                    Name = EnumExtensions.GetDescription(item),
+                    Name = Utility.GetEnumDescription(item),
                     IsEnabled = true,
                 };
 

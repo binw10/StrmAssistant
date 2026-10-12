@@ -229,7 +229,7 @@ namespace StrmAssistant.Options
                 var selectOption = new EditorSelectOption
                 {
                     Value = item.ToString(),
-                    Name = EnumExtensions.GetDescription(item),
+                    Name = Utility.GetEnumDescription(item),
                     IsEnabled = true,
                 };
 
