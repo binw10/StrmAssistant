@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
@@ -168,7 +168,9 @@ namespace StrmAssistant.ScheduledTask
             "MergeMovieTask_Description_Merge_movies_per_library_or_across_libraries_per_preference",
             Plugin.Instance.DefaultUICulture);
 
-        public string Name => "Merge Multi Versions";
+        public string Name =>
+            Resources.ResourceManager.GetString("MergeMultiVersionTask_Name_Merge_Multi_Versions",
+                Plugin.Instance.DefaultUICulture);
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {

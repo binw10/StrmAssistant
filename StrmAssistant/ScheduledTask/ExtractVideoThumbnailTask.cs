@@ -177,7 +177,9 @@ namespace StrmAssistant.ScheduledTask
             "ExtractVideoThumbnailTask_Description_Extract_video_thumbnail_preview",
             Plugin.Instance.DefaultUICulture);
 
-        public string Name => "Extract Video Thumbnail";
+        public string Name =>
+            Resources.ResourceManager.GetString("ExtractVideoThumbnailTask_Name_Extract_Video_Thumbnail",
+                Plugin.Instance.DefaultUICulture);
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {

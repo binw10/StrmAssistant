@@ -143,6 +143,15 @@ namespace StrmAssistant.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Delete Persons.
+        /// </summary>
+        public static string DeletePersonTask_Name_Delete_Persons {
+            get {
+                return ResourceManager.GetString("DeletePersonTask_Name_Delete_Persons", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Disclaimer.
         /// </summary>
         public static string Disclaimer {
@@ -422,6 +431,15 @@ namespace StrmAssistant.Properties {
         public static string ExtractVideoThumbnailTask_Description_Extract_video_thumbnail_preview {
             get {
                 return ResourceManager.GetString("ExtractVideoThumbnailTask_Description_Extract_video_thumbnail_preview", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Extract Video Thumbnail.
+        /// </summary>
+        public static string ExtractVideoThumbnailTask_Name_Extract_Video_Thumbnail {
+            get {
+                return ResourceManager.GetString("ExtractVideoThumbnailTask_Name_Extract_Video_Thumbnail", resourceCulture);
             }
         }
         
@@ -1094,6 +1112,15 @@ namespace StrmAssistant.Properties {
             get {
                 return ResourceManager.GetString("MergeMovieTask_Description_Merge_movies_per_library_or_across_libraries_per_prefe" +
                         "rence", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Merge Multi Versions.
+        /// </summary>
+        public static string MergeMultiVersionTask_Name_Merge_Multi_Versions {
+            get {
+                return ResourceManager.GetString("MergeMultiVersionTask_Name_Merge_Multi_Versions", resourceCulture);
             }
         }
         
@@ -2050,6 +2077,15 @@ namespace StrmAssistant.Properties {
         public static string ProxyServer_Unavailable {
             get {
                 return ResourceManager.GetString("ProxyServer_Unavailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Refresh Episode.
+        /// </summary>
+        public static string RefreshEpisodeTask_Name_Refresh_Episode {
+            get {
+                return ResourceManager.GetString("RefreshEpisodeTask_Name_Refresh_Episode", resourceCulture);
             }
         }
         

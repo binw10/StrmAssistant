@@ -1,4 +1,4 @@
-﻿using MediaBrowser.Model.Logging;
+using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Tasks;
 using StrmAssistant.Common;
 using StrmAssistant.Properties;
@@ -121,7 +121,9 @@ namespace StrmAssistant.ScheduledTask
             "EpisodeRefreshTask_Description_Refresh_metadata_for_episodes_missing_overview",
             Plugin.Instance.DefaultUICulture);
 
-        public string Name => "Refresh Episode";
+        public string Name =>
+            Resources.ResourceManager.GetString("RefreshEpisodeTask_Name_Refresh_Episode",
+                Plugin.Instance.DefaultUICulture);
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {

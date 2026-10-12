@@ -807,6 +807,18 @@
     <value>Folder Scope</value>
   </data>
   <data name="ExclusiveControl_NoNfoSaverOptimization_No_Nfo_Saver_Optimization" xml:space="preserve">
-    <value>No Nfo Saver Optimization</value>
+    <value>No NFO Saver Optimization</value>
+  </data>
+  <data name="DeletePersonTask_Name_Delete_Persons" xml:space="preserve">
+    <value>Delete Persons</value>
+  </data>
+  <data name="ExtractVideoThumbnailTask_Name_Extract_Video_Thumbnail" xml:space="preserve">
+    <value>Extract Video Thumbnail</value>
+  </data>
+  <data name="MergeMultiVersionTask_Name_Merge_Multi_Versions" xml:space="preserve">
+    <value>Merge Multi Versions</value>
+  </data>
+  <data name="RefreshEpisodeTask_Name_Refresh_Episode" xml:space="preserve">
+    <value>Refresh Episode</value>
   </data>
 </root>

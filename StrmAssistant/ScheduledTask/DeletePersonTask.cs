@@ -1,4 +1,4 @@
-﻿using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Tasks;
@@ -49,7 +49,9 @@ namespace StrmAssistant.ScheduledTask
             Resources.ResourceManager.GetString("DeletePersonTask_Description_Deletes_all_persons",
                 Plugin.Instance.DefaultUICulture);
 
-        public string Name => "Delete Persons";
+        public string Name =>
+            Resources.ResourceManager.GetString("DeletePersonTask_Name_Delete_Persons",
+                Plugin.Instance.DefaultUICulture);
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {

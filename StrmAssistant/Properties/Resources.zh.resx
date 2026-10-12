@@ -675,7 +675,7 @@
     <value>媒体深度删除</value>
   </data>
   <data name="Notification_DeepDelete_EventDescription" xml:space="preserve">
-    <value>Item Name:\n{0}\n\nItem Path:\n{1}\n\nMount Paths:\n{2}</value>
+    <value>名称:\n{0}\n\n路径:\n{1}\n\n挂载路径:\n{2}</value>
   </data>
   <data name="DeletePersonTask_Description_Deletes_all_persons" xml:space="preserve">
     <value>清除所有人员数据</value>
@@ -721,5 +721,17 @@
   </data>
   <data name="ExclusiveControl_NoNfoSaverOptimization_No_Nfo_Saver_Optimization" xml:space="preserve">
     <value>无NFO保存优化</value>
+  </data>
+  <data name="DeletePersonTask_Name_Delete_Persons" xml:space="preserve">
+    <value>删除人员数据</value>
+  </data>
+  <data name="ExtractVideoThumbnailTask_Name_Extract_Video_Thumbnail" xml:space="preserve">
+    <value>提取视频预览缩略图</value>
+  </data>
+  <data name="MergeMultiVersionTask_Name_Merge_Multi_Versions" xml:space="preserve">
+    <value>合并多版本</value>
+  </data>
+  <data name="RefreshEpisodeTask_Name_Refresh_Episode" xml:space="preserve">
+    <value>刷新剧集元数据</value>
   </data>
 </root>
