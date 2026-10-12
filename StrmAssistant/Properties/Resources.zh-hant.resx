@@ -221,6 +221,39 @@
   <data name="ModOptions_SearchScope_Include_item_types__Blank_includes_all_" xml:space="preserve">
     <value>搜尋包含的類型，預設為電影，合集，電視節目，留空包含所有。</value>
   </data>
+  <data name="DirectLinkOptions_EditorTitle_Direct_Link" xml:space="preserve">
+    <value>影音直鏈</value>
+  </data>
+  <data name="ModOptions_EnableStrmDirectRedirect_Strm_302_Direct_Link" xml:space="preserve">
+    <value>Strm 302 直鏈</value>
+  </data>
+  <data name="ModOptions_EnableStrmDirectRedirect_Smart_direct_link_for_video_and_music_Strm_urls_without_server_relay__Default_is_OFF_" xml:space="preserve">
+    <value>智能直鏈影片和音樂 Strm Url 位址，無需伺服器轉發，預設關閉。</value>
+  </data>
+  <data name="ModOptions_EnableLiveTvDirectRedirect_LiveTV_Direct_Link" xml:space="preserve">
+    <value>LiveTV 直鏈</value>
+  </data>
+  <data name="ModOptions_EnableLiveTvDirectRedirect_Smart_direct_link_for_LiveTV_source_urls_without_server_relay__Default_is_OFF_" xml:space="preserve">
+    <value>智能直鏈電視源 Url 位址，無需伺服器轉發，預設關閉。</value>
+  </data>
+  <data name="ModOptions_StrmDirectRedirectFollow302_Follow_302_Redirect" xml:space="preserve">
+    <value>重定向 302 設定</value>
+  </data>
+  <data name="ModOptions_StrmDirectRedirectFollow302_Auto_resolve_the_real_302_url_of_cloud_drives__OFF_uses_the_original_url_in_the_strm_file__Default_is_OFF_" xml:space="preserve">
+    <value>自動重定向網盤 302 真實直鏈位址；關閉則使用 strm 檔案內原始 Url 位址，預設關閉。</value>
+  </data>
+  <data name="ModOptions_StrmVideoDirectRedirectClientBlacklist_Video_Direct_Link_Client_Blacklist" xml:space="preserve">
+    <value>影片直鏈用戶端黑名單</value>
+  </data>
+  <data name="ModOptions_StrmVideoDirectRedirectClientBlacklist_Client_name_keyword_match__matched_clients_are_blocked_from_video_strm_direct_link__Separated_by_comma__semicolon_or_newline" xml:space="preserve">
+    <value>按用戶端名稱關鍵字匹配，命中的用戶端禁止影片 strm 直鏈。支援逗號、分號或換行分隔。</value>
+  </data>
+  <data name="ModOptions_StrmAudioDirectRedirectClientBlacklist_Music_Direct_Link_Client_Blacklist" xml:space="preserve">
+    <value>音樂直鏈用戶端黑名單</value>
+  </data>
+  <data name="ModOptions_StrmAudioDirectRedirectClientBlacklist_Client_name_keyword_match__matched_clients_are_blocked_from_music_strm_direct_link__Separated_by_comma__semicolon_or_newline" xml:space="preserve">
+    <value>按用戶端名稱關鍵字匹配，命中的用戶端禁止音樂 strm 直鏈。支援逗號、分號或換行分隔。</value>
+  </data>
   <data name="ModOptions_PinyinSortName_Pinyin_Sort_Title" xml:space="preserve">
     <value>拼音首字母排序</value>
   </data>

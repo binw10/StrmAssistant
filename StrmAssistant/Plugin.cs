@@ -69,6 +69,11 @@ namespace StrmAssistant
         public static MetadataApi MetadataApi { get; private set; }
         public static VideoThumbnailApi VideoThumbnailApi { get; private set; }
 
+        /// <summary>影音直链等功能使用的媒体库管理器与共享 HttpClient。</summary>
+        public static ILibraryManager LibraryManager { get; private set; }
+
+        public static IHttpClient HttpClient { get; private set; }
+
         private readonly Guid _id = new Guid("63c322b7-a371-41a3-b11f-04f8418b37d8");
 
         public readonly ILogger Logger;
@@ -138,6 +143,9 @@ namespace StrmAssistant
             _fileSystem = fileSystem;
             _taskManager = taskManager;
 
+            LibraryManager = libraryManager;
+            HttpClient = httpClient;
+
             MainOptionsStore = new PluginOptionsStore(applicationHost, Logger, Name);
             MediaInfoExtractStore =
                 new MediaInfoExtractOptionsStore(applicationHost, Logger, Name + "_" + nameof(MediaInfoExtractOptions));
@@ -164,23 +172,33 @@ namespace StrmAssistant
             if (IsModSupported)
             {
                 Logger.Info("Initializing Harmony Mod patches...");
-                PatchManager.Initialize();
-                
-                // 检查补丁状态并记录详细信息
-                var modSuccess = PatchManager.IsModSuccess();
-                if (!modSuccess)
+
+                try
                 {
-                    Logger.Warn("Harmony Mod initialization completed with some failures. Check logs above for details.");
+                    PatchManager.Initialize();
+
+                    // 检查补丁状态并记录详细信息
+                    var modSuccess = PatchManager.IsModSuccess();
+                    if (!modSuccess)
+                    {
+                        Logger.Warn("Harmony Mod initialization completed with some failures. Check logs above for details.");
+                    }
+                    else
+                    {
+                        Logger.Info("Harmony Mod initialization completed successfully.");
+                    }
+
+                    // 在调试模式下输出详细诊断
+                    if (DebugMode)
+                    {
+                        Logger.Debug(PatchManager.GetDiagnosticReport());
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    Logger.Info("Harmony Mod initialization completed successfully.");
-                }
-                
-                // 在调试模式下输出详细诊断
-                if (DebugMode)
-                {
-                    Logger.Debug(PatchManager.GetDiagnosticReport());
+                    // 兜底：补丁初始化异常不得导致插件加载失败、设置页无法打开
+                    Logger.Error($"PatchManager initialization failed: {ex.Message}");
+                    Logger.Error(ex.ToString());
                 }
             }
             else

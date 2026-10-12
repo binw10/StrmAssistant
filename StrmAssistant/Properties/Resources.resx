@@ -308,6 +308,39 @@
   <data name="ModOptions_SearchScope_Include_item_types__Blank_includes_all_" xml:space="preserve">
     <value>Include search item types. Default is Movie, Collection, Series. Blank includes all.</value>
   </data>
+  <data name="DirectLinkOptions_EditorTitle_Direct_Link" xml:space="preserve">
+    <value>Direct Link</value>
+  </data>
+  <data name="ModOptions_EnableStrmDirectRedirect_Strm_302_Direct_Link" xml:space="preserve">
+    <value>Strm 302 Direct Link</value>
+  </data>
+  <data name="ModOptions_EnableStrmDirectRedirect_Smart_direct_link_for_video_and_music_Strm_urls_without_server_relay__Default_is_OFF_" xml:space="preserve">
+    <value>Smart direct link for video and music Strm urls without server relay. Default is OFF.</value>
+  </data>
+  <data name="ModOptions_EnableLiveTvDirectRedirect_LiveTV_Direct_Link" xml:space="preserve">
+    <value>LiveTV Direct Link</value>
+  </data>
+  <data name="ModOptions_EnableLiveTvDirectRedirect_Smart_direct_link_for_LiveTV_source_urls_without_server_relay__Default_is_OFF_" xml:space="preserve">
+    <value>Smart direct link for LiveTV source urls without server relay. Default is OFF.</value>
+  </data>
+  <data name="ModOptions_StrmDirectRedirectFollow302_Follow_302_Redirect" xml:space="preserve">
+    <value>Follow 302 Redirect</value>
+  </data>
+  <data name="ModOptions_StrmDirectRedirectFollow302_Auto_resolve_the_real_302_url_of_cloud_drives__OFF_uses_the_original_url_in_the_strm_file__Default_is_OFF_" xml:space="preserve">
+    <value>Auto resolve the real 302 url of cloud drives; OFF uses the original url in the strm file. Default is OFF.</value>
+  </data>
+  <data name="ModOptions_StrmVideoDirectRedirectClientBlacklist_Video_Direct_Link_Client_Blacklist" xml:space="preserve">
+    <value>Video Direct Link Client Blacklist</value>
+  </data>
+  <data name="ModOptions_StrmVideoDirectRedirectClientBlacklist_Client_name_keyword_match__matched_clients_are_blocked_from_video_strm_direct_link__Separated_by_comma__semicolon_or_newline" xml:space="preserve">
+    <value>Client name keyword match, matched clients are blocked from video strm direct link. Separated by comma, semicolon or newline.</value>
+  </data>
+  <data name="ModOptions_StrmAudioDirectRedirectClientBlacklist_Music_Direct_Link_Client_Blacklist" xml:space="preserve">
+    <value>Music Direct Link Client Blacklist</value>
+  </data>
+  <data name="ModOptions_StrmAudioDirectRedirectClientBlacklist_Client_name_keyword_match__matched_clients_are_blocked_from_music_strm_direct_link__Separated_by_comma__semicolon_or_newline" xml:space="preserve">
+    <value>Client name keyword match, matched clients are blocked from music strm direct link. Separated by comma, semicolon or newline.</value>
+  </data>
   <data name="ModOptions_PinyinSortName_Pinyin_Sort_Title" xml:space="preserve">
     <value>Pinyin Initials Sort Title</value>
   </data>

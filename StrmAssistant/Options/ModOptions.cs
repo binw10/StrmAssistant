@@ -66,6 +66,9 @@ namespace StrmAssistant.Options
         [VisibleCondition(nameof(EnhanceChineseSearch), SimpleCondition.IsTrue)]
         public bool ExcludeOriginalTitleFromSearch { get; set; } = false;
 
+        [DisplayNameL("DirectLinkOptions_EditorTitle_Direct_Link", typeof(Resources))]
+        public DirectLinkOptions DirectLinkOptions { get; set; } = new DirectLinkOptions();
+
         [Browsable(false)]
         public bool IsChineseSearchSupported =>
             (RuntimeInformation.ProcessArchitecture == Architecture.X64 ||

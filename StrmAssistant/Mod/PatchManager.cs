@@ -40,6 +40,8 @@ namespace StrmAssistant.Mod
         public static NoBoxsetsAutoCreation NoBoxsetsAutoCreation;
         public static EnhanceNotificationSystem EnhanceNotificationSystem;
         public static EnableDeepDelete EnableDeepDelete;
+        public static StrmDirectRedirect StrmDirectRedirect;
+        public static LiveTvDirectRedirect LiveTvDirectRedirect;
 
         private static readonly ConcurrentDictionary<Tuple<Type, string>, HarmonyMethod> HarmonyMethodCache 
             = new ConcurrentDictionary<Tuple<Type, string>, HarmonyMethod>();
@@ -95,6 +97,8 @@ namespace StrmAssistant.Mod
             NoBoxsetsAutoCreation = new NoBoxsetsAutoCreation();
             EnhanceNotificationSystem = new EnhanceNotificationSystem();
             EnableDeepDelete = new EnableDeepDelete();
+            StrmDirectRedirect = new StrmDirectRedirect();
+            LiveTvDirectRedirect = new LiveTvDirectRedirect();
 
             // ★ 总览日志：遍历所有 PatchTracker，打印每个模块的最终状态（Info 级别，无需开启 DebugMode）
             try
@@ -159,7 +163,9 @@ namespace StrmAssistant.Mod
                 typeof(EnhanceMovieDbPerson),
                 typeof(EnhanceNfoMetadata),
                 typeof(MovieDbEpisodeGroup),
-                typeof(OptimizeMovieDbEpisodeScraping)
+                typeof(OptimizeMovieDbEpisodeScraping),
+                typeof(StrmDirectRedirect),
+                typeof(LiveTvDirectRedirect)
             };
             
             // 核心功能补丁（这些失败会影响整体状态）

@@ -1,4 +1,4 @@
-﻿using Emby.Media.Common.Extensions;
+using Emby.Media.Common.Extensions;
 using Emby.Web.GenericEdit.Elements;
 using Emby.Web.GenericEdit.PropertyDiff;
 using MediaBrowser.Common;
@@ -183,6 +183,30 @@ namespace StrmAssistant.Options.Store
                     {
                         Plugin.Instance.ApplicationHost.NotifyPendingRestart();
                     }
+                }
+
+                // 影音直链：保存后即时生效（直接比较新旧值，避免依赖嵌套层级的变更检测）
+                try
+                {
+                    var oldDirectLink = PluginOptions.ModOptions.DirectLinkOptions ?? new DirectLinkOptions();
+                    var newDirectLink = options.ModOptions.DirectLinkOptions ?? new DirectLinkOptions();
+
+                    if (oldDirectLink.EnableStrmDirectRedirect != newDirectLink.EnableStrmDirectRedirect ||
+                        oldDirectLink.StrmDirectRedirectFollow302 != newDirectLink.StrmDirectRedirectFollow302 ||
+                        !string.Equals(oldDirectLink.StrmVideoDirectRedirectClientBlacklist, newDirectLink.StrmVideoDirectRedirectClientBlacklist) ||
+                        !string.Equals(oldDirectLink.StrmAudioDirectRedirectClientBlacklist, newDirectLink.StrmAudioDirectRedirectClientBlacklist))
+                    {
+                        PatchManager.StrmDirectRedirect?.ApplyOptionsAndConfigure(newDirectLink);
+                    }
+
+                    if (oldDirectLink.EnableLiveTvDirectRedirect != newDirectLink.EnableLiveTvDirectRedirect)
+                    {
+                        PatchManager.LiveTvDirectRedirect?.ApplyOptionsAndConfigure(newDirectLink);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn($"影音直链选项即时生效失败: {ex.Message}");
                 }
             }
         }
