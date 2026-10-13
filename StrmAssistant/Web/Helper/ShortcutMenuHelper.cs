@@ -204,6 +204,15 @@ setTimeout(() => {
             ModifiedShortcutsString = File.ReadAllText(Path.Combine(dashboardSourcePath, "modules", "shortcuts.js")) +
                                       injectShortcutCommand;
 
+            const string injectDoubanBadgeBootstrap = @"
+// StrmAssistant Douban badge bootstrap
+require(['components/strmassistant/strmassistant'], function (responses) {
+    var mod = responses && responses[0];
+    if (mod && mod.badges) { try { mod.badges.init(); } catch (e) {} }
+});
+";
+            ModifiedShortcutsString += injectDoubanBadgeBootstrap;
+
             if (dataExplorer2Assembly != null)
             {
                 if (Plugin.Instance.DebugMode)

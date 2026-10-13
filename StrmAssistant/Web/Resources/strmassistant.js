@@ -185,7 +185,134 @@
             const commandName = locale === 'zh-cn' ? '\u6E05\u9664\u5A92\u4F53\u4FE1\u606F' :
                     (['zh-hk', 'zh-tw'].includes(locale) ? '\u6E05\u9664\u5A92\u9AD4\u8CC7\u8A0A' : 'Clear Media Info');
             batchClear(itemIds, 'ClearMediaInfo', commandName);
-        }
+        },
+
+        badges: (function () {
+            let initialized = false;
+            let enabled = null;
+            let scanTimer = null;
+
+            function apiClient() {
+                return connectionManager.currentApiClient();
+            }
+
+            function checkEnabled() {
+                if (enabled !== null) return Promise.resolve(enabled);
+                return apiClient().getJSON(apiClient().getUrl('Douban/Ratings')).then(function (res) {
+                    enabled = !!(res && (res.Enabled !== undefined ? res.Enabled : res.enabled));
+                    return enabled;
+                }).catch(function () {
+                    enabled = false;
+                    return false;
+                });
+            }
+
+            function fetchRatings(ids) {
+                return apiClient().getJSON(apiClient().getUrl('Douban/Ratings', { Ids: ids.join(',') }))
+                    .then(function (res) { return (res && (res.Ratings || res.ratings)) || []; })
+                    .catch(function () { return []; });
+            }
+
+            function ratingOf(info) {
+                return info && (info.Rating !== undefined ? info.Rating : info.rating);
+            }
+
+            function idOf(info) {
+                return info && (info.ItemId !== undefined ? info.ItemId : info.itemId);
+            }
+
+            function makePill(info, floating) {
+                const pill = document.createElement('div');
+                pill.className = 'douban-badge';
+                pill.textContent = '\u8C46\u74E3 ' + Number(ratingOf(info)).toFixed(1);
+                let style = 'z-index:5;background:rgba(0,0,0,.72);color:#ffac2d;font-size:12px;' +
+                    'line-height:16px;padding:0 6px;border-radius:8px;pointer-events:none;white-space:nowrap;';
+                style += floating ? 'position:absolute;top:4px;right:4px;' : 'display:inline-block;vertical-align:middle;';
+                pill.setAttribute('style', style);
+                return pill;
+            }
+
+            function decorateCard(card, info) {
+                if (card.getAttribute('data-douban-badge')) return;
+                card.setAttribute('data-douban-badge', '1');
+                const host = card.querySelector('.cardScalable') || card.querySelector('.cardBox') || card;
+                if (!host) return;
+                if (host.style.position !== 'absolute' && !host.style.position) host.style.position = 'relative';
+                host.appendChild(makePill(info, true));
+            }
+
+            function decorateDetail() {
+                const page = document.querySelector('.itemDetailPage');
+                if (!page || page.getAttribute('data-douban-badge')) return;
+
+                const match = (location.hash || '').match(/[?&]id=(\d+)/);
+                if (!match) return;
+
+                page.setAttribute('data-douban-badge', '1');
+
+                fetchRatings([match[1]]).then(function (list) {
+                    const info = list && list[0];
+                    if (!info || !ratingOf(info)) return;
+                    const host = page.querySelector('.itemMiscInfo') || page.querySelector('.mainDetailButtons');
+                    if (!host) return;
+                    host.appendChild(makePill(info, false));
+                }).catch(function () {});
+            }
+
+            function scan() {
+                try {
+                    decorateDetail();
+
+                    const cards = Array.prototype.slice.call(
+                        document.querySelectorAll('.card[data-id]:not([data-douban-badge])'));
+                    if (!cards.length) return;
+
+                    const seen = {};
+                    const ids = [];
+                    for (const card of cards) {
+                        const id = card.getAttribute('data-id');
+                        if (!id || seen[id]) continue;
+                        seen[id] = true;
+                        ids.push(id);
+                        if (ids.length >= 60) break;
+                    }
+                    if (!ids.length) return;
+
+                    fetchRatings(ids).then(function (list) {
+                        const byId = {};
+                        (list || []).forEach(function (info) { byId[idOf(info)] = info; });
+                        cards.forEach(function (card) {
+                            const info = byId[card.getAttribute('data-id')];
+                            if (info && ratingOf(info)) decorateCard(card, info);
+                            else card.setAttribute('data-douban-badge', '1');
+                        });
+                    }).catch(function () {});
+                } catch (e) {
+                    // ignore
+                }
+            }
+
+            function scheduleScan() {
+                if (scanTimer) clearTimeout(scanTimer);
+                scanTimer = setTimeout(scan, 600);
+            }
+
+            function init() {
+                if (initialized) return;
+                initialized = true;
+
+                checkEnabled().then(function (on) {
+                    if (!on) return;
+                    scan();
+                    if (window.MutationObserver) {
+                        new MutationObserver(scheduleScan).observe(document.body,
+                            { childList: true, subtree: true });
+                    }
+                });
+            }
+
+            return { init: init };
+        })()
     };
 
     function batchClear(itemIds, endpoint, commandName) {

@@ -40,6 +40,24 @@ namespace StrmAssistant.Provider.Douban
             public object Value { get; set; }
         }
 
+        /// <summary>
+        /// 评分快照（无过期）：豆瓣评分徽章数据源，条目通过 ProviderIds["Douban"] 关联。
+        /// </summary>
+        public class DoubanRatingSnapshot
+        {
+            public double Rating { get; set; }
+            public long? Votes { get; set; }
+            public DateTime Updated { get; set; }
+        }
+
+        public class DoubanRatingInfo
+        {
+            public string ItemId { get; set; }
+            public string SubjectId { get; set; }
+            public double? Rating { get; set; }
+            public long? Votes { get; set; }
+        }
+
         public class DoubanSubject
         {
             public string SubjectId { get; set; }
@@ -100,11 +118,14 @@ namespace StrmAssistant.Provider.Douban
         private readonly ILogger _logger;
 
         private readonly string _cachePath;
+        private readonly string _ratingsPath;
         private readonly object _cacheLock = new object();
+        private readonly object _ratingsLock = new object();
         private readonly object _requestLock = new object();
         private readonly ConcurrentDictionary<long, byte> _inFlight = new ConcurrentDictionary<long, byte>();
 
         private Dictionary<string, CacheEntry> _cache;
+        private Dictionary<string, DoubanRatingSnapshot> _ratings;
         private DateTime _lastRequestTime = DateTime.MinValue;
         private DateTime _breakerUntil = DateTime.MinValue;
         private int _consecutiveBlocked;
@@ -116,6 +137,105 @@ namespace StrmAssistant.Provider.Douban
             _jsonSerializer = jsonSerializer;
             _cachePath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath,
                 "strmassistant_douban_cache.json");
+            _ratingsPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath,
+                "strmassistant_douban_ratings.json");
+        }
+
+        /// <summary>
+        /// 按条目 ID 列表解析豆瓣评分快照（经条目上的 Douban ProviderId 关联），供徽章端点使用。
+        /// </summary>
+        public List<DoubanRatingInfo> GetRatings(IEnumerable<string> itemIds)
+        {
+            var result = new List<DoubanRatingInfo>();
+
+            lock (_ratingsLock)
+            {
+                if (_ratings == null) LoadRatings();
+
+                if (_ratings.Count == 0) return result;
+
+                foreach (var itemId in itemIds)
+                {
+                    try
+                    {
+                        var item = Plugin.LibraryManager.GetItemById(long.Parse(itemId));
+                        var subjectId = item?.GetProviderId(DoubanProviderId);
+
+                        if (string.IsNullOrEmpty(subjectId)) continue;
+
+                        if (_ratings.TryGetValue(subjectId, out var snapshot))
+                        {
+                            result.Add(new DoubanRatingInfo
+                            {
+                                ItemId = itemId,
+                                SubjectId = subjectId,
+                                Rating = snapshot.Rating,
+                                Votes = snapshot.Votes
+                            });
+                        }
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private void RecordRatingSnapshot(string subjectId, double rating, long? votes)
+        {
+            lock (_ratingsLock)
+            {
+                if (_ratings == null) LoadRatings();
+
+                if (_ratings.TryGetValue(subjectId, out var existing) &&
+                    Math.Abs(existing.Rating - rating) < 0.001 &&
+                    existing.Votes == votes)
+                {
+                    return;
+                }
+
+                _ratings[subjectId] = new DoubanRatingSnapshot
+                {
+                    Rating = rating,
+                    Votes = votes,
+                    Updated = DateTime.UtcNow
+                };
+
+                SaveRatings();
+            }
+        }
+
+        private void LoadRatings()
+        {
+            _ratings = new Dictionary<string, DoubanRatingSnapshot>();
+
+            try
+            {
+                if (File.Exists(_ratingsPath))
+                {
+                    var persisted = _jsonSerializer.DeserializeFromFile<Dictionary<string, DoubanRatingSnapshot>>(_ratingsPath);
+                    if (persisted != null) _ratings = persisted;
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.Debug("DoubanAssist - Ratings load failed: {0}", e.Message);
+            }
+        }
+
+        private void SaveRatings()
+        {
+            try
+            {
+                _jsonSerializer.SerializeToFile(_ratings, _ratingsPath);
+            }
+            catch (Exception e)
+            {
+                _logger.Debug("DoubanAssist - Ratings save failed: {0}", e.Message);
+            }
         }
 
         /// <summary>
@@ -123,7 +243,7 @@ namespace StrmAssistant.Provider.Douban
         /// </summary>
         public Task ApplyAsync(Movie movie, CancellationToken cancellationToken)
         {
-            return ApplyAsync(movie, "movie", cancellationToken);
+            return ApplyAsync(movie, "movie", null, cancellationToken);
         }
 
         /// <summary>
@@ -131,10 +251,19 @@ namespace StrmAssistant.Provider.Douban
         /// </summary>
         public Task ApplyAsync(Series series, CancellationToken cancellationToken)
         {
-            return ApplyAsync(series, "tv", cancellationToken);
+            return ApplyAsync(series, "tv", null, cancellationToken);
         }
 
-        private async Task ApplyAsync(BaseItem item, string suggestType, CancellationToken cancellationToken)
+        /// <summary>
+        /// 季刷新完成后调用：按「剧名 第N季」匹配豆瓣季条目（阿拉伯/中文数字各试一次）。
+        /// </summary>
+        public Task ApplyAsync(Season season, CancellationToken cancellationToken)
+        {
+            return ApplyAsync(season, "tv", season?.IndexNumber, cancellationToken);
+        }
+
+        private async Task ApplyAsync(BaseItem item, string suggestType, int? seasonNumber,
+            CancellationToken cancellationToken)
         {
             var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();
 
@@ -148,7 +277,7 @@ namespace StrmAssistant.Provider.Douban
 
             try
             {
-                var subject = await FindSubjectAsync(item, suggestType, cancellationToken).ConfigureAwait(false);
+                var subject = await FindSubjectAsync(item, suggestType, seasonNumber, cancellationToken).ConfigureAwait(false);
                 if (subject == null) return;
 
                 var changed = false;
@@ -224,13 +353,36 @@ namespace StrmAssistant.Provider.Douban
             }
         }
 
-        private async Task<DoubanSubject> FindSubjectAsync(BaseItem item, string suggestType,
+        private async Task<DoubanSubject> FindSubjectAsync(BaseItem item, string suggestType, int? seasonNumber,
             CancellationToken cancellationToken)
         {
             var cachedId = item.GetProviderId(DoubanProviderId);
             if (!string.IsNullOrEmpty(cachedId))
             {
                 return await FetchSubjectAsync(cachedId, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (seasonNumber.HasValue)
+            {
+                var season = item as Season;
+                var seriesTitle = season?.Series != null
+                    ? season.Series.OriginalTitle ?? season.Series.Name
+                    : null;
+
+                if (string.IsNullOrEmpty(seriesTitle)) return null;
+
+                var candidates = new List<string> { $"{seriesTitle} 第{seasonNumber.Value}季" };
+                var chinese = ToChineseSeasonNumber(seasonNumber.Value);
+                if (chinese != null && !chinese.Contains(seasonNumber.Value.ToString())) candidates.Add($"{seriesTitle} {chinese}");
+
+                foreach (var query in candidates)
+                {
+                    var subject = await SearchByTitleAsync(query, null, suggestType, seasonNumber, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (subject != null) return subject;
+                }
+
+                return null;
             }
 
             var imdbId = item.GetProviderId(MetadataProviders.Imdb);
@@ -246,16 +398,46 @@ namespace StrmAssistant.Provider.Douban
             var searchTerm = item.OriginalTitle ?? item.Name;
             if (string.IsNullOrWhiteSpace(searchTerm)) return null;
 
-            return await SearchByTitleAsync(searchTerm, item.ProductionYear, suggestType, cancellationToken)
+            return await SearchByTitleAsync(searchTerm, item.ProductionYear, suggestType, null, cancellationToken)
                 .ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// 季数转中文序数（1→第一季、21→第二十一季），超出范围返回阿拉伯数字形式。
+        /// </summary>
+        private static string ToChineseSeasonNumber(int n)
+        {
+            if (n <= 0 || n > 99) return $"第{n}季";
+
+            var digits = new[] { "", "一", "二", "三", "四", "五", "六", "七", "八", "九" };
+
+            if (n < 10) return "第" + digits[n] + "季";
+            if (n == 10) return "第十季";
+            if (n < 20) return "第十" + digits[n - 10] + "季";
+
+            var tens = n / 10;
+            var ones = n % 10;
+
+            return "第" + digits[tens] + "十" + (ones > 0 ? digits[ones] : string.Empty) + "季";
+        }
+
         private async Task<DoubanSubject> SearchByTitleAsync(string title, int? year, string suggestType,
-            CancellationToken cancellationToken)
+            int? seasonNumber, CancellationToken cancellationToken)
         {
             var suggestions = await GetSuggestionsAsync(title, cancellationToken).ConfigureAwait(false);
 
-            var match = suggestions?.FirstOrDefault(s => s.type == suggestType && string.IsNullOrEmpty(s.id) == false);
+            var matches = suggestions?
+                .Where(s => s.type == suggestType && !string.IsNullOrEmpty(s.id))
+                .ToList();
+
+            var match = matches?.FirstOrDefault();
+
+            // 季级匹配优先选标题带「季」的条目，避免命中的是剧集主条目
+            if (seasonNumber.HasValue && matches != null)
+            {
+                match = matches.FirstOrDefault(s => s.title != null && s.title.Contains("季", StringComparison.Ordinal))
+                        ?? match;
+            }
 
             if (match == null) return null;
 
@@ -351,6 +533,11 @@ namespace StrmAssistant.Provider.Douban
 
             var subject = ParseSubject(subjectId, html);
             SetCache(key, subject);
+
+            if (subject.Rating.HasValue)
+            {
+                RecordRatingSnapshot(subjectId, subject.Rating.Value, subject.Votes);
+            }
 
             return subject;
         }

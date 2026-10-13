@@ -358,6 +358,10 @@ namespace StrmAssistant
                 {
                     _ = Task.Run(() => DoubanAssist.ApplyAsync(doubanSeries, CancellationToken.None));
                 }
+                else if (e.Argument.Item is Season doubanSeason)
+                {
+                    _ = Task.Run(() => DoubanAssist.ApplyAsync(doubanSeason, CancellationToken.None));
+                }
             }
 
             if (options.MergeMultiVersion && e.Argument.Item.IsTopParent)
