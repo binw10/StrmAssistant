@@ -70,6 +70,7 @@ namespace StrmAssistant
         public static PlaySessionMonitor PlaySessionMonitor { get; private set; }
         public static AutoMarkWatched AutoMarkWatched { get; private set; }
         public static IntroDbApi IntroDbApi { get; private set; }
+        public static ImagePostProcessor ImagePostProcessor { get; private set; }
         public static MetadataApi MetadataApi { get; private set; }
         public static VideoThumbnailApi VideoThumbnailApi { get; private set; }
 
@@ -286,6 +287,7 @@ namespace StrmAssistant
                 itemRepository, jsonSerializer, libraryMonitor);
             ChapterApi = new ChapterApi(libraryManager, itemRepository);
             IntroDbApi = new IntroDbApi(httpClient, jsonSerializer);
+            ImagePostProcessor = new ImagePostProcessor(ffmpegManager);
             FingerprintApi = new FingerprintApi(libraryManager, fileSystem, applicationPaths, ffmpegManager,
                 mediaEncoder, mediaMountManager, jsonSerializer, itemRepository, serverApplicationHost);
             PlaySessionMonitor = new PlaySessionMonitor(libraryManager, userManager, sessionManager);
@@ -331,6 +333,17 @@ namespace StrmAssistant
                 {
                     _ = Task.Run(() => IntroDbApi.ScrapeMovieAsync(refreshedMovie, CancellationToken.None));
                 }
+            }
+
+            var mediaInfoOptions = MediaInfoExtractStore.GetOptions();
+
+            if (mediaInfoOptions.EnableImageCapture &&
+                (mediaInfoOptions.ForcePortraitPoster || mediaInfoOptions.EnsureEpisode16x9))
+            {
+                var refreshedItem = e.Argument.Item;
+
+                _ = Task.Run(() => ImagePostProcessor.ProcessItem(refreshedItem,
+                    mediaInfoOptions.ForcePortraitPoster, mediaInfoOptions.EnsureEpisode16x9));
             }
 
             if (options.MergeMultiVersion && e.Argument.Item.IsTopParent)

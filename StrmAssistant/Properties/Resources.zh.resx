@@ -665,6 +665,18 @@
   <data name="ScrapeIntroDbTask_Description_Fills_missing_intro_credits_markers_from_TheIntroDB" xml:space="preserve">
     <value>从 TheIntroDB 为缺失片头片尾标记的剧集和电影填充标记。建议先在网站确认有数据再执行。</value>
   </data>
+  <data name="MediaInfoExtractOptions_ForcePortraitPoster_Force_Portrait_Poster" xml:space="preserve">
+    <value>强制海报为竖图</value>
+  </data>
+  <data name="MediaInfoExtractOptions_ForcePortraitPoster_Crop_the_captured_primary_image_to_2_3_portrait_after_refresh__Default_is_OFF_" xml:space="preserve">
+    <value>刷新后将截图生成的海报裁剪为 2:3 竖图。仅处理服务器生成的图片。默认关闭。</value>
+  </data>
+  <data name="MediaInfoExtractOptions_EnsureEpisode16x9_Ensure_Episode_Image_16x9" xml:space="preserve">
+    <value>确保集图像比例为 16:9</value>
+  </data>
+  <data name="MediaInfoExtractOptions_EnsureEpisode16x9_Crop_episode_stills_to_16_9_when_the_source_ratio_differs__Default_is_OFF_" xml:space="preserve">
+    <value>来源比例不符时将剧集截图裁剪为 16:9。仅处理服务器生成的图片。默认关闭。</value>
+  </data>
   <data name="AreYouSureToContinue" xml:space="preserve">
     <value>您确定要继续吗？</value>
   </data>

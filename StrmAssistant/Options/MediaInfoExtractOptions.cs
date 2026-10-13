@@ -36,6 +36,18 @@ namespace StrmAssistant.Options
         [VisibleCondition(nameof(EnableImageCapture), SimpleCondition.IsTrue)]
         public int ImageCapturePosition { get; set; } = 10;
 
+        [DisplayNameL("MediaInfoExtractOptions_ForcePortraitPoster_Force_Portrait_Poster", typeof(Resources))]
+        [DescriptionL("MediaInfoExtractOptions_ForcePortraitPoster_Crop_the_captured_primary_image_to_2_3_portrait_after_refresh__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        [VisibleCondition(nameof(EnableImageCapture), SimpleCondition.IsTrue)]
+        public bool ForcePortraitPoster { get; set; } = false;
+
+        [DisplayNameL("MediaInfoExtractOptions_EnsureEpisode16x9_Ensure_Episode_Image_16x9", typeof(Resources))]
+        [DescriptionL("MediaInfoExtractOptions_EnsureEpisode16x9_Crop_episode_stills_to_16_9_when_the_source_ratio_differs__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        [VisibleCondition(nameof(EnableImageCapture), SimpleCondition.IsTrue)]
+        public bool EnsureEpisode16x9 { get; set; } = false;
+
         [Browsable(false)]
         [Required]
         public string ImageCaptureExcludeMediaContainers { get; set; } =

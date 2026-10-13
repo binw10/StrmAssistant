@@ -439,6 +439,42 @@ namespace StrmAssistant.Properties {
                 return ResourceManager.GetString("ScrapeIntroDbTask_Description_Fills_missing_intro_credits_markers_from_TheIntroDB", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Force Portrait Poster.
+        /// </summary>
+        public static string MediaInfoExtractOptions_ForcePortraitPoster_Force_Portrait_Poster {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_ForcePortraitPoster_Force_Portrait_Poster", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Crop the captured primary image to 2:3 portrait after refresh. Server-generated images only. Default is OFF..
+        /// </summary>
+        public static string MediaInfoExtractOptions_ForcePortraitPoster_Crop_the_captured_primary_image_to_2_3_portrait_after_refresh__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_ForcePortraitPoster_Crop_the_captured_primary_image_to_2_3_portrait_after_refresh__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Ensure Episode Image 16:9.
+        /// </summary>
+        public static string MediaInfoExtractOptions_EnsureEpisode16x9_Ensure_Episode_Image_16x9 {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_EnsureEpisode16x9_Ensure_Episode_Image_16x9", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Crop episode stills to 16:9 when the source ratio differs. Server-generated images only. Default is OFF..
+        /// </summary>
+        public static string MediaInfoExtractOptions_EnsureEpisode16x9_Crop_episode_stills_to_16_9_when_the_source_ratio_differs__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_EnsureEpisode16x9_Crop_episode_stills_to_16_9_when_the_source_ratio_differs__Default_is_OFF_", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Notification Enhanced.
