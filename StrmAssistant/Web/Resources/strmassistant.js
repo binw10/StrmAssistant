@@ -166,32 +166,57 @@
             });
         },
 
-        clear_intro: function (itemId) {
+        clear_intro: function (itemIds) {
             const locale = globalize.getCurrentLocale().toLowerCase();
-            const commandName = locale === 'zh-cn' ? '\u6E05\u9664\u7247\u5934\u6807\u8BB0' : 
+            const commandName = locale === 'zh-cn' ? '\u6E05\u9664\u7247\u5934\u6807\u8BB0' :
                     (['zh-hk', 'zh-tw'].includes(locale) ? '\u6E05\u9664\u7247\u982D\u6A19\u8A18' : 'Clear Intro Markers');
-            confirm({
-                text: globalize.translate('AreYouSureToContinue'),
-                title: commandName,
-                confirmText: globalize.translate('Clear'),
-                primary: 'cancel'
-            })
-            .then(function() {
-                loading.show();
-                let apiClient = connectionManager.currentApiClient();
-                let clearIntroApi = apiClient.getUrl(`Items/${itemId}/ClearIntro`);
-                apiClient.ajax({
-                    type: "POST",
-                    url: clearIntroApi,
-                    data: {},
-                    contentType: "application/json"
-                }).finally(() => {
-                    loading.hide();
-                    const confirmMessage = (locale === 'zh-cn') ? commandName + '\u6210\u529F' : 
-                        (['zh-hk', 'zh-tw'].includes(locale) ? commandName + '\u6210\u529F' : commandName + ' Success');
-                    toast(confirmMessage);
-                });
-            });
+            batchClear(itemIds, 'ClearIntro', commandName);
+        },
+
+        clear_chapter: function (itemIds) {
+            const locale = globalize.getCurrentLocale().toLowerCase();
+            const commandName = locale === 'zh-cn' ? '\u6E05\u9664\u7AE0\u8282\u56FE' :
+                    (['zh-hk', 'zh-tw'].includes(locale) ? '\u6E05\u9664\u7AE0\u7BC0\u5716' : 'Clear Chapter Images');
+            batchClear(itemIds, 'ClearChapterImages', commandName);
+        },
+
+        clear_mediainfo: function (itemIds) {
+            const locale = globalize.getCurrentLocale().toLowerCase();
+            const commandName = locale === 'zh-cn' ? '\u6E05\u9664\u5A92\u4F53\u4FE1\u606F' :
+                    (['zh-hk', 'zh-tw'].includes(locale) ? '\u6E05\u9664\u5A92\u9AD4\u8CC7\u8A0A' : 'Clear Media Info');
+            batchClear(itemIds, 'ClearMediaInfo', commandName);
         }
     };
+
+    function batchClear(itemIds, endpoint, commandName) {
+        const ids = Array.isArray(itemIds) ? itemIds : [itemIds];
+        if (!ids.length) return;
+
+        confirm({
+            text: globalize.translate('AreYouSureToContinue'),
+            title: commandName,
+            confirmText: globalize.translate('Clear'),
+            primary: 'cancel'
+        })
+        .then(function() {
+            loading.show();
+            let apiClient = connectionManager.currentApiClient();
+            return Promise.all(ids.map(id => apiClient.ajax({
+                type: "POST",
+                url: apiClient.getUrl(`Items/${id}/${endpoint}`),
+                data: {},
+                contentType: "application/json"
+            })));
+        })
+        .then(function() {
+            loading.hide();
+            const locale = globalize.getCurrentLocale().toLowerCase();
+            const confirmMessage = (locale === 'zh-cn') ? commandName + '\u6210\u529F' :
+                (['zh-hk', 'zh-tw'].includes(locale) ? commandName + '\u6210\u529F' : commandName + ' Success');
+            toast(confirmMessage);
+        })
+        .catch(function() {
+            loading.hide();
+        });
+    }
 });

@@ -92,15 +92,51 @@ const strmAssistantCommandSource = {
             }
             if ((options.items[0].Type === 'Series' || options.items[0].Type === 'Season') &&
                 (options.user && options.user.Policy.IsAdministrator || false)) {
-                const commandName = locale === 'zh-cn' ? '\u6E05\u9664\u7247\u5934\u6807\u8BB0' : 
+                const commandName = locale === 'zh-cn' ? '\u6E05\u9664\u7247\u5934\u6807\u8BB0' :
                     (['zh-hk', 'zh-tw'].includes(locale) ? '\u6E05\u9664\u7247\u982D\u6A19\u8A18' : 'Clear Intro Markers');
                 result.push({ name: commandName, id: 'clear_intro', icon: 'clear_all' });
+            }
+            if (['Movie', 'Episode', 'Series', 'Season'].includes(options.items[0].Type) &&
+                (options.user && options.user.Policy.IsAdministrator || false)) {
+                const commandName = locale === 'zh-cn' ? '\u6E05\u9664\u7AE0\u8282\u56FE' :
+                    (['zh-hk', 'zh-tw'].includes(locale) ? '\u6E05\u9664\u7AE0\u7BC0\u5716' : 'Clear Chapter Images');
+                result.push({ name: commandName, id: 'clear_chapter', icon: 'hide_image' });
+            }
+            if ((options.items[0].Type === 'Movie' || options.items[0].Type === 'Episode') &&
+                (options.user && options.user.Policy.IsAdministrator || false)) {
+                const commandName = locale === 'zh-cn' ? '\u6E05\u9664\u5A92\u4F53\u4FE1\u606F' :
+                    (['zh-hk', 'zh-tw'].includes(locale) ? '\u6E05\u9664\u5A92\u9AD4\u8CC7\u8A0A' : 'Clear Media Info');
+                result.push({ name: commandName, id: 'clear_mediainfo', icon: 'delete_sweep' });
             }
             return result;
         }
         if (!options.multiSelect && options.items?.length > 1 && options.items[0].Type !== 'CollectionFolder' &&
             ((options.users && Object.values(options.users)[0]?.Policy.IsAdministrator) || false)) {
             const result = [];
+            const types = [...new Set(options.items.map(item => item.Type))];
+            const allMovies = types.length === 1 && types[0] === 'Movie';
+            const allSeriesScope = types.every(t => t === 'Series' || t === 'Season');
+            const allVideoScope = types.every(t => t === 'Movie' || t === 'Episode');
+            const allClearScope = types.every(t => ['Movie', 'Episode', 'Series', 'Season'].includes(t));
+
+            if (allMovies) {
+                result.push({ name: this.globalize.translate('HeaderScanLibraryFiles'), id: 'traverse', icon: 'refresh' });
+            }
+            if (allSeriesScope) {
+                const commandName = locale === 'zh-cn' ? '\u6E05\u9664\u7247\u5934\u6807\u8BB0' :
+                    (['zh-hk', 'zh-tw'].includes(locale) ? '\u6E05\u9664\u7247\u982D\u6A19\u8A18' : 'Clear Intro Markers');
+                result.push({ name: commandName, id: 'clear_intro', icon: 'clear_all' });
+            }
+            if (allClearScope) {
+                const commandName = locale === 'zh-cn' ? '\u6E05\u9664\u7AE0\u8282\u56FE' :
+                    (['zh-hk', 'zh-tw'].includes(locale) ? '\u6E05\u9664\u7AE0\u7BC0\u5716' : 'Clear Chapter Images');
+                result.push({ name: commandName, id: 'clear_chapter', icon: 'hide_image' });
+            }
+            if (allVideoScope) {
+                const commandName = locale === 'zh-cn' ? '\u6E05\u9664\u5A92\u4F53\u4FE1\u606F' :
+                    (['zh-hk', 'zh-tw'].includes(locale) ? '\u6E05\u9664\u5A92\u9AD4\u8CC7\u8A0A' : 'Clear Media Info');
+                result.push({ name: commandName, id: 'clear_mediainfo', icon: 'delete_sweep' });
+            }
             result.push({ name: lockCommandName, id: 'lock', icon: 'lock' });
             result.push({ name: unlockCommandName, id: 'unlock', icon: 'lock_open' });
             return result;
@@ -112,10 +148,8 @@ const strmAssistantCommandSource = {
         const actions = {
             copy: 'copy',
             remove: 'remove',
-            traverse: 'traverse',
             lock: 'lock',
-            unlock: 'unlock',
-            clear_intro: 'clear_intro'
+            unlock: 'unlock'
         };
         if (command.startsWith('delver_')) {
             const mediaSourceId = command.replace('delver_', '');
@@ -136,11 +170,19 @@ const strmAssistantCommandSource = {
                 return Promise.all(promises);
             });
         }
+        if (command === 'traverse') {
+            return require(['components/strmassistant/strmassistant']).then(responses => {
+                const parentIds = [...new Set(items.map(item => item.ParentId).filter(Boolean))];
+                return Promise.all(parentIds.map(id => responses[0].traverse(id)));
+            });
+        }
+        if (command === 'clear_intro' || command === 'clear_chapter' || command === 'clear_mediainfo') {
+            return require(['components/strmassistant/strmassistant']).then(responses => {
+                return responses[0][command](items.map(item => item.Id));
+            });
+        }
         if (actions[command]) {
             return require(['components/strmassistant/strmassistant']).then(responses => {
-                if (command === 'traverse') {
-                    return responses[0][actions[command]](items[0].ParentId);
-                }
                 return responses[0][actions[command]](items[0].Id, items[0].Name);
             });
         }

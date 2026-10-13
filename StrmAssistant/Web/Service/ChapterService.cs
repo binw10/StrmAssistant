@@ -5,6 +5,7 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Logging;
 using StrmAssistant.Web.Api;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace StrmAssistant.Web.Service
 {
@@ -31,6 +32,22 @@ namespace StrmAssistant.Web.Service
             {
                 Plugin.ChapterApi.RemoveIntroCreditsMarkers(item);
                 _logger.Info("IntroSkipClear - " + item.Name + " - " + item.Path);
+            }
+        }
+
+        public void Post(ClearChapterImages request)
+        {
+            var itemById = _libraryManager.GetItemById(request.Id);
+
+            if (itemById is null) return;
+
+            var targets = itemById is Series || itemById is Season
+                ? Plugin.ChapterApi.FetchClearTaskItems(new List<BaseItem> { itemById })
+                : new List<BaseItem> { itemById };
+
+            foreach (var item in targets.OfType<Video>())
+            {
+                Plugin.ChapterApi.ClearChapterImages(item);
             }
         }
     }

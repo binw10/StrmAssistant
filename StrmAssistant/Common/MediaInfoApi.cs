@@ -547,6 +547,11 @@ namespace StrmAssistant.Common
             return false;
         }
 
+        public void ClearMediaInfoJson(BaseItem item, string source)
+        {
+            DeleteMediaInfoJson(item, new DirectoryService(_logger, _fileSystem), source);
+        }
+
         public void DeleteMediaInfoJson(BaseItem item, IDirectoryService directoryService, string source)
         {
             var mediaInfoJsonPath = GetMediaInfoJsonPath(item);

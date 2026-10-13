@@ -9,6 +9,7 @@ using MediaBrowser.Model.Querying;
 using StrmAssistant.IntroSkip;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using static StrmAssistant.Options.IntroSkipOptions;
@@ -256,6 +257,71 @@ namespace StrmAssistant.Common
                 c.MarkerType == MarkerType.IntroStart || c.MarkerType == MarkerType.IntroEnd ||
                 c.MarkerType == MarkerType.CreditsStart);
             _itemRepository.SaveChapters(item.InternalId, chapters);
+        }
+
+        public void ClearChapterImages(BaseItem item)
+        {
+            var chapters = _itemRepository.GetChapters(item);
+            var changed = false;
+
+            foreach (var chapter in chapters)
+            {
+                if (string.IsNullOrEmpty(chapter.ImagePath)) continue;
+
+                try
+                {
+                    if (File.Exists(chapter.ImagePath))
+                    {
+                        File.Delete(chapter.ImagePath);
+                    }
+                }
+                catch (Exception e)
+                {
+                    _logger.Warn($"ChapterImageClear - Failed to delete {chapter.ImagePath}: {e.Message}");
+                }
+
+                chapter.ImagePath = null;
+                chapter.ImageDateModified = DateTime.MinValue;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                _itemRepository.SaveChapters(item.InternalId, chapters);
+            }
+
+            DeleteBifFiles(item);
+
+            _logger.Info("ChapterImageClear - " + item.Name + " - " + item.Path);
+        }
+
+        private void DeleteBifFiles(BaseItem item)
+        {
+            try
+            {
+                var directory = Path.GetDirectoryName(item.Path);
+                var basename = Path.GetFileNameWithoutExtension(item.Path);
+
+                if (string.IsNullOrEmpty(directory) || string.IsNullOrEmpty(basename) || !Directory.Exists(directory))
+                    return;
+
+                foreach (var bif in Directory.GetFiles(directory, basename + "*.bif"))
+                {
+                    try
+                    {
+                        File.Delete(bif);
+                        _logger.Info("ChapterImageClear - Deleted BIF: " + bif);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Warn($"ChapterImageClear - Failed to delete BIF {bif}: {e.Message}");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.Warn($"ChapterImageClear - Failed to enumerate BIF for {item.Path}: {e.Message}");
+            }
         }
 
         public List<BaseItem> FetchClearTaskItems(List<BaseItem> clearItems)

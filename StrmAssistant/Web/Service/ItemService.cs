@@ -44,5 +44,14 @@ namespace StrmAssistant.Web.Service
                 }
             }
         }
+
+        public void Post(ClearMediaInfo request)
+        {
+            var itemById = _libraryManager.GetItemById(request.Id);
+
+            if (itemById is null) return;
+
+            Plugin.MediaInfoApi.ClearMediaInfoJson(itemById, "Clear Media Info Menu");
+        }
     }
 }
