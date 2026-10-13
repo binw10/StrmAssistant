@@ -441,6 +441,8 @@ namespace StrmAssistant.Mod
 
             var originalLanguage = GetOriginalLanguage(item);
             var libraryPreferredImageLanguage = libraryOptions.PreferredImageLanguage?.Split('-')[0];
+            var preferredScript = GetChineseScriptClass(libraryOptions.PreferredImageLanguage);
+            var originalScript = GetChineseScriptClass(originalLanguage);
 
             var remoteImages = result.ToList();
 
@@ -461,13 +463,50 @@ namespace StrmAssistant.Mod
             }
 
             var reorderedImages = remoteImages.OrderBy(i =>
-                i.Type == ImageType.Backdrop ? 2 :
-                !string.IsNullOrEmpty(libraryPreferredImageLanguage) && string.Equals(i.Language,
-                    libraryPreferredImageLanguage, StringComparison.OrdinalIgnoreCase) ? 0 :
-                !string.IsNullOrEmpty(originalLanguage) && string.Equals(i.Language, originalLanguage,
-                    StringComparison.OrdinalIgnoreCase) ? 1 : 2);
+            {
+                if (i.Type == ImageType.Backdrop) return 2;
+
+                // 简繁区分：条目原语言为中文且库首选语言带简/繁区时，脚本一致的海报最优先，中性 zh 退到原语言层
+                var imageScript = GetChineseScriptClass(i.Language);
+
+                if (preferredScript != null && originalScript != null && imageScript == preferredScript) return 0;
+
+                if (!string.IsNullOrEmpty(libraryPreferredImageLanguage) && string.Equals(i.Language,
+                        libraryPreferredImageLanguage, StringComparison.OrdinalIgnoreCase)) return 0;
+
+                if (!string.IsNullOrEmpty(originalLanguage) && string.Equals(i.Language, originalLanguage,
+                        StringComparison.OrdinalIgnoreCase)) return 1;
+
+                if (preferredScript != null && originalScript != null && imageScript == "zh") return 1;
+
+                return 2;
+            });
 
             return Task.FromResult(reorderedImages.AsEnumerable());
+        }
+
+        /// <summary>
+        /// 判定语言代码的中文脚本类别：hans（简）、hant（繁）、zh（未分区的中性中文）、null（非中文）。
+        /// 兼容 TMDB 的 zh/zh-CN/zh-TW、TVDB 的 zho/zhtw/yue 及 Emby 的 zh-hk 等写法。
+        /// </summary>
+        private static string GetChineseScriptClass(string language)
+        {
+            if (string.IsNullOrEmpty(language)) return null;
+
+            var lang = language.Trim().ToLowerInvariant();
+
+            if (lang == "zho" || lang == "yue" || lang.StartsWith("yue-")) return "hant";
+
+            if (lang.StartsWith("zh"))
+            {
+                if (lang.Contains("hans") || lang.EndsWith("cn") || lang.EndsWith("sg") || lang.EndsWith("my"))
+                    return "hans";
+                if (lang.Contains("hant") || lang.EndsWith("tw") || lang.EndsWith("hk") || lang.EndsWith("mo"))
+                    return "hant";
+                return "zh";
+            }
+
+            return null;
         }
 
         [HarmonyReversePatch]
