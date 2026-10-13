@@ -348,9 +348,16 @@ namespace StrmAssistant
                     mediaInfoOptions.ForcePortraitPoster, mediaInfoOptions.EnsureEpisode16x9));
             }
 
-            if (MetadataEnhanceStore.GetOptions().EnableDoubanAssist && e.Argument.Item is Movie doubanMovie)
+            if (MetadataEnhanceStore.GetOptions().EnableDoubanAssist)
             {
-                _ = Task.Run(() => DoubanAssist.ApplyAsync(doubanMovie, CancellationToken.None));
+                if (e.Argument.Item is Movie doubanMovie)
+                {
+                    _ = Task.Run(() => DoubanAssist.ApplyAsync(doubanMovie, CancellationToken.None));
+                }
+                else if (e.Argument.Item is Series doubanSeries)
+                {
+                    _ = Task.Run(() => DoubanAssist.ApplyAsync(doubanSeries, CancellationToken.None));
+                }
             }
 
             if (options.MergeMultiVersion && e.Argument.Item.IsTopParent)

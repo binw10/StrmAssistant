@@ -1,6 +1,7 @@
 using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Logging;
@@ -120,49 +121,62 @@ namespace StrmAssistant.Provider.Douban
         /// <summary>
         /// 电影刷新完成后调用：匹配豆瓣条目并填充缺失字段。重复触发、锁定条目与非中文库直接跳过。
         /// </summary>
-        public async Task ApplyAsync(Movie movie, CancellationToken cancellationToken)
+        public Task ApplyAsync(Movie movie, CancellationToken cancellationToken)
+        {
+            return ApplyAsync(movie, "movie", cancellationToken);
+        }
+
+        /// <summary>
+        /// 剧集刷新完成后调用：匹配豆瓣剧集条目并填充缺失字段。
+        /// </summary>
+        public Task ApplyAsync(Series series, CancellationToken cancellationToken)
+        {
+            return ApplyAsync(series, "tv", cancellationToken);
+        }
+
+        private async Task ApplyAsync(BaseItem item, string suggestType, CancellationToken cancellationToken)
         {
             var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();
 
-            if (!options.EnableDoubanAssist || movie == null || movie.IsLocked) return;
+            if (!options.EnableDoubanAssist || item == null || item.IsLocked) return;
 
-            var language = movie.PreferredMetadataLanguage;
+            var language = item.PreferredMetadataLanguage;
             if (string.IsNullOrEmpty(language) || !language.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
                 return;
 
-            if (!_inFlight.TryAdd(movie.InternalId, 0)) return;
+            if (!_inFlight.TryAdd(item.InternalId, 0)) return;
 
             try
             {
-                var subject = await FindSubjectAsync(movie, cancellationToken).ConfigureAwait(false);
+                var subject = await FindSubjectAsync(item, suggestType, cancellationToken).ConfigureAwait(false);
                 if (subject == null) return;
 
                 var changed = false;
 
-                if (!string.Equals(movie.GetProviderId(DoubanProviderId), subject.SubjectId, StringComparison.Ordinal))
+                if (!string.Equals(item.GetProviderId(DoubanProviderId), subject.SubjectId, StringComparison.Ordinal))
                 {
-                    movie.ProviderIds[DoubanProviderId] = subject.SubjectId;
+                    item.ProviderIds[DoubanProviderId] = subject.SubjectId;
                     changed = true;
                 }
 
-                if (string.IsNullOrWhiteSpace(movie.Overview) && !string.IsNullOrWhiteSpace(subject.Summary))
+                if (string.IsNullOrWhiteSpace(item.Overview) && !string.IsNullOrWhiteSpace(subject.Summary))
                 {
-                    movie.Overview = subject.Summary;
+                    item.Overview = subject.Summary;
                     changed = true;
                 }
 
                 foreach (var genre in subject.Genres)
                 {
-                    if (!string.IsNullOrWhiteSpace(genre) && !movie.Genres.Contains(genre, StringComparer.OrdinalIgnoreCase))
+                    if (!string.IsNullOrWhiteSpace(genre) && !item.Genres.Contains(genre, StringComparer.OrdinalIgnoreCase))
                     {
-                        movie.AddGenre(genre.Trim());
+                        item.AddGenre(genre.Trim());
                         changed = true;
                     }
                 }
 
                 if (subject.Countries.Count > 0)
                 {
-                    var locations = movie.ProductionLocations?
+                    var locations = item.ProductionLocations?
                         .Where(l => !string.IsNullOrWhiteSpace(l)).ToList() ?? new List<string>();
 
                     foreach (var country in subject.Countries)
@@ -177,22 +191,22 @@ namespace StrmAssistant.Provider.Douban
                         }
                     }
 
-                    movie.ProductionLocations = locations.ToArray();
+                    item.ProductionLocations = locations.ToArray();
                 }
 
                 if (options.DoubanRatingOverride && subject.Rating.HasValue)
                 {
-                    if (Math.Abs((movie.CommunityRating ?? 0) - subject.Rating.Value) > 0.05)
+                    if (Math.Abs((item.CommunityRating ?? 0) - subject.Rating.Value) > 0.05)
                     {
-                        movie.CommunityRating = (float)subject.Rating.Value;
+                        item.CommunityRating = (float)subject.Rating.Value;
                         changed = true;
                     }
                 }
 
                 if (changed)
                 {
-                    movie.UpdateToRepository(ItemUpdateType.MetadataEdit);
-                    _logger.Info("DoubanAssist - Applied subject {0} to {1}", subject.SubjectId, movie.Name);
+                    item.UpdateToRepository(ItemUpdateType.MetadataEdit);
+                    _logger.Info("DoubanAssist - Applied subject {0} to {1}", subject.SubjectId, item.Name);
                 }
             }
             catch (OperationCanceledException)
@@ -201,24 +215,25 @@ namespace StrmAssistant.Provider.Douban
             }
             catch (Exception e)
             {
-                _logger.Warn("DoubanAssist - Failed for {0}: {1}", movie.Name, e.Message);
+                _logger.Warn("DoubanAssist - Failed for {0}: {1}", item.Name, e.Message);
                 _logger.Debug(e.StackTrace);
             }
             finally
             {
-                _inFlight.TryRemove(movie.InternalId, out _);
+                _inFlight.TryRemove(item.InternalId, out _);
             }
         }
 
-        private async Task<DoubanSubject> FindSubjectAsync(Movie movie, CancellationToken cancellationToken)
+        private async Task<DoubanSubject> FindSubjectAsync(BaseItem item, string suggestType,
+            CancellationToken cancellationToken)
         {
-            var cachedId = movie.GetProviderId(DoubanProviderId);
+            var cachedId = item.GetProviderId(DoubanProviderId);
             if (!string.IsNullOrEmpty(cachedId))
             {
                 return await FetchSubjectAsync(cachedId, cancellationToken).ConfigureAwait(false);
             }
 
-            var imdbId = movie.GetProviderId(MetadataProviders.Imdb);
+            var imdbId = item.GetProviderId(MetadataProviders.Imdb);
             if (!string.IsNullOrEmpty(imdbId))
             {
                 var doubanId = await ResolveDoubanIdByImdbAsync(imdbId, cancellationToken).ConfigureAwait(false);
@@ -228,19 +243,19 @@ namespace StrmAssistant.Provider.Douban
                 }
             }
 
-            var searchTerm = movie.OriginalTitle ?? movie.Name;
+            var searchTerm = item.OriginalTitle ?? item.Name;
             if (string.IsNullOrWhiteSpace(searchTerm)) return null;
 
-            return await SearchByTitleAsync(searchTerm, movie.ProductionYear, cancellationToken)
+            return await SearchByTitleAsync(searchTerm, item.ProductionYear, suggestType, cancellationToken)
                 .ConfigureAwait(false);
         }
 
-        private async Task<DoubanSubject> SearchByTitleAsync(string title, int? year,
+        private async Task<DoubanSubject> SearchByTitleAsync(string title, int? year, string suggestType,
             CancellationToken cancellationToken)
         {
             var suggestions = await GetSuggestionsAsync(title, cancellationToken).ConfigureAwait(false);
 
-            var match = suggestions?.FirstOrDefault(s => s.type == "movie" && string.IsNullOrEmpty(s.id) == false);
+            var match = suggestions?.FirstOrDefault(s => s.type == suggestType && string.IsNullOrEmpty(s.id) == false);
 
             if (match == null) return null;
 
