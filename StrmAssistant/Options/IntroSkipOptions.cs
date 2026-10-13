@@ -29,6 +29,16 @@ namespace StrmAssistant.Options
         [Required]
         public bool UnlockIntroSkip { get; set; } = false;
 
+        [DisplayNameL("IntroSkipOptions_EnableIntroDbScrape_IntroDb_Intro_Credits_Scraper", typeof(Resources))]
+        [DescriptionL("IntroSkipOptions_EnableIntroDbScrape_Scrape_intro_credits_markers_from_TheIntroDB_when_refreshing_series_or_movies__fill_missing_only__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        public bool EnableIntroDbScrape { get; set; } = false;
+
+        [DisplayNameL("IntroSkipOptions_IntroDbApiKey_Api_Key", typeof(Resources))]
+        [DescriptionL("IntroSkipOptions_IntroDbApiKey_Optional_TheIntroDB_API_key_sent_via_Bearer_auth_to_raise_the_daily_request_limit__Default_is_empty_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableIntroDbScrape), SimpleCondition.IsTrue)]
+        public string IntroDbApiKey { get; set; } = string.Empty;
+
         [DisplayNameL("IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Minutes", typeof(Resources))]
         [DescriptionL("IntroSkipOptions_IntroDetectionFingerprintMinutes_It_must_be_between_2_and_20__Default_is_10_", typeof(Resources))]
         [MinValue(2), MaxValue(20)]

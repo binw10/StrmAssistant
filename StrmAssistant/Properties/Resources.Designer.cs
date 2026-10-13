@@ -385,6 +385,60 @@ namespace StrmAssistant.Properties {
                 return ResourceManager.GetString("ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Playback_progress_percentage_of_current_episode_required_to_mark_previous_episodes_as_watched__5_to_100__Default_is_90_", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to IntroDb Intro/Credits Scraper.
+        /// </summary>
+        public static string IntroSkipOptions_EnableIntroDbScrape_IntroDb_Intro_Credits_Scraper {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_EnableIntroDbScrape_IntroDb_Intro_Credits_Scraper", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Scrape intro/credits markers from TheIntroDB when refreshing series or movies, fill missing markers only. Default is OFF..
+        /// </summary>
+        public static string IntroSkipOptions_EnableIntroDbScrape_Scrape_intro_credits_markers_from_TheIntroDB_when_refreshing_series_or_movies__fill_missing_only__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_EnableIntroDbScrape_Scrape_intro_credits_markers_from_TheIntroDB_when_refreshing_series_or_movies__fill_missing_only__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to API Key (Optional).
+        /// </summary>
+        public static string IntroSkipOptions_IntroDbApiKey_Api_Key {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_IntroDbApiKey_Api_Key", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Optional TheIntroDB API key sent via Bearer auth to raise the daily request limit. Default is empty..
+        /// </summary>
+        public static string IntroSkipOptions_IntroDbApiKey_Optional_TheIntroDB_API_key_sent_via_Bearer_auth_to_raise_the_daily_request_limit__Default_is_empty_ {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_IntroDbApiKey_Optional_TheIntroDB_API_key_sent_via_Bearer_auth_to_raise_the_daily_request_limit__Default_is_empty_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Scrape Intro/Credits from IntroDb.
+        /// </summary>
+        public static string ScrapeIntroDbTask_Name_Scrape_Intro_Credits_from_IntroDb {
+            get {
+                return ResourceManager.GetString("ScrapeIntroDbTask_Name_Scrape_Intro_Credits_from_IntroDb", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Fills missing intro/credits markers for episodes and movies from TheIntroDB. Confirm coverage on the website before running..
+        /// </summary>
+        public static string ScrapeIntroDbTask_Description_Fills_missing_intro_credits_markers_from_TheIntroDB {
+            get {
+                return ResourceManager.GetString("ScrapeIntroDbTask_Description_Fills_missing_intro_credits_markers_from_TheIntroDB", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Notification Enhanced.

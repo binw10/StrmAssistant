@@ -647,6 +647,24 @@
   <data name="ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Favorite_episodes_will_not_be_automatically_marked_as_watched__Default_is_OFF_" xml:space="preserve">
     <value>收藏的集不會被自動標記為已看。預設為關閉。</value>
   </data>
+  <data name="IntroSkipOptions_EnableIntroDbScrape_IntroDb_Intro_Credits_Scraper" xml:space="preserve">
+    <value>片頭片尾刮削（IntroDb）</value>
+  </data>
+  <data name="IntroSkipOptions_EnableIntroDbScrape_Scrape_intro_credits_markers_from_TheIntroDB_when_refreshing_series_or_movies__fill_missing_only__Default_is_OFF_" xml:space="preserve">
+    <value>重新整理劇集或電影時從 TheIntroDB 刮削片頭片尾標記，僅填充缺失的標記。預設為關閉。</value>
+  </data>
+  <data name="IntroSkipOptions_IntroDbApiKey_Api_Key" xml:space="preserve">
+    <value>API Key（可選）</value>
+  </data>
+  <data name="IntroSkipOptions_IntroDbApiKey_Optional_TheIntroDB_API_key_sent_via_Bearer_auth_to_raise_the_daily_request_limit__Default_is_empty_" xml:space="preserve">
+    <value>可選的 TheIntroDB API Key，透過 Bearer 認證提高每日請求限額。預設留空。</value>
+  </data>
+  <data name="ScrapeIntroDbTask_Name_Scrape_Intro_Credits_from_IntroDb" xml:space="preserve">
+    <value>從 IntroDb 刮削片頭片尾</value>
+  </data>
+  <data name="ScrapeIntroDbTask_Description_Fills_missing_intro_credits_markers_from_TheIntroDB" xml:space="preserve">
+    <value>從 TheIntroDB 為缺失片頭片尾標記的劇集和電影填充標記。建議先在網站確認有資料再執行。</value>
+  </data>
   <data name="AreYouSureToContinue" xml:space="preserve">
     <value>確定要繼續執行？</value>
   </data>

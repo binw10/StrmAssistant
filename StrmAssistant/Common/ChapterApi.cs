@@ -148,6 +148,98 @@ namespace StrmAssistant.Common
             return chapter.Name.EndsWith(MarkerSuffix);
         }
 
+        /// <summary>
+        /// IntroDb 刮削标记后缀，区别于播放行为探测的 #SA，用于识别与更新自身写入的标记。
+        /// </summary>
+        public const string DbMarkerSuffix = "#DB";
+
+        /// <summary>
+        /// 写入 IntroDb 刮削的片头/片尾标记：仅填充缺失（不覆盖探测或其他来源），
+        /// 自身上一轮的 #DB 标记允许更新。返回是否发生写入。
+        /// </summary>
+        public bool UpdateIntroDbMarkers(BaseItem item, List<IntroDbApi.IntroDbSegment> intro,
+            List<IntroDbApi.IntroDbSegment> credits)
+        {
+            var changed = false;
+            var chapters = _itemRepository.GetChapters(item);
+            var runtime = item.RunTimeTicks;
+
+            var introSegment = intro?.FirstOrDefault();
+            var creditsSegment = credits?.FirstOrDefault();
+
+            if (introSegment != null)
+            {
+                var hasExternalIntro = chapters.Any(c =>
+                    (c.MarkerType == MarkerType.IntroStart || c.MarkerType == MarkerType.IntroEnd) &&
+                    !c.Name.EndsWith(DbMarkerSuffix, StringComparison.Ordinal));
+
+                if (!hasExternalIntro)
+                {
+                    var introStartTicks = (introSegment.start_ms ?? 0) * TimeSpan.TicksPerMillisecond;
+                    var introEndTicks = (introSegment.end_ms ?? runtime) ?? introStartTicks;
+
+                    if (runtime.HasValue && introEndTicks > runtime.Value) introEndTicks = runtime.Value;
+
+                    if (introEndTicks > introStartTicks)
+                    {
+                        chapters.RemoveAll(c =>
+                            c.MarkerType == MarkerType.IntroStart || c.MarkerType == MarkerType.IntroEnd);
+
+                        chapters.Add(new ChapterInfo
+                        {
+                            Name = MarkerType.IntroStart + DbMarkerSuffix,
+                            MarkerType = MarkerType.IntroStart,
+                            StartPositionTicks = introStartTicks
+                        });
+                        chapters.Add(new ChapterInfo
+                        {
+                            Name = MarkerType.IntroEnd + DbMarkerSuffix,
+                            MarkerType = MarkerType.IntroEnd,
+                            StartPositionTicks = introEndTicks
+                        });
+
+                        changed = true;
+                        _logger.Info("IntroDbScrape - Intro marker {0}-{1} for {2}",
+                            new TimeSpan(introStartTicks).ToString(@"hh\:mm\:ss"),
+                            new TimeSpan(introEndTicks).ToString(@"hh\:mm\:ss"), item.Name);
+                    }
+                }
+            }
+
+            if (creditsSegment?.start_ms != null)
+            {
+                var hasExternalCredits = chapters.Any(c =>
+                    c.MarkerType == MarkerType.CreditsStart &&
+                    !c.Name.EndsWith(DbMarkerSuffix, StringComparison.Ordinal));
+
+                var creditsStartTicks = creditsSegment.start_ms.Value * TimeSpan.TicksPerMillisecond;
+
+                if (!hasExternalCredits && (!runtime.HasValue || creditsStartTicks < runtime.Value))
+                {
+                    chapters.RemoveAll(c => c.MarkerType == MarkerType.CreditsStart);
+
+                    chapters.Add(new ChapterInfo
+                    {
+                        Name = MarkerType.CreditsStart + DbMarkerSuffix,
+                        MarkerType = MarkerType.CreditsStart,
+                        StartPositionTicks = creditsStartTicks
+                    });
+
+                    changed = true;
+                    _logger.Info("IntroDbScrape - Credits marker {0} for {1}",
+                        new TimeSpan(creditsStartTicks).ToString(@"hh\:mm\:ss"), item.Name);
+                }
+            }
+
+            if (changed)
+            {
+                chapters.Sort((c1, c2) => c1.StartPositionTicks.CompareTo(c2.StartPositionTicks));
+                _itemRepository.SaveChapters(item.InternalId, chapters);
+            }
+
+            return changed;
+        }
+
         private static bool AllowOverwrite(ChapterInfo chapter)
         {
             return IsMarkerAddedByIntroSkip(chapter) ||

@@ -42,6 +42,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using static StrmAssistant.Options.ExperienceEnhanceOptions;
 using static StrmAssistant.Options.GeneralOptions;
 using static StrmAssistant.Options.MediaInfoExtractOptions;
@@ -67,6 +69,7 @@ namespace StrmAssistant
         public static SubtitleApi SubtitleApi { get; private set; }
         public static PlaySessionMonitor PlaySessionMonitor { get; private set; }
         public static AutoMarkWatched AutoMarkWatched { get; private set; }
+        public static IntroDbApi IntroDbApi { get; private set; }
         public static MetadataApi MetadataApi { get; private set; }
         public static VideoThumbnailApi VideoThumbnailApi { get; private set; }
 
@@ -282,6 +285,7 @@ namespace StrmAssistant
             MediaInfoApi = new MediaInfoApi(libraryManager, fileSystem, providerManager, mediaSourceManager,
                 itemRepository, jsonSerializer, libraryMonitor);
             ChapterApi = new ChapterApi(libraryManager, itemRepository);
+            IntroDbApi = new IntroDbApi(httpClient, jsonSerializer);
             FingerprintApi = new FingerprintApi(libraryManager, fileSystem, applicationPaths, ffmpegManager,
                 mediaEncoder, mediaMountManager, jsonSerializer, itemRepository, serverApplicationHost);
             PlaySessionMonitor = new PlaySessionMonitor(libraryManager, userManager, sessionManager);
@@ -316,6 +320,18 @@ namespace StrmAssistant
             if (_libraryManager.IsScanRunning) return;
 
             var options = ExperienceEnhanceStore.GetOptions();
+
+            if (IntroSkipStore.GetOptions().EnableIntroDbScrape)
+            {
+                if (e.Argument.Item is Series refreshedSeries)
+                {
+                    _ = Task.Run(() => IntroDbApi.ScrapeSeriesAsync(refreshedSeries, CancellationToken.None));
+                }
+                else if (e.Argument.Item is Movie refreshedMovie)
+                {
+                    _ = Task.Run(() => IntroDbApi.ScrapeMovieAsync(refreshedMovie, CancellationToken.None));
+                }
+            }
 
             if (options.MergeMultiVersion && e.Argument.Item.IsTopParent)
             {

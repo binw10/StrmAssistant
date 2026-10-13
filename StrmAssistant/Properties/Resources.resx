@@ -734,6 +734,24 @@
   <data name="ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Favorite_episodes_will_not_be_automatically_marked_as_watched__Default_is_OFF_" xml:space="preserve">
     <value>Favorite episodes will not be automatically marked as watched. Default is OFF.</value>
   </data>
+  <data name="IntroSkipOptions_EnableIntroDbScrape_IntroDb_Intro_Credits_Scraper" xml:space="preserve">
+    <value>IntroDb Intro/Credits Scraper</value>
+  </data>
+  <data name="IntroSkipOptions_EnableIntroDbScrape_Scrape_intro_credits_markers_from_TheIntroDB_when_refreshing_series_or_movies__fill_missing_only__Default_is_OFF_" xml:space="preserve">
+    <value>Scrape intro/credits markers from TheIntroDB when refreshing series or movies, fill missing markers only. Default is OFF.</value>
+  </data>
+  <data name="IntroSkipOptions_IntroDbApiKey_Api_Key" xml:space="preserve">
+    <value>API Key (Optional)</value>
+  </data>
+  <data name="IntroSkipOptions_IntroDbApiKey_Optional_TheIntroDB_API_key_sent_via_Bearer_auth_to_raise_the_daily_request_limit__Default_is_empty_" xml:space="preserve">
+    <value>Optional TheIntroDB API key sent via Bearer auth to raise the daily request limit. Default is empty.</value>
+  </data>
+  <data name="ScrapeIntroDbTask_Name_Scrape_Intro_Credits_from_IntroDb" xml:space="preserve">
+    <value>Scrape Intro/Credits from IntroDb</value>
+  </data>
+  <data name="ScrapeIntroDbTask_Description_Fills_missing_intro_credits_markers_from_TheIntroDB" xml:space="preserve">
+    <value>Fills missing intro/credits markers for episodes and movies from TheIntroDB. Confirm coverage on the website before running.</value>
+  </data>
   <data name="AreYouSureToContinue" xml:space="preserve">
     <value>Are you sure you wish to continue?</value>
   </data>
