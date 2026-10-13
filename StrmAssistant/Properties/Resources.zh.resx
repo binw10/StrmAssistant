@@ -695,6 +695,18 @@
   <data name="MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_and_VoteCount_with_Douban_rating__Default_is_OFF_" xml:space="preserve">
     <value>用豆瓣评分覆盖 CommunityRating。默认关闭。</value>
   </data>
+  <data name="MetadataEnhanceOptions_DoubanCastChinese_Douban_Cast_Chinese_Names" xml:space="preserve">
+    <value>豆瓣演员中文名</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanCastChinese_Replace_English_actor_names_with_Douban_Chinese_names_for_matched_items__Default_is_OFF_" xml:space="preserve">
+    <value>将匹配条目中的英文演员名替换为豆瓣中文名，已中文名的演员不动。默认关闭。</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanPosterFallback_Douban_Poster_Fallback" xml:space="preserve">
+    <value>豆瓣海报兜底</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanPosterFallback_Set_Douban_poster_as_primary_image_when_the_movie_has_none__Default_is_OFF_" xml:space="preserve">
+    <value>电影没有主图时使用豆瓣海报作为主图。默认关闭。</value>
+  </data>
   <data name="AreYouSureToContinue" xml:space="preserve">
     <value>您确定要继续吗？</value>
   </data>

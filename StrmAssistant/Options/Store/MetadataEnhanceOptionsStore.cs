@@ -245,6 +245,8 @@ namespace StrmAssistant.Options.Store
                 _logger.Info("DoubanCookie is set to {0}",
                     !string.IsNullOrEmpty(options.DoubanCookie) ? "CONFIGURED" : "EMPTY");
                 _logger.Info("DoubanRatingOverride is set to {0}", options.DoubanRatingOverride);
+                _logger.Info("DoubanCastChinese is set to {0}", options.DoubanCastChinese);
+                _logger.Info("DoubanPosterFallback is set to {0}", options.DoubanPosterFallback);
             }
         }
     }

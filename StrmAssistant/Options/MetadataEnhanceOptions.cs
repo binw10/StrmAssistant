@@ -105,6 +105,18 @@ namespace StrmAssistant.Options
         [Required]
         public bool DoubanRatingOverride { get; set; } = false;
 
+        [DisplayNameL("MetadataEnhanceOptions_DoubanCastChinese_Douban_Cast_Chinese_Names", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_DoubanCastChinese_Replace_English_actor_names_with_Douban_Chinese_names_for_matched_items__Default_is_OFF_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
+        [Required]
+        public bool DoubanCastChinese { get; set; } = false;
+
+        [DisplayNameL("MetadataEnhanceOptions_DoubanPosterFallback_Douban_Poster_Fallback", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_DoubanPosterFallback_Set_Douban_poster_as_primary_image_when_the_movie_has_none__Default_is_OFF_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
+        [Required]
+        public bool DoubanPosterFallback { get; set; } = false;
+
         [DisplayNameL("MetadataEnhanceOptions_DisableMovieDbEpisodeScrapingFallback_Disable_Per_Episode_Fallback", typeof(Resources))]
         [DescriptionL("MetadataEnhanceOptions_DisableMovieDbEpisodeScrapingFallback_Skip_per_episode_requests_when_season_data_is_empty__Default_is_OFF_", typeof(Resources))]
         [VisibleCondition(nameof(OptimizeMovieDbEpisodeScraping), SimpleCondition.IsTrue)]

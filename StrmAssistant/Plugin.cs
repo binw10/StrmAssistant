@@ -289,7 +289,8 @@ namespace StrmAssistant
             ChapterApi = new ChapterApi(libraryManager, itemRepository);
             IntroDbApi = new IntroDbApi(httpClient, jsonSerializer);
             ImagePostProcessor = new ImagePostProcessor(ffmpegManager);
-            DoubanAssist = new global::StrmAssistant.Provider.Douban.DoubanAssist(httpClient, jsonSerializer);
+            DoubanAssist = new global::StrmAssistant.Provider.Douban.DoubanAssist(httpClient, jsonSerializer,
+                providerManager, fileSystem);
             FingerprintApi = new FingerprintApi(libraryManager, fileSystem, applicationPaths, ffmpegManager,
                 mediaEncoder, mediaMountManager, jsonSerializer, itemRepository, serverApplicationHost);
             PlaySessionMonitor = new PlaySessionMonitor(libraryManager, userManager, sessionManager);

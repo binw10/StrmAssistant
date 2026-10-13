@@ -782,6 +782,18 @@
   <data name="MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_and_VoteCount_with_Douban_rating__Default_is_OFF_" xml:space="preserve">
     <value>Overwrite CommunityRating with Douban rating. Default is OFF.</value>
   </data>
+  <data name="MetadataEnhanceOptions_DoubanCastChinese_Douban_Cast_Chinese_Names" xml:space="preserve">
+    <value>Douban Cast Chinese Names</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanCastChinese_Replace_English_actor_names_with_Douban_Chinese_names_for_matched_items__Default_is_OFF_" xml:space="preserve">
+    <value>Replace English actor names with Douban Chinese names for matched items. Default is OFF.</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanPosterFallback_Douban_Poster_Fallback" xml:space="preserve">
+    <value>Douban Poster Fallback</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanPosterFallback_Set_Douban_poster_as_primary_image_when_the_movie_has_none__Default_is_OFF_" xml:space="preserve">
+    <value>Set Douban poster as primary image when the movie has none. Default is OFF.</value>
+  </data>
   <data name="AreYouSureToContinue" xml:space="preserve">
     <value>Are you sure you wish to continue?</value>
   </data>

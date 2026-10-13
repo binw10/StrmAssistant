@@ -3,7 +3,9 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using System;
@@ -75,6 +77,14 @@ namespace StrmAssistant.Provider.Douban
             public string title { get; set; }
             public string year { get; set; }
             public string type { get; set; }
+            public string img { get; set; }
+        }
+
+        public class DoubanCelebrity
+        {
+            public string ChineseName { get; set; }
+            public string ForeignName { get; set; }
+            public string Role { get; set; }
         }
 
         private class SparqlResponse
@@ -112,9 +122,15 @@ namespace StrmAssistant.Provider.Douban
         private static readonly Regex LanguageRegex =
             new Regex(@"语言[^<]*</span>\s*([^<\r\n]+)|语言:</span?\s*([^<\r\n]+)", RegexOptions.Compiled);
         private static readonly Regex StripTagsRegex = new Regex(@"<[^>]+>", RegexOptions.Compiled);
+        private static readonly Regex CelebrityNameRegex =
+            new Regex(@"class=""name""[^>]*>\s*<a href=""[^""]*celebrity/\d+/?""[^>]*>([^<]+)</a>\s*(?:/\s*([^<]*?))?\s*</span>",
+                RegexOptions.Compiled);
+        private static readonly Regex CelebrityRoleRegex = new Regex(@"饰[:：]?\s*([^<]+)", RegexOptions.Compiled);
 
         private readonly IHttpClient _httpClient;
         private readonly IJsonSerializer _jsonSerializer;
+        private readonly IProviderManager _providerManager;
+        private readonly IFileSystem _fileSystem;
         private readonly ILogger _logger;
 
         private readonly string _cachePath;
@@ -130,11 +146,14 @@ namespace StrmAssistant.Provider.Douban
         private DateTime _breakerUntil = DateTime.MinValue;
         private int _consecutiveBlocked;
 
-        public DoubanAssist(IHttpClient httpClient, IJsonSerializer jsonSerializer)
+        public DoubanAssist(IHttpClient httpClient, IJsonSerializer jsonSerializer,
+            IProviderManager providerManager, IFileSystem fileSystem)
         {
             _logger = Plugin.Instance.Logger;
             _httpClient = httpClient;
             _jsonSerializer = jsonSerializer;
+            _providerManager = providerManager;
+            _fileSystem = fileSystem;
             _cachePath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath,
                 "strmassistant_douban_cache.json");
             _ratingsPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath,
@@ -332,6 +351,18 @@ namespace StrmAssistant.Provider.Douban
                     }
                 }
 
+                if (options.DoubanCastChinese)
+                {
+                    changed = await ApplyCastChineseNamesAsync(item, subject.SubjectId, cancellationToken)
+                        .ConfigureAwait(false) || changed;
+                }
+
+                if (options.DoubanPosterFallback && !item.HasImage(ImageType.Primary) && suggestType == "movie")
+                {
+                    changed = await TrySetDoubanPosterAsync(item, subject.SubjectId, cancellationToken)
+                        .ConfigureAwait(false) || changed;
+                }
+
                 if (changed)
                 {
                     item.UpdateToRepository(ItemUpdateType.MetadataEdit);
@@ -350,6 +381,175 @@ namespace StrmAssistant.Provider.Douban
             finally
             {
                 _inFlight.TryRemove(item.InternalId, out _);
+            }
+        }
+
+        /// <summary>
+        /// 豆瓣演员中文名：仅替换当前为纯英文名的演员（匹配豆瓣外文名），已中文名的演员不动。
+        /// </summary>
+        private async Task<bool> ApplyCastChineseNamesAsync(BaseItem item, string subjectId,
+            CancellationToken cancellationToken)
+        {
+            var people = Plugin.LibraryManager.GetItemPeople(item);
+
+            if (people == null || people.Count == 0) return false;
+
+            var celebrities = await FetchCelebritiesAsync(subjectId, cancellationToken).ConfigureAwait(false);
+
+            if (celebrities == null || celebrities.Count == 0) return false;
+
+            var changed = false;
+
+            foreach (var person in people.Where(p =>
+                         p.Type == PersonType.Actor && !string.IsNullOrWhiteSpace(p.Name)))
+            {
+                if (person.Name.Any(c => c > 0x7F)) continue;
+
+                var entry = celebrities.FirstOrDefault(c =>
+                    !string.IsNullOrEmpty(c.ForeignName) &&
+                    string.Equals(c.ForeignName.Trim(), person.Name.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                if (entry == null || string.IsNullOrEmpty(entry.ChineseName) ||
+                    !entry.ChineseName.Any(c => c > 0x7F)) continue;
+
+                _logger.Info("DoubanAssist - Cast {0} -> {1} for {2}", person.Name, entry.ChineseName, item.Name);
+                person.Name = entry.ChineseName;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                Plugin.LibraryManager.UpdatePeople(item, people);
+            }
+
+            return changed;
+        }
+
+        private async Task<List<DoubanCelebrity>> FetchCelebritiesAsync(string subjectId,
+            CancellationToken cancellationToken)
+        {
+            var key = "celeb:" + subjectId;
+
+            var cached = GetCache<List<DoubanCelebrity>>(key);
+            if (cached != null) return cached;
+
+            var html = await RequestAsync($"{BaseUrl}/subject/{subjectId}/celebrities", cancellationToken)
+                .ConfigureAwait(false);
+            if (html == null) return null;
+
+            var result = new List<DoubanCelebrity>();
+            var matches = CelebrityNameRegex.Matches(html).Cast<Match>().ToList();
+
+            for (var i = 0; i < matches.Count; i++)
+            {
+                var celebrity = new DoubanCelebrity { ChineseName = matches[i].Groups[1].Value.Trim() };
+
+                var foreign = matches[i].Groups[2].Value;
+                if (!string.IsNullOrWhiteSpace(foreign))
+                {
+                    celebrity.ForeignName = foreign.Trim();
+                }
+
+                var blockEnd = i + 1 < matches.Count ? matches[i + 1].Index : Math.Min(html.Length, matches[i].Index + 800);
+                var roleMatch = CelebrityRoleRegex.Match(html, matches[i].Index, blockEnd - matches[i].Index);
+                if (roleMatch.Success)
+                {
+                    celebrity.Role = roleMatch.Groups[1].Value.Trim();
+                }
+
+                result.Add(celebrity);
+            }
+
+            SetCache(key, result);
+
+            return result;
+        }
+
+        /// <summary>
+        /// 豆瓣海报兜底：条目无主图时，从 suggest 结果取海报（优先大图）写入 Primary。
+        /// </summary>
+        private async Task<bool> TrySetDoubanPosterAsync(BaseItem item, string subjectId,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var searchTerm = item.OriginalTitle ?? item.Name;
+
+                if (string.IsNullOrWhiteSpace(searchTerm)) return false;
+
+                var suggestions = await GetSuggestionsAsync(searchTerm, cancellationToken).ConfigureAwait(false);
+                var posterUrl = suggestions?
+                    .Where(s => string.Equals(s.id, subjectId, StringComparison.Ordinal) && !string.IsNullOrEmpty(s.img))
+                    .Select(s => s.img)
+                    .FirstOrDefault();
+
+                if (string.IsNullOrEmpty(posterUrl)) return false;
+
+                var largeUrl = posterUrl.Replace("/s_ratio_poster/", "/l_ratio_poster/", StringComparison.Ordinal);
+
+                var tempPath = await DownloadToTempAsync(largeUrl, cancellationToken).ConfigureAwait(false)
+                               ?? await DownloadToTempAsync(posterUrl, cancellationToken).ConfigureAwait(false);
+
+                if (tempPath == null) return false;
+
+                var libraryOptions = Plugin.LibraryManager.GetLibraryOptions(item);
+                var directoryService = new DirectoryService(_logger, _fileSystem);
+
+                await _providerManager.SaveImage(item, libraryOptions, tempPath, ImageType.Primary, null,
+                        Array.Empty<long>(), directoryService, false, cancellationToken)
+                    .ConfigureAwait(false);
+
+                _logger.Info("DoubanAssist - Poster set from subject {0} for {1}", subjectId, item.Name);
+
+                return true;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                _logger.Warn("DoubanAssist - Poster fallback failed for {0}: {1}", item.Name, e.Message);
+                return false;
+            }
+        }
+
+        private async Task<string> DownloadToTempAsync(string url, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var requestOptions = new HttpRequestOptions
+                {
+                    Url = url,
+                    CancellationToken = cancellationToken,
+                    BufferContent = true,
+                    UserAgent = Plugin.Instance.UserAgent
+                };
+
+                var cookie = Plugin.Instance.MetadataEnhanceStore.GetOptions().DoubanCookie;
+                if (!string.IsNullOrWhiteSpace(cookie))
+                {
+                    requestOptions.RequestHeaders["Cookie"] = cookie.Trim();
+                }
+
+                using var response = await _httpClient.SendAsync(requestOptions, "GET").ConfigureAwait(false);
+
+                if (response.StatusCode != HttpStatusCode.OK) return null;
+
+                var tempPath = Path.Combine(Plugin.Instance.ApplicationPaths.TempDirectory,
+                    "douban_" + Guid.NewGuid().ToString("N") + ".jpg");
+                Directory.CreateDirectory(Plugin.Instance.ApplicationPaths.TempDirectory);
+
+                await using var contentStream = response.Content;
+                await using var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write);
+                await contentStream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
+
+                return tempPath;
+            }
+            catch (Exception e)
+            {
+                _logger.Debug("DoubanAssist - Image download failed for {0}: {1}", url, e.Message);
+                return null;
             }
         }
 
@@ -373,13 +573,29 @@ namespace StrmAssistant.Provider.Douban
 
                 var candidates = new List<string> { $"{seriesTitle} 第{seasonNumber.Value}季" };
                 var chinese = ToChineseSeasonNumber(seasonNumber.Value);
-                if (chinese != null && !chinese.Contains(seasonNumber.Value.ToString())) candidates.Add($"{seriesTitle} {chinese}");
+                if (!chinese.Contains(seasonNumber.Value.ToString())) candidates.Add($"{seriesTitle} {chinese}");
 
                 foreach (var query in candidates)
                 {
                     var subject = await SearchByTitleAsync(query, null, suggestType, seasonNumber, cancellationToken)
                         .ConfigureAwait(false);
                     if (subject != null) return subject;
+                }
+
+                // 第三策略：按剧名搜索，从全部 tv 建议里找标题带季标记的条目
+                var suggestions = await GetSuggestionsAsync(seriesTitle, cancellationToken).ConfigureAwait(false);
+
+                var seasonMatch = suggestions?
+                    .Where(s => s.type == suggestType && !string.IsNullOrEmpty(s.id) &&
+                                !string.Equals(s.title, seriesTitle, StringComparison.OrdinalIgnoreCase))
+                    .FirstOrDefault(s => s.title != null &&
+                                         (s.title.Contains("季", StringComparison.Ordinal) ||
+                                          s.title.Contains("Season", StringComparison.OrdinalIgnoreCase) ||
+                                          s.title.Contains("Part", StringComparison.OrdinalIgnoreCase)));
+
+                if (seasonMatch != null)
+                {
+                    return await FetchSubjectAsync(seasonMatch.id, cancellationToken).ConfigureAwait(false);
                 }
 
                 return null;

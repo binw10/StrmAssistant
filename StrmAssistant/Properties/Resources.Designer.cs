@@ -529,6 +529,42 @@ namespace StrmAssistant.Properties {
                 return ResourceManager.GetString("MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_and_VoteCount_with_Douban_rating__Default_is_OFF_", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Douban Cast Chinese Names.
+        /// </summary>
+        public static string MetadataEnhanceOptions_DoubanCastChinese_Douban_Cast_Chinese_Names {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanCastChinese_Douban_Cast_Chinese_Names", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Replace English actor names with Douban Chinese names for matched items. Default is OFF..
+        /// </summary>
+        public static string MetadataEnhanceOptions_DoubanCastChinese_Replace_English_actor_names_with_Douban_Chinese_names_for_matched_items__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanCastChinese_Replace_English_actor_names_with_Douban_Chinese_names_for_matched_items__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Douban Poster Fallback.
+        /// </summary>
+        public static string MetadataEnhanceOptions_DoubanPosterFallback_Douban_Poster_Fallback {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanPosterFallback_Douban_Poster_Fallback", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Set Douban poster as primary image when the movie has none. Default is OFF..
+        /// </summary>
+        public static string MetadataEnhanceOptions_DoubanPosterFallback_Set_Douban_poster_as_primary_image_when_the_movie_has_none__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanPosterFallback_Set_Douban_poster_as_primary_image_when_the_movie_has_none__Default_is_OFF_", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Notification Enhanced.
