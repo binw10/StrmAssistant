@@ -764,6 +764,24 @@
   <data name="MediaInfoExtractOptions_EnsureEpisode16x9_Crop_episode_stills_to_16_9_when_the_source_ratio_differs__Default_is_OFF_" xml:space="preserve">
     <value>Crop episode stills to 16:9 when the source ratio differs. Server-generated images only. Default is OFF.</value>
   </data>
+  <data name="MetadataEnhanceOptions_EnableDoubanAssist_Douban_Assist_Scraping" xml:space="preserve">
+    <value>Douban Assist Scraping</value>
+  </data>
+  <data name="MetadataEnhanceOptions_EnableDoubanAssist_After_movie_refresh_fill_missing_Chinese_overview_genres_locations_from_Douban__Default_is_OFF_" xml:space="preserve">
+    <value>After movie refresh, fill missing Chinese overview, genres and production locations from Douban (Chinese libraries only). Default is OFF.</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanCookie_Douban_Cookie" xml:space="preserve">
+    <value>Douban Cookie (Optional)</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanCookie_Optional_Douban_cookie_for_anti_crawler_verification__Default_is_empty_" xml:space="preserve">
+    <value>Optional Douban cookie for anti-crawler verification. Default is empty.</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanRatingOverride_Override_Rating_With_Douban" xml:space="preserve">
+    <value>Override Rating With Douban</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_and_VoteCount_with_Douban_rating__Default_is_OFF_" xml:space="preserve">
+    <value>Overwrite CommunityRating with Douban rating. Default is OFF.</value>
+  </data>
   <data name="AreYouSureToContinue" xml:space="preserve">
     <value>Are you sure you wish to continue?</value>
   </data>

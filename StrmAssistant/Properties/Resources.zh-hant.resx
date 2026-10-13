@@ -677,6 +677,24 @@
   <data name="MediaInfoExtractOptions_EnsureEpisode16x9_Crop_episode_stills_to_16_9_when_the_source_ratio_differs__Default_is_OFF_" xml:space="preserve">
     <value>來源比例不符時將劇集截圖裁剪為 16:9。僅處理伺服器生成的圖片。預設為關閉。</value>
   </data>
+  <data name="MetadataEnhanceOptions_EnableDoubanAssist_Douban_Assist_Scraping" xml:space="preserve">
+    <value>豆瓣輔助刮削</value>
+  </data>
+  <data name="MetadataEnhanceOptions_EnableDoubanAssist_After_movie_refresh_fill_missing_Chinese_overview_genres_locations_from_Douban__Default_is_OFF_" xml:space="preserve">
+    <value>電影重新整理完成後從豆瓣填充缺失的中文簡介、類型和製片地區（僅中文媒體庫）。預設為關閉。</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanCookie_Douban_Cookie" xml:space="preserve">
+    <value>豆瓣 Cookie（可選）</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanCookie_Optional_Douban_cookie_for_anti_crawler_verification__Default_is_empty_" xml:space="preserve">
+    <value>可選的豆瓣 Cookie，用於通過反爬驗證。預設留空。</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanRatingOverride_Override_Rating_With_Douban" xml:space="preserve">
+    <value>使用豆瓣評分覆蓋</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_and_VoteCount_with_Douban_rating__Default_is_OFF_" xml:space="preserve">
+    <value>用豆瓣評分覆蓋 CommunityRating。預設為關閉。</value>
+  </data>
   <data name="AreYouSureToContinue" xml:space="preserve">
     <value>確定要繼續執行？</value>
   </data>

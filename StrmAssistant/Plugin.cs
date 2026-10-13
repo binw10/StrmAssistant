@@ -71,6 +71,7 @@ namespace StrmAssistant
         public static AutoMarkWatched AutoMarkWatched { get; private set; }
         public static IntroDbApi IntroDbApi { get; private set; }
         public static ImagePostProcessor ImagePostProcessor { get; private set; }
+        public static global::StrmAssistant.Provider.Douban.DoubanAssist DoubanAssist { get; private set; }
         public static MetadataApi MetadataApi { get; private set; }
         public static VideoThumbnailApi VideoThumbnailApi { get; private set; }
 
@@ -288,6 +289,7 @@ namespace StrmAssistant
             ChapterApi = new ChapterApi(libraryManager, itemRepository);
             IntroDbApi = new IntroDbApi(httpClient, jsonSerializer);
             ImagePostProcessor = new ImagePostProcessor(ffmpegManager);
+            DoubanAssist = new global::StrmAssistant.Provider.Douban.DoubanAssist(httpClient, jsonSerializer);
             FingerprintApi = new FingerprintApi(libraryManager, fileSystem, applicationPaths, ffmpegManager,
                 mediaEncoder, mediaMountManager, jsonSerializer, itemRepository, serverApplicationHost);
             PlaySessionMonitor = new PlaySessionMonitor(libraryManager, userManager, sessionManager);
@@ -344,6 +346,11 @@ namespace StrmAssistant
 
                 _ = Task.Run(() => ImagePostProcessor.ProcessItem(refreshedItem,
                     mediaInfoOptions.ForcePortraitPoster, mediaInfoOptions.EnsureEpisode16x9));
+            }
+
+            if (MetadataEnhanceStore.GetOptions().EnableDoubanAssist && e.Argument.Item is Movie doubanMovie)
+            {
+                _ = Task.Run(() => DoubanAssist.ApplyAsync(doubanMovie, CancellationToken.None));
             }
 
             if (options.MergeMultiVersion && e.Argument.Item.IsTopParent)

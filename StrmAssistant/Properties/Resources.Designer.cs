@@ -475,6 +475,60 @@ namespace StrmAssistant.Properties {
                 return ResourceManager.GetString("MediaInfoExtractOptions_EnsureEpisode16x9_Crop_episode_stills_to_16_9_when_the_source_ratio_differs__Default_is_OFF_", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Douban Assist Scraping.
+        /// </summary>
+        public static string MetadataEnhanceOptions_EnableDoubanAssist_Douban_Assist_Scraping {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_EnableDoubanAssist_Douban_Assist_Scraping", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to After movie refresh, fill missing Chinese overview, genres and production locations from Douban (Chinese libraries only). Default is OFF..
+        /// </summary>
+        public static string MetadataEnhanceOptions_EnableDoubanAssist_After_movie_refresh_fill_missing_Chinese_overview_genres_locations_from_Douban__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_EnableDoubanAssist_After_movie_refresh_fill_missing_Chinese_overview_genres_locations_from_Douban__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Douban Cookie (Optional).
+        /// </summary>
+        public static string MetadataEnhanceOptions_DoubanCookie_Douban_Cookie {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanCookie_Douban_Cookie", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Optional Douban cookie for anti-crawler verification. Default is empty..
+        /// </summary>
+        public static string MetadataEnhanceOptions_DoubanCookie_Optional_Douban_cookie_for_anti_crawler_verification__Default_is_empty_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanCookie_Optional_Douban_cookie_for_anti_crawler_verification__Default_is_empty_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Override Rating With Douban.
+        /// </summary>
+        public static string MetadataEnhanceOptions_DoubanRatingOverride_Override_Rating_With_Douban {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanRatingOverride_Override_Rating_With_Douban", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Overwrite CommunityRating and VoteCount with Douban rating. Default is OFF..
+        /// </summary>
+        public static string MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_and_VoteCount_with_Douban_rating__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_and_VoteCount_with_Douban_rating__Default_is_OFF_", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Notification Enhanced.

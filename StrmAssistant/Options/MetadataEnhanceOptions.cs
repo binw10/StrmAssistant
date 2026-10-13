@@ -89,6 +89,22 @@ namespace StrmAssistant.Options
         [Required]
         public bool OptimizeMovieDbEpisodeScraping { get; set; } = false;
 
+        [DisplayNameL("MetadataEnhanceOptions_EnableDoubanAssist_Douban_Assist_Scraping", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_EnableDoubanAssist_After_movie_refresh_fill_missing_Chinese_overview_genres_locations_from_Douban__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        public bool EnableDoubanAssist { get; set; } = false;
+
+        [DisplayNameL("MetadataEnhanceOptions_DoubanCookie_Douban_Cookie", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_DoubanCookie_Optional_Douban_cookie_for_anti_crawler_verification__Default_is_empty_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
+        public string DoubanCookie { get; set; } = string.Empty;
+
+        [DisplayNameL("MetadataEnhanceOptions_DoubanRatingOverride_Override_Rating_With_Douban", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_and_VoteCount_with_Douban_rating__Default_is_OFF_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
+        [Required]
+        public bool DoubanRatingOverride { get; set; } = false;
+
         [DisplayNameL("MetadataEnhanceOptions_DisableMovieDbEpisodeScrapingFallback_Disable_Per_Episode_Fallback", typeof(Resources))]
         [DescriptionL("MetadataEnhanceOptions_DisableMovieDbEpisodeScrapingFallback_Skip_per_episode_requests_when_season_data_is_empty__Default_is_OFF_", typeof(Resources))]
         [VisibleCondition(nameof(OptimizeMovieDbEpisodeScraping), SimpleCondition.IsTrue)]
