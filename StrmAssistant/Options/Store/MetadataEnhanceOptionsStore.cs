@@ -241,6 +241,10 @@ namespace StrmAssistant.Options.Store
                     !string.IsNullOrEmpty(options.AltMovieDbApiKey)
                         ? options.AltMovieDbApiKey
                         : "EMPTY");
+                _logger.Info("EnableDoubanAssist is set to {0}", options.EnableDoubanAssist);
+                _logger.Info("DoubanCookie is set to {0}",
+                    !string.IsNullOrEmpty(options.DoubanCookie) ? "CONFIGURED" : "EMPTY");
+                _logger.Info("DoubanRatingOverride is set to {0}", options.DoubanRatingOverride);
             }
         }
     }

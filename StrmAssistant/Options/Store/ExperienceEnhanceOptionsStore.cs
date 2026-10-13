@@ -180,6 +180,10 @@ namespace StrmAssistant.Options.Store
                     _logger.Info("NoBoxsetsAutoCreation is set to {0}",
                         options.UIFunctionOptions.NoBoxsetsAutoCreation);
 
+                    _logger.Info("EnableAutoMarkWatched is set to {0}", options.EnableAutoMarkWatched);
+                    _logger.Info("AutoMarkWatchedThreshold is set to {0}", options.AutoMarkWatchedThreshold);
+                    _logger.Info("AutoMarkWatchedExcludeFavorites is set to {0}", options.AutoMarkWatchedExcludeFavorites);
+
                     // 系列合并仅 GlobalScope 生效的可见提示（参考 Mod/MergeMultiVersion.cs 行 217-218）
                     if (options.MergeMultiVersion &&
                         options.MergeSeriesPreference == ExperienceEnhanceOptions.MergeSeriesScopeOption.LibraryScope)
