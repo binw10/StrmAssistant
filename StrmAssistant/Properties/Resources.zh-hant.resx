@@ -629,6 +629,24 @@
   <data name="ExperienceEnhanceOptions_EnableDeepDelete_Attempt_to_cascade_delete_the_underlying_file_of_strm_or_symlink__Default_is_OFF_" xml:space="preserve">
     <value>刪除媒體時，嘗試級聯刪除 STRM 或軟連結的目標檔案以及相關檔案和空目錄，預設為關閉。</value>
   </data>
+  <data name="ExperienceEnhanceOptions_EnableAutoMarkWatched_Auto_Mark_Previous_Episodes_Watched" xml:space="preserve">
+    <value>自動標記前幾集已看</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_EnableAutoMarkWatched_Automatically_mark_previous_episodes_as_watched_when_current_episode_reaches_the_progress_threshold__Default_is_OFF_" xml:space="preserve">
+    <value>當前集播放進度達到閾值時，自動標記同劇前幾集為已看。預設為關閉。</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Marked_Progress_Threshold" xml:space="preserve">
+    <value>標記進度閾值（%）</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Playback_progress_percentage_of_current_episode_required_to_mark_previous_episodes_as_watched__5_to_100__Default_is_90_" xml:space="preserve">
+    <value>當前集播放進度達到該百分比（5-100）時，自動標記前幾集為已看。預設為 90。</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Exclude_Favorite_Episodes" xml:space="preserve">
+    <value>排除收藏的集</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Favorite_episodes_will_not_be_automatically_marked_as_watched__Default_is_OFF_" xml:space="preserve">
+    <value>收藏的集不會被自動標記為已看。預設為關閉。</value>
+  </data>
   <data name="AreYouSureToContinue" xml:space="preserve">
     <value>確定要繼續執行？</value>
   </data>

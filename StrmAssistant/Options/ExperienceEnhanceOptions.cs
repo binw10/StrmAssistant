@@ -74,6 +74,23 @@ namespace StrmAssistant.Options
         [Required]
         public bool EnableDeepDelete { get; set; } = false;
 
+        [DisplayNameL("ExperienceEnhanceOptions_EnableAutoMarkWatched_Auto_Mark_Previous_Episodes_Watched", typeof(Resources))]
+        [DescriptionL("ExperienceEnhanceOptions_EnableAutoMarkWatched_Automatically_mark_previous_episodes_as_watched_when_current_episode_reaches_the_progress_threshold__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        public bool EnableAutoMarkWatched { get; set; } = false;
+
+        [DisplayNameL("ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Marked_Progress_Threshold", typeof(Resources))]
+        [DescriptionL("ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Playback_progress_percentage_of_current_episode_required_to_mark_previous_episodes_as_watched__5_to_100__Default_is_90_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableAutoMarkWatched), SimpleCondition.IsTrue)]
+        [Required]
+        public int AutoMarkWatchedThreshold { get; set; } = 90;
+
+        [DisplayNameL("ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Exclude_Favorite_Episodes", typeof(Resources))]
+        [DescriptionL("ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Favorite_episodes_will_not_be_automatically_marked_as_watched__Default_is_OFF_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableAutoMarkWatched), SimpleCondition.IsTrue)]
+        [Required]
+        public bool AutoMarkWatchedExcludeFavorites { get; set; } = false;
+
         [DisplayNameL("UIFunctionOptions_EditorTitle_UI_Functions", typeof(Resources))]
         public UIFunctionOptions UIFunctionOptions { get; set; } = new UIFunctionOptions();
 

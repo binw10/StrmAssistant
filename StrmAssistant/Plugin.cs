@@ -66,6 +66,7 @@ namespace StrmAssistant
         public static NotificationApi NotificationApi { get; private set; }
         public static SubtitleApi SubtitleApi { get; private set; }
         public static PlaySessionMonitor PlaySessionMonitor { get; private set; }
+        public static AutoMarkWatched AutoMarkWatched { get; private set; }
         public static MetadataApi MetadataApi { get; private set; }
         public static VideoThumbnailApi VideoThumbnailApi { get; private set; }
 
@@ -284,6 +285,7 @@ namespace StrmAssistant
             FingerprintApi = new FingerprintApi(libraryManager, fileSystem, applicationPaths, ffmpegManager,
                 mediaEncoder, mediaMountManager, jsonSerializer, itemRepository, serverApplicationHost);
             PlaySessionMonitor = new PlaySessionMonitor(libraryManager, userManager, sessionManager);
+            AutoMarkWatched = new AutoMarkWatched(libraryManager, userManager, sessionManager, userDataManager);
             NotificationApi = new NotificationApi(notificationManager, userManager, sessionManager);
             SubtitleApi = new SubtitleApi(libraryManager, fileSystem, mediaProbeManager, localizationManager,
                 itemRepository);
@@ -295,6 +297,7 @@ namespace StrmAssistant
 
             if (MainOptionsStore.GetOptions().GeneralOptions.CatchupMode) QueueManager.Initialize();
             if (IntroSkipStore.GetOptions().EnableIntroSkip) PlaySessionMonitor.Initialize();
+            if (ExperienceEnhanceStore.GetOptions().EnableAutoMarkWatched) AutoMarkWatched.Initialize();
 
             _libraryManager.ItemAdded += OnItemAdded;
             _libraryManager.ItemUpdated += OnItemUpdated;

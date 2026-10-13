@@ -716,6 +716,24 @@
   <data name="ExperienceEnhanceOptions_EnableDeepDelete_Attempt_to_cascade_delete_the_underlying_file_of_strm_or_symlink__Default_is_OFF_" xml:space="preserve">
     <value>Attempt to cascade delete the target file of strm or symlink, and the related files and emptry directory. Default is OFF.</value>
   </data>
+  <data name="ExperienceEnhanceOptions_EnableAutoMarkWatched_Auto_Mark_Previous_Episodes_Watched" xml:space="preserve">
+    <value>Auto Mark Previous Episodes Watched</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_EnableAutoMarkWatched_Automatically_mark_previous_episodes_as_watched_when_current_episode_reaches_the_progress_threshold__Default_is_OFF_" xml:space="preserve">
+    <value>Automatically mark previous episodes of the same series as watched when the current episode reaches the progress threshold. Default is OFF.</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Marked_Progress_Threshold" xml:space="preserve">
+    <value>Marked Progress Threshold (%)</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Playback_progress_percentage_of_current_episode_required_to_mark_previous_episodes_as_watched__5_to_100__Default_is_90_" xml:space="preserve">
+    <value>Playback progress percentage of the current episode required to mark previous episodes as watched (5 to 100). Default is 90.</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Exclude_Favorite_Episodes" xml:space="preserve">
+    <value>Exclude Favorite Episodes</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Favorite_episodes_will_not_be_automatically_marked_as_watched__Default_is_OFF_" xml:space="preserve">
+    <value>Favorite episodes will not be automatically marked as watched. Default is OFF.</value>
+  </data>
   <data name="AreYouSureToContinue" xml:space="preserve">
     <value>Are you sure you wish to continue?</value>
   </data>

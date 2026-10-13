@@ -331,6 +331,60 @@ namespace StrmAssistant.Properties {
                 return ResourceManager.GetString("ExperienceEnhanceOptions_EnableDeepDelete_Enable_Deep_Delete", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Auto Mark Previous Episodes Watched.
+        /// </summary>
+        public static string ExperienceEnhanceOptions_EnableAutoMarkWatched_Auto_Mark_Previous_Episodes_Watched {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_EnableAutoMarkWatched_Auto_Mark_Previous_Episodes_Watched", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Automatically mark previous episodes of the same series as watched when the current episode reaches the progress threshold. Default is OFF..
+        /// </summary>
+        public static string ExperienceEnhanceOptions_EnableAutoMarkWatched_Automatically_mark_previous_episodes_as_watched_when_current_episode_reaches_the_progress_threshold__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_EnableAutoMarkWatched_Automatically_mark_previous_episodes_as_watched_when_current_episode_reaches_the_progress_threshold__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Exclude Favorite Episodes.
+        /// </summary>
+        public static string ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Exclude_Favorite_Episodes {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Exclude_Favorite_Episodes", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Favorite episodes will not be automatically marked as watched. Default is OFF..
+        /// </summary>
+        public static string ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Favorite_episodes_will_not_be_automatically_marked_as_watched__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Favorite_episodes_will_not_be_automatically_marked_as_watched__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Marked Progress Threshold (%).
+        /// </summary>
+        public static string ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Marked_Progress_Threshold {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Marked_Progress_Threshold", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Playback progress percentage of the current episode required to mark previous episodes as watched (5 to 100). Default is 90..
+        /// </summary>
+        public static string ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Playback_progress_percentage_of_current_episode_required_to_mark_previous_episodes_as_watched__5_to_100__Default_is_90_ {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Playback_progress_percentage_of_current_episode_required_to_mark_previous_episodes_as_watched__5_to_100__Default_is_90_", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Notification Enhanced.
