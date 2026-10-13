@@ -35,12 +35,47 @@ namespace StrmAssistant.Mod
         private static readonly object _lock = new object();
         private static bool _patchPhase2Initialized;
         private static readonly string RebuildMarkerPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath, "strmassistant_chinese_search_rebuild.pending");
+        private static readonly string NormV2MarkerPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath, "strmassistant_chinese_search_norm2.done");
         private static readonly Dictionary<string, Regex> patterns = new Dictionary<string, Regex>
         {
             { "imdb", new Regex(@"^tt\d{7,8}$", RegexOptions.IgnoreCase | RegexOptions.Compiled) },
             { "tmdb", new Regex(@"^tmdb(id)?=(\d+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled) },
             { "tvdb", new Regex(@"^tvdb(id)?=(\d+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled) }
         };
+
+        /// <summary>
+        /// 索引侧归一化：剥离引号/句点/间隔号/连字符，中文统一转为简体，保证索引与查询可简繁互通。
+        /// </summary>
+        internal static string NormalizeSearchTerm(string searchTerm)
+        {
+            if (string.IsNullOrEmpty(searchTerm)) return searchTerm;
+
+            var normalized = searchTerm
+                .Replace("'", string.Empty)
+                .Replace(".", string.Empty)
+                .Replace("·", string.Empty)
+                .Replace("-", string.Empty);
+
+            return LanguageUtility.IsChinese(normalized)
+                ? LanguageUtility.ConvertTraditionalToSimplified(normalized)
+                : normalized;
+        }
+
+        /// <summary>
+        /// 查询侧归一化：与索引侧同步处理间隔号/连字符并繁转简；句点/引号保持原有查询行为不变。
+        /// </summary>
+        private static string NormalizeQueryTerm(string searchTerm)
+        {
+            if (string.IsNullOrEmpty(searchTerm)) return searchTerm;
+
+            var normalized = searchTerm
+                .Replace("·", string.Empty)
+                .Replace("-", string.Empty);
+
+            return LanguageUtility.IsChinese(normalized)
+                ? LanguageUtility.ConvertTraditionalToSimplified(normalized)
+                : normalized;
+        }
 
         public EnhanceChineseSearch()
         {
@@ -336,7 +371,28 @@ namespace StrmAssistant.Mod
                                     "EnhanceChineseSearch: tokenizer already 'simple'; cleared stale scheduled rebuild marker");
                             }
 
-                            Plugin.Instance.Logger.Info("EnhanceChineseSearch - Load Success (search patches active)");
+                            // 归一化 v2（简繁互通 + 间隔号/连字符清理）未落到索引时，升级后触发一次重建
+                            if (!HasNormV2Marker())
+                            {
+                                Plugin.Instance.Logger.Info(
+                                    "EnhanceChineseSearch: norm v2 (simp-trad + interpunct/hyphen) pending, rebuilding FTS index");
+
+                                rebuildFtsResult = RebuildFts(connection, ftsTableName, "simple");
+                                if (rebuildFtsResult)
+                                {
+                                    CurrentTokenizerName = "simple";
+                                    Plugin.Instance.Logger.Info("EnhanceChineseSearch - Norm v2 rebuild completed");
+                                }
+                                else
+                                {
+                                    Plugin.Instance.Logger.Warn(
+                                        "EnhanceChineseSearch - Norm v2 rebuild failed; retry on next restart");
+                                }
+                            }
+                            else
+                            {
+                                Plugin.Instance.Logger.Info("EnhanceChineseSearch - Load Success (search patches active)");
+                            }
                         }
                     }
                     else
@@ -419,7 +475,12 @@ namespace StrmAssistant.Mod
                 Plugin.Instance.Logger.Info($"EnhanceChineseSearch - Filling {ftsTableName} Start");
 
                 connection.Execute(populateQuery);
+
+                ApplySimplifiedSweep(connection, ftsTableName);
+
                 connection.CommitTransaction();
+
+                WriteNormV2Marker();
 
                 Plugin.Instance.Logger.Info($"EnhanceChineseSearch - Filling {ftsTableName} Complete");
 
@@ -443,6 +504,111 @@ namespace StrmAssistant.Mod
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// 重建填充后扫描 FTS 全表，把仍为繁体的词条改写为简体（SQL populate 无法调用托管转换，
+        /// 用一次性 UPDATE 补齐），失败仅降级为无简繁索引，不阻断重建。
+        /// </summary>
+        private static void ApplySimplifiedSweep(IDatabaseConnection connection, string ftsTableName)
+        {
+            try
+            {
+                var convertedRows = new Dictionary<long, string[]>();
+
+                using (var select = connection.PrepareStatement(
+                           $"SELECT RowId, Name, OriginalTitle, SeriesName, Album FROM {ftsTableName}"))
+                {
+                    while (select.MoveNext())
+                    {
+                        var row = select.Current;
+                        var rowId = row.GetInt64(0);
+                        var converted = new string[4];
+                        var differs = false;
+
+                        for (var i = 0; i < 4; i++)
+                        {
+                            var original = row.GetString(i + 1);
+                            converted[i] = ConvertToSimplified(original);
+
+                            if (!string.Equals(original, converted[i], StringComparison.Ordinal))
+                            {
+                                differs = true;
+                            }
+                        }
+
+                        if (differs)
+                        {
+                            convertedRows[rowId] = converted;
+                        }
+                    }
+                }
+
+                foreach (var pair in convertedRows)
+                {
+                    var values = pair.Value;
+
+                    connection.Execute(
+                        $"UPDATE {ftsTableName} SET Name = {SqlQuote(values[0])}, OriginalTitle = {SqlQuote(values[1])}, " +
+                        $"SeriesName = {SqlQuote(values[2])}, Album = {SqlQuote(values[3])} WHERE RowId = {pair.Key}");
+                }
+
+                if (convertedRows.Count > 0)
+                {
+                    Plugin.Instance.Logger.Info($"EnhanceChineseSearch - Simplified sweep converted {convertedRows.Count} FTS rows");
+                }
+            }
+            catch (Exception e)
+            {
+                Plugin.Instance.Logger.Warn($"EnhanceChineseSearch - Simplified sweep failed, continue without trad-to-simp index: {e.Message}");
+                if (Plugin.Instance.DebugMode)
+                {
+                    Plugin.Instance.Logger.Debug(e.StackTrace);
+                }
+            }
+        }
+
+        private static string ConvertToSimplified(string input)
+        {
+            if (string.IsNullOrEmpty(input) || !LanguageUtility.IsChinese(input)) return input;
+
+            var simplified = LanguageUtility.ConvertTraditionalToSimplified(input);
+
+            return string.Equals(input, simplified, StringComparison.Ordinal) ? input : simplified;
+        }
+
+        private static string SqlQuote(string value)
+        {
+            return value == null ? "NULL" : "'" + value.Replace("'", "''") + "'";
+        }
+
+        private static bool HasNormV2Marker()
+        {
+            try
+            {
+                return File.Exists(NormV2MarkerPath);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void WriteNormV2Marker()
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(NormV2MarkerPath);
+                if (!string.IsNullOrEmpty(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+                File.WriteAllText(NormV2MarkerPath, DateTime.UtcNow.ToString("O"));
+            }
+            catch (Exception ex)
+            {
+                Plugin.Instance.Logger.Warn($"EnhanceChineseSearch: failed to write norm v2 marker: {ex.Message}");
+            }
         }
 
         private static void ScheduleRebuildOnNextRestart()
@@ -491,7 +657,7 @@ namespace StrmAssistant.Mod
 
         private static string GetSearchColumnNormalization(string columnName)
         {
-            return "replace(replace(" + columnName + ",'''',''),'.','')";
+            return "replace(replace(replace(replace(" + columnName + ",'''',''),'.',''),'·',''),'-','')";
         }
 
         private static bool EnsureTokenizerExists()
@@ -871,9 +1037,11 @@ namespace StrmAssistant.Mod
 
         [HarmonyPostfix]
         private static void GetJoinCommandTextPostfix(InternalItemsQuery query,
-            List<KeyValuePair<string, string>> bindParams, string mediaItemsTableQualifier, 
+            List<KeyValuePair<string, string>> bindParams, string mediaItemsTableQualifier,
             bool allowJoinOnItemLinks, ref string __result)
         {
+            var modified = false;
+
             if (!string.IsNullOrEmpty(query.SearchTerm) && __result.Contains("match @SearchTerm"))
             {
                 if (!Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ExcludeOriginalTitleFromSearch)
@@ -884,31 +1052,20 @@ namespace StrmAssistant.Mod
                 {
                     __result = __result.Replace("match @SearchTerm", "match '-OriginalTitle:' || simple_query(@SearchTerm)");
                 }
+
+                modified = true;
             }
 
             if (!string.IsNullOrEmpty(query.Name) && __result.Contains("match @SearchTerm"))
             {
                 __result = __result.Replace("match @SearchTerm", "match 'Name:' || simple_query(@SearchTerm)");
 
-                for (var i = 0; i < bindParams.Count; i++)
-                {
-                    var kvp = bindParams[i];
-                    if (kvp.Key == "@SearchTerm")
-                    {
-                        var currentValue = kvp.Value;
+                modified = true;
+            }
 
-                        if (currentValue.StartsWith("Name:", StringComparison.Ordinal))
-                        {
-                            currentValue = currentValue
-                                .Substring(currentValue.IndexOf(":", StringComparison.Ordinal) + 1)
-                                .Trim('\"', '^', '$')
-                                .Replace(".", string.Empty)
-                                .Replace("'", string.Empty);
-                        }
-
-                        bindParams[i] = new KeyValuePair<string, string>(kvp.Key, currentValue);
-                    }
-                }
+            if (modified)
+            {
+                TransformSearchTermBindParams(bindParams);
             }
         }
 
@@ -918,7 +1075,7 @@ namespace StrmAssistant.Mod
             bool allowJoinOnItemLinks, System.Text.StringBuilder __result)
         {
             if (__result == null) return;
-            
+
             var resultString = __result.ToString();
             var modified = false;
 
@@ -940,39 +1097,46 @@ namespace StrmAssistant.Mod
             {
                 resultString = resultString.Replace("match @SearchTerm", "match 'Name:' || simple_query(@SearchTerm)");
                 modified = true;
-
-                for (var i = 0; i < bindParams.Count; i++)
-                {
-                    var kvp = bindParams[i];
-                    if (kvp.Key == "@SearchTerm")
-                    {
-                        var currentValue = kvp.Value;
-
-                        if (currentValue.StartsWith("Name:", StringComparison.Ordinal))
-                        {
-                            currentValue = currentValue
-                                .Substring(currentValue.IndexOf(":", StringComparison.Ordinal) + 1)
-                                .Trim('\"', '^', '$')
-                                .Replace(".", string.Empty)
-                                .Replace("'", string.Empty);
-                        }
-
-                        bindParams[i] = new KeyValuePair<string, string>(kvp.Key, currentValue);
-                    }
-                }
             }
 
             if (modified)
             {
+                TransformSearchTermBindParams(bindParams);
+
                 __result.Clear();
                 __result.Append(resultString);
+            }
+        }
+
+        /// <summary>
+        /// 查询参数归一化：Name: 前缀剥离（原有行为）+ 简繁互通与间隔号/连字符清理，
+        /// 与索引侧 NormalizeSearchTerm 保持一致。
+        /// </summary>
+        private static void TransformSearchTermBindParams(List<KeyValuePair<string, string>> bindParams)
+        {
+            for (var i = 0; i < bindParams.Count; i++)
+            {
+                if (!string.Equals(bindParams[i].Key, "@SearchTerm", StringComparison.Ordinal)) continue;
+
+                var currentValue = bindParams[i].Value;
+
+                if (currentValue != null && currentValue.StartsWith("Name:", StringComparison.Ordinal))
+                {
+                    currentValue = currentValue
+                        .Substring(currentValue.IndexOf(":", StringComparison.Ordinal) + 1)
+                        .Trim('\"', '^', '$')
+                        .Replace(".", string.Empty)
+                        .Replace("'", string.Empty);
+                }
+
+                bindParams[i] = new KeyValuePair<string, string>(bindParams[i].Key, NormalizeQueryTerm(currentValue));
             }
         }
 
         [HarmonyPrefix]
         private static bool CreateSearchTermPrefix(string searchTerm, ref string __result)
         {
-            __result = searchTerm.Replace(".", string.Empty).Replace("'", string.Empty);
+            __result = NormalizeSearchTerm(searchTerm);
 
             return false;
         }
