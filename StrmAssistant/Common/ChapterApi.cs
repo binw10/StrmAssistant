@@ -37,6 +37,16 @@ namespace StrmAssistant.Common
             return _itemRepository.GetChapters(item, CancellationToken.None).Any(c => c.MarkerType == MarkerType.IntroStart);
         }
 
+        /// <summary>
+        /// 是否存在非 IntroDb 来源的片头标记（探测 #SA、其他插件或原生），用于判断能否用 #DB 刷新。
+        /// </summary>
+        public bool HasNonDbIntro(BaseItem item)
+        {
+            return _itemRepository.GetChapters(item, CancellationToken.None).Any(c =>
+                c.MarkerType == MarkerType.IntroStart &&
+                !c.Name.EndsWith(DbMarkerSuffix, StringComparison.Ordinal));
+        }
+
         public long? GetIntroStart(BaseItem item)
         {
             var introStart = _itemRepository.GetChapters(item, CancellationToken.None)
@@ -154,6 +164,19 @@ namespace StrmAssistant.Common
         public const string DbMarkerSuffix = "#DB";
 
         /// <summary>
+        /// 多人提交时取时长最长的片段（社区数据里最长的通常是完整片头/片尾）。
+        /// </summary>
+        private static IntroDbApi.IntroDbSegment PickLongestSegment(List<IntroDbApi.IntroDbSegment> segments)
+        {
+            if (segments == null || segments.Count == 0) return null;
+
+            return segments
+                .Where(s => s.start_ms.HasValue)
+                .OrderByDescending(s => ((s.end_ms ?? s.start_ms) ?? 0) - s.start_ms.Value)
+                .FirstOrDefault();
+        }
+
+        /// <summary>
         /// 写入 IntroDb 刮削的片头/片尾标记：仅填充缺失（不覆盖探测或其他来源），
         /// 自身上一轮的 #DB 标记允许更新。返回是否发生写入。
         /// </summary>
@@ -164,8 +187,8 @@ namespace StrmAssistant.Common
             var chapters = _itemRepository.GetChapters(item);
             var runtime = item.RunTimeTicks;
 
-            var introSegment = intro?.FirstOrDefault();
-            var creditsSegment = credits?.FirstOrDefault();
+            var introSegment = PickLongestSegment(intro);
+            var creditsSegment = PickLongestSegment(credits);
 
             if (introSegment != null)
             {

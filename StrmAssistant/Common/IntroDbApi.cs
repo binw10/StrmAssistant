@@ -169,7 +169,8 @@ namespace StrmAssistant.Common
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    if (Plugin.ChapterApi.HasIntro(episode) && Plugin.ChapterApi.HasCredits(episode)) continue;
+                    // 仅有 IntroDb 自身 #DB 标记的集允许重新刮削刷新；探测等外部来源不覆盖
+                    if (Plugin.ChapterApi.HasNonDbIntro(episode) && Plugin.ChapterApi.HasCredits(episode)) continue;
 
                     if (consecutiveNotFound >= 50)
                     {

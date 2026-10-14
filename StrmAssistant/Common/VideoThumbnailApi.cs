@@ -26,6 +26,7 @@ namespace StrmAssistant.Common
     {
         private readonly ILogger _logger;
         private readonly ILibraryManager _libraryManager;
+        private readonly IItemRepository _itemRepository;
 
         private static readonly PatchTracker PatchTracker = new PatchTracker(typeof(VideoThumbnailApi),
             Plugin.Instance.IsModSupported ? PatchApproach.Harmony : PatchApproach.Reflection);
@@ -42,6 +43,7 @@ namespace StrmAssistant.Common
         {
             _logger = Plugin.Instance.Logger;
             _libraryManager = libraryManager;
+            _itemRepository = itemRepository;
 
             try
             {
@@ -162,6 +164,29 @@ namespace StrmAssistant.Common
             throw new NotImplementedException();
 #pragma warning restore CS1998
 
+        /// <summary>
+        /// 片头片尾标记章节与距片尾过近的章节不参与截图（标记点非真章节、片尾点常截不出图），
+        /// 但仍需保留在章节记录里：提取后把被剔除的章节合并回写，失败时整体回滚。
+        /// </summary>
+        private static readonly TimeSpan ChapterTailMargin = TimeSpan.FromSeconds(10);
+
+        private bool IsMarkerChapter(ChapterInfo chapter)
+        {
+            return chapter.MarkerType == MarkerType.IntroStart ||
+                   chapter.MarkerType == MarkerType.IntroEnd ||
+                   chapter.MarkerType == MarkerType.CreditsStart;
+        }
+
+        private List<ChapterInfo> FilterChaptersForExtraction(Video item, List<ChapterInfo> chapters)
+        {
+            var runtimeTicks = item.RunTimeTicks;
+            var tailLimit = runtimeTicks.HasValue ? runtimeTicks.Value - ChapterTailMargin.Ticks : long.MaxValue;
+
+            return chapters
+                .Where(c => !IsMarkerChapter(c) && c.StartPositionTicks < tailLimit)
+                .ToList();
+        }
+
         public Task<bool> RefreshThumbnailImages(Video item, LibraryOptions libraryOptions,
             IDirectoryService directoryService, List<ChapterInfo> chapters, bool extractImages, bool saveChapters,
             CancellationToken cancellationToken)
@@ -169,6 +194,102 @@ namespace StrmAssistant.Common
             var mediaSource = item.GetMediaSources(false, false, libraryOptions).FirstOrDefault();
             var paramCount = _refreshThumbnailImages?.GetParameters().Length ?? 0;
 
+            List<ChapterInfo> excluded = null;
+            if (extractImages && chapters != null && chapters.Count > 0)
+            {
+                var filtered = FilterChaptersForExtraction(item, chapters);
+                excluded = chapters.Where(c => !filtered.Contains(c)).ToList();
+                if (filtered.Count == 0)
+                {
+                    return Task.FromResult(false);
+                }
+                chapters = filtered;
+            }
+
+            var result = RefreshThumbnailImagesCore(item, libraryOptions, directoryService, chapters,
+                extractImages, saveChapters, cancellationToken, mediaSource, paramCount);
+
+            if (excluded != null && excluded.Count > 0 && saveChapters)
+            {
+                return MergeBackExcludedChaptersAsync(item, result, excluded, cancellationToken);
+            }
+
+            return result;
+        }
+
+        private async Task<bool> MergeBackExcludedChaptersAsync(Video item, Task<bool> extractionTask,
+            List<ChapterInfo> excluded, CancellationToken cancellationToken)
+        {
+            var result = false;
+
+            try
+            {
+                result = await extractionTask.ConfigureAwait(false);
+            }
+            catch
+            {
+                RestoreChapters(item, excluded);
+                throw;
+            }
+
+            try
+            {
+                var current = _itemRepository.GetChapters(item, cancellationToken);
+
+                foreach (var excludedChapter in excluded)
+                {
+                    if (current.Any(c => c.MarkerType == excludedChapter.MarkerType &&
+                                         c.StartPositionTicks == excludedChapter.StartPositionTicks &&
+                                         c.Name == excludedChapter.Name))
+                    {
+                        continue;
+                    }
+
+                    current.Add(excludedChapter);
+                }
+
+                current.Sort((c1, c2) => c1.StartPositionTicks.CompareTo(c2.StartPositionTicks));
+                _itemRepository.SaveChapters(item.InternalId, current);
+            }
+            catch (Exception e)
+            {
+                _logger.Warn($"VideoThumbnailExtract - Failed to merge back excluded chapters for {item.Name}: {e.Message}");
+                RestoreChapters(item, excluded);
+            }
+
+            return result;
+        }
+
+        private void RestoreChapters(Video item, List<ChapterInfo> excluded)
+        {
+            try
+            {
+                var current = _itemRepository.GetChapters(item, CancellationToken.None);
+
+                foreach (var excludedChapter in excluded)
+                {
+                    if (current.Any(c => c.Name == excludedChapter.Name &&
+                                         c.StartPositionTicks == excludedChapter.StartPositionTicks))
+                    {
+                        continue;
+                    }
+
+                    current.Add(excludedChapter);
+                }
+
+                current.Sort((c1, c2) => c1.StartPositionTicks.CompareTo(c2.StartPositionTicks));
+                _itemRepository.SaveChapters(item.InternalId, current);
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"VideoThumbnailExtract - Failed to restore chapters for {item.Name}: {e.Message}");
+            }
+        }
+
+        private Task<bool> RefreshThumbnailImagesCore(Video item, LibraryOptions libraryOptions,
+            IDirectoryService directoryService, List<ChapterInfo> chapters, bool extractImages, bool saveChapters,
+            CancellationToken cancellationToken, MediaSourceInfo mediaSource, int paramCount)
+        {
             switch (PatchTracker.FallbackPatchApproach)
             {
                 case PatchApproach.Harmony:
@@ -191,7 +312,8 @@ namespace StrmAssistant.Common
                             _logger.Debug(ex.StackTrace);
                         }
                         PatchTracker.FallbackPatchApproach = PatchApproach.Reflection;
-                        return RefreshThumbnailImages(item, libraryOptions, directoryService, chapters, extractImages, saveChapters, cancellationToken);
+                        return RefreshThumbnailImagesCore(item, libraryOptions, directoryService, chapters,
+                            extractImages, saveChapters, cancellationToken, mediaSource, paramCount);
                     }
                     
                 case PatchApproach.Reflection:
