@@ -21,6 +21,12 @@ namespace StrmAssistant.Options
         [Required]
         public bool CatchupMode { get; set; } = false;
 
+        [DisplayNameL("PluginOptions_CatchupMinWaitMinutes_Min_Wait_After_Library_Insert", typeof(Resources))]
+        [DescriptionL("PluginOptions_CatchupMinWaitMinutes_Minutes_to_wait_after_an_item_enters_the_library_before_catch_up_processes_it__letting_initial_scraping_finish__Default_is_0_", typeof(Resources))]
+        [Required, MinValue(0), MaxValue(120)]
+        [VisibleCondition(nameof(CatchupMode), SimpleCondition.IsTrue)]
+        public int CatchupMinWaitMinutes { get; set; } = 0;
+
         public enum CatchupTask
         {
             [DescriptionL("CatchupTask_MediaInfo_MediaInfo", typeof(Resources))]

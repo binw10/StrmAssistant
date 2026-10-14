@@ -369,6 +369,24 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Min Wait After Library Insert.
+        /// </summary>
+        public static string PluginOptions_CatchupMinWaitMinutes_Min_Wait_After_Library_Insert {
+            get {
+                return ResourceManager.GetString("PluginOptions_CatchupMinWaitMinutes_Min_Wait_After_Library_Insert", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Minutes to wait after an item enters the library before catch-up processes it, letting initial scraping finish. Default is 0..
+        /// </summary>
+        public static string PluginOptions_CatchupMinWaitMinutes_Minutes_to_wait_after_an_item_enters_the_library_before_catch_up_processes_it__letting_initial_scraping_finish__Default_is_0_ {
+            get {
+                return ResourceManager.GetString("PluginOptions_CatchupMinWaitMinutes_Minutes_to_wait_after_an_item_enters_the_library_before_catch_up_processes_it__letting_initial_scraping_finish__Default_is_0_", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Exclude Favorite Episodes.
         /// </summary>
         public static string ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Exclude_Favorite_Episodes {

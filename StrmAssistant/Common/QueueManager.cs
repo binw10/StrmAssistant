@@ -153,6 +153,34 @@ namespace StrmAssistant.Common
             }
         }
 
+        /// <summary>
+        /// 追更最小等待：入库不足设定时间的条目重新入队，下个节流周期再试，
+        /// 避免在初始刮削完成前就跑媒体信息提取/声纹/刷新。
+        /// </summary>
+        private static List<T> FilterByCatchupMinWait<T>(List<T> items, Action<T> requeue) where T : BaseItem
+        {
+            var minWaitMinutes = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.CatchupMinWaitMinutes;
+
+            if (minWaitMinutes <= 0 || items.Count == 0) return items;
+
+            var ready = new List<T>();
+
+            foreach (var item in items)
+            {
+                var wait = TimeSpan.FromMinutes(minWaitMinutes) - (DateTime.UtcNow - item.DateCreated);
+
+                if (wait > TimeSpan.FromSeconds(5)) requeue(item);
+                else ready.Add(item);
+            }
+
+            if (ready.Count < items.Count)
+            {
+                Logger.Info($"Catchup - {items.Count - ready.Count} item(s) within min wait time ({minWaitMinutes} min), deferred");
+            }
+
+            return ready;
+        }
+
         public static async Task MediaInfo_ProcessItemQueueAsync()
         {
             Logger.Info("MediaInfo - ProcessItemQueueAsync Started");
@@ -207,7 +235,9 @@ namespace StrmAssistant.Common
 
                     var dedupQueueItems =
                         dequeueItems.GroupBy(i => i.InternalId).Select(g => g.First()).ToList();
-                    var mediaInfoItems = Plugin.LibraryApi.FetchExtractQueueItems(dedupQueueItems);
+                    var mediaInfoItems = FilterByCatchupMinWait(
+                        Plugin.LibraryApi.FetchExtractQueueItems(dedupQueueItems),
+                        i => MediaInfoExtractItemQueue.Enqueue(i));
 
                     if (mediaInfoItems.Count > 0)
                     {
@@ -405,6 +435,8 @@ namespace StrmAssistant.Common
                             MediaInfoExtractItemQueue.Enqueue(item);
                         }
                     }
+
+                    episodes = FilterByCatchupMinWait(episodes, i => FingerprintItemQueue.Enqueue(i));
 
                     if (episodes.Count > 0)
                     {
@@ -717,7 +749,9 @@ namespace StrmAssistant.Common
                     Logger.Info("EpisodeRefresh - Clear Item Queue Started");
 
 
-                    var itemsToRefresh = Plugin.LibraryApi.FetchEpisodeRefreshQueueItems(dequeueItems);
+                    var itemsToRefresh = FilterByCatchupMinWait(
+                        Plugin.LibraryApi.FetchEpisodeRefreshQueueItems(dequeueItems),
+                        i => EpisodeRefreshItemQueue.Enqueue(i));
 
                     if (itemsToRefresh.Count > 0)
                     {

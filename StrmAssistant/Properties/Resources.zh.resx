@@ -641,6 +641,12 @@
   <data name="ExperienceEnhanceOptions_EnableMultiVersionEnhance_Show_quality_badges_and_sort_by_quality_on_multi_version_detail_pages__Default_is_OFF_" xml:space="preserve">
     <value>多版本详情页显示画质标识并按画质排序。默认关闭。</value>
   </data>
+  <data name="PluginOptions_CatchupMinWaitMinutes_Min_Wait_After_Library_Insert" xml:space="preserve">
+    <value>入库最小等待时间</value>
+  </data>
+  <data name="PluginOptions_CatchupMinWaitMinutes_Minutes_to_wait_after_an_item_enters_the_library_before_catch_up_processes_it__letting_initial_scraping_finish__Default_is_0_" xml:space="preserve">
+    <value>媒体入库后等待指定分钟再进行追更处理，让初始刮削先完成。默认 0。</value>
+  </data>
   <data name="ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Marked_Progress_Threshold" xml:space="preserve">
     <value>标记进度阈值（%）</value>
   </data>

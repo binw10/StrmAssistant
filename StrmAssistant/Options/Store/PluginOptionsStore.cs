@@ -223,6 +223,7 @@ namespace StrmAssistant.Options.Store
                     var catchupTaskScope = GetSelectedCatchupTaskDescription();
                     _logger.Info("CatchupTaskScope is set to {0}",
                         string.IsNullOrEmpty(catchupTaskScope) ? "EMPTY" : catchupTaskScope);
+                    _logger.Info("CatchupMinWaitMinutes is set to {0}", options.GeneralOptions.CatchupMinWaitMinutes);
 
                     _logger.Info("Master MaxConcurrentCount is set to {0}", options.GeneralOptions.MaxConcurrentCount);
                     _logger.Info("CooldownDurationSeconds is set to {0}", options.GeneralOptions.CooldownDurationSeconds);
