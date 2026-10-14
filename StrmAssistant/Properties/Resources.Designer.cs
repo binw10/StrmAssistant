@@ -887,6 +887,24 @@ namespace StrmAssistant.Properties {
                 return ResourceManager.GetString("IntroSkipOptions_BlacklistShows_Optional_Blacklist_Shows", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Optional Blacklist Keywords.
+        /// </summary>
+        public static string IntroSkipOptions_BlacklistKeywords_Optional_Blacklist_Keywords {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_BlacklistKeywords_Optional_Blacklist_Keywords", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Skip episodes whose name or series name contains any keyword (e.g. NCOP, Menu), separated by comma or semicolon. Default is EMPTY..
+        /// </summary>
+        public static string IntroSkipOptions_BlacklistKeywords_Skip_episodes_whose_name_contains_any_keyword_separated_by_comma_or_semicolon__Default_is_EMPTY {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_BlacklistKeywords_Skip_episodes_whose_name_contains_any_keyword_separated_by_comma_or_semicolon__Default_is_EMPTY", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Client name keywords separated by comma or semicolon. Detection via 3rd-party clients might not work properly. Default is Emby,Infuse,SenPlayer.

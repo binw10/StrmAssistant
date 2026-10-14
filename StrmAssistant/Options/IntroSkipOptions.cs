@@ -63,6 +63,12 @@ namespace StrmAssistant.Options
         [EnabledCondition(nameof(IsModSupported),SimpleCondition.IsTrue)]
         public string FingerprintBlacklistShows { get; set; } = string.Empty;
 
+        [DisplayNameL("IntroSkipOptions_BlacklistKeywords_Optional_Blacklist_Keywords", typeof(Resources))]
+        [DescriptionL("IntroSkipOptions_BlacklistKeywords_Skip_episodes_whose_name_contains_any_keyword_separated_by_comma_or_semicolon__Default_is_EMPTY", typeof(Resources))]
+        [VisibleCondition(nameof(UnlockIntroSkip), SimpleCondition.IsTrue)]
+        [EnabledCondition(nameof(IsModSupported),SimpleCondition.IsTrue)]
+        public string FingerprintBlacklistKeywords { get; set; } = string.Empty;
+
         [VisibleCondition(nameof(UnlockIntroSkip), SimpleCondition.IsTrue)]
         public GenericItemList FingerprintBlacklistShowsResult { get; set; } = new GenericItemList();
 

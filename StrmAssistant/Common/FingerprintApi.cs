@@ -259,6 +259,31 @@ namespace StrmAssistant.Common
             UpdateLibraryPathsInScope(Plugin.Instance.IntroSkipStore.GetOptions().MarkerEnabledLibraryScope);
         }
 
+        /// <summary>
+        /// 关键字黑名单：集名或剧名命中关键字的集跳过声纹片头检测（如 NCOP、Menu、特典）。
+        /// </summary>
+        private List<Episode> FilterBlacklistKeywords(List<Episode> episodes)
+        {
+            var keywords = Plugin.Instance.IntroSkipStore.GetOptions().FingerprintBlacklistKeywords
+                .Split(new[] { ',', ';', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(k => k.Trim())
+                .Where(k => k.Length > 0)
+                .ToArray();
+
+            if (keywords.Length == 0 || episodes.Count == 0) return episodes;
+
+            var filtered = episodes.Where(e => !keywords.Any(k =>
+                (e.Name?.Contains(k, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (e.SeriesName?.Contains(k, StringComparison.OrdinalIgnoreCase) ?? false))).ToList();
+
+            if (filtered.Count < episodes.Count)
+            {
+                _logger.Info($"IntroFingerprintExtract - {episodes.Count - filtered.Count} episode(s) skipped by keyword blacklist");
+            }
+
+            return filtered;
+        }
+
         public HashSet<long> GetAllBlacklistSeasons()
         {
             var blacklistShowIds = Plugin.Instance.IntroSkipStore.GetOptions()
@@ -316,7 +341,8 @@ namespace StrmAssistant.Common
             var isModSupported = Plugin.Instance.IsModSupported;
             resultItems = resultItems.Where(i => isModSupported || !i.IsShortcut).GroupBy(i => i.InternalId).Select(g => g.First()).ToList();
             var blackListSeasons = GetAllBlacklistSeasons();
-            return FilterUnprocessed(resultItems.Where(e => !blackListSeasons.Contains(e.ParentId)).ToList());
+            return FilterBlacklistKeywords(
+                FilterUnprocessed(resultItems.Where(e => !blackListSeasons.Contains(e.ParentId)).ToList()));
         }
 
         private List<Episode> FilterUnprocessed(List<Episode> items)
@@ -356,7 +382,8 @@ namespace StrmAssistant.Common
                 if (blackListSeasons.Any()) itemsFingerprintQuery.ExcludeParentIds = blackListSeasons.ToArray();
             }
 
-            return _libraryManager.GetItemList(itemsFingerprintQuery).Where(i => Plugin.Instance.IsModSupported || !i.IsShortcut).OfType<Episode>().ToList();
+            return FilterBlacklistKeywords(_libraryManager.GetItemList(itemsFingerprintQuery)
+                .Where(i => Plugin.Instance.IsModSupported || !i.IsShortcut).OfType<Episode>().ToList());
         }
 
         public List<Episode> FetchIntroFingerprintTaskItems()
@@ -379,7 +406,8 @@ namespace StrmAssistant.Common
                 if (blackListSeasons.Any()) itemsFingerprintQuery.ExcludeParentIds = blackListSeasons.ToArray();
             }
 
-            return _libraryManager.GetItemList(itemsFingerprintQuery).Where(i => Plugin.Instance.IsModSupported || !i.IsShortcut).OfType<Episode>().ToList();
+            return FilterBlacklistKeywords(_libraryManager.GetItemList(itemsFingerprintQuery)
+                .Where(i => Plugin.Instance.IsModSupported || !i.IsShortcut).OfType<Episode>().ToList());
         }
 
         public void UpdateLibraryIntroDetectionFingerprintLength(int currentLength)

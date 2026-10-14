@@ -308,6 +308,8 @@ namespace StrmAssistant
             if (IntroSkipStore.GetOptions().EnableIntroSkip) PlaySessionMonitor.Initialize();
             if (ExperienceEnhanceStore.GetOptions().EnableAutoMarkWatched) AutoMarkWatched.Initialize();
 
+            MigrateImageCaptureExcludeContainers();
+
             _libraryManager.ItemAdded += OnItemAdded;
             _libraryManager.ItemUpdated += OnItemUpdated;
             _libraryManager.ItemRemoved += OnItemRemoved;
@@ -318,6 +320,31 @@ namespace StrmAssistant
             _userManager.UserConfigurationUpdated += OnUserConfigurationUpdated;
             _userDataManager.UserDataSaved += OnUserDataSaved;
             CollectionFolder.LibraryOptionsUpdated += OnLibraryOptionsUpdated;
+        }
+
+        /// <summary>
+        /// 老配置迁移：新版 ffmpeg 对 ts/m2ts 截图已可靠，移出截图默认排除列表
+        /// （仅当存量配置仍为旧默认值时重置，自定义值不动）。
+        /// </summary>
+        private void MigrateImageCaptureExcludeContainers()
+        {
+            try
+            {
+                const string legacyDefault = "MpegTs,Ts,M2Ts";
+                var mediaInfoOptions = MediaInfoExtractStore.GetOptions();
+
+                if (!string.Equals(mediaInfoOptions.ImageCaptureExcludeMediaContainers, legacyDefault,
+                        StringComparison.Ordinal)) return;
+
+                mediaInfoOptions.ImageCaptureExcludeMediaContainers = string.Empty;
+                MediaInfoExtractStore.SetOptions(mediaInfoOptions);
+
+                Logger.Info("MediaInfoExtract - Migrated ImageCaptureExcludeMediaContainers: ts/m2ts no longer excluded by default");
+            }
+            catch (Exception e)
+            {
+                Logger.Warn("MediaInfoExtract - Exclude containers migration failed: " + e.Message);
+            }
         }
 
         private void OnRefreshCompleted(object sender, GenericEventArgs<RefreshProgressInfo> e)

@@ -50,8 +50,7 @@ namespace StrmAssistant.Options
 
         [Browsable(false)]
         [Required]
-        public string ImageCaptureExcludeMediaContainers { get; set; } =
-            string.Join(",", new[] { MediaContainers.MpegTs, MediaContainers.Ts, MediaContainers.M2Ts });
+        public string ImageCaptureExcludeMediaContainers { get; set; } = string.Empty;
 
         [DisplayNameL("ModOptions_ExclusiveExtract_Exclusive_Extract", typeof(Resources))]
         [DescriptionL("ModOptions_ExclusiveExtract_Only_allow_this_plugin_to_extract_media_info__ffprobe__and_capture_image__ffmpeg___Default_is_OFF_", typeof(Resources))]

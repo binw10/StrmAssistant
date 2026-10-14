@@ -224,6 +224,8 @@ namespace StrmAssistant.Options.Store
                 _logger.Info("EnableIntroDbScrape is set to {0}", options.EnableIntroDbScrape);
                 _logger.Info("IntroDbApiKey is set to {0}",
                     !string.IsNullOrEmpty(options.IntroDbApiKey) ? "CONFIGURED" : "EMPTY");
+                _logger.Info("FingerprintBlacklistKeywords is set to {0}",
+                    string.IsNullOrEmpty(options.FingerprintBlacklistKeywords) ? "EMPTY" : "CONFIGURED");
 
                 // UnlockIntroSkip 已开启但声纹提取范围为空的可见提示
                 if (options.UnlockIntroSkip && string.IsNullOrEmpty(options.MarkerEnabledLibraryScope))

@@ -509,6 +509,12 @@
   <data name="IntroSkipOptions_BlacklistShows_Optional_Blacklist_Shows" xml:space="preserve">
     <value>可選黑名單</value>
   </data>
+  <data name="IntroSkipOptions_BlacklistKeywords_Optional_Blacklist_Keywords" xml:space="preserve">
+    <value>可選關鍵字黑名單</value>
+  </data>
+  <data name="IntroSkipOptions_BlacklistKeywords_Skip_episodes_whose_name_contains_any_keyword_separated_by_comma_or_semicolon__Default_is_EMPTY" xml:space="preserve">
+    <value>集名或劇名包含關鍵字的集跳過聲紋片頭檢測（如 NCOP、Menu、特典），逗號或分號分隔。預設留空。</value>
+  </data>
   <data name="GeneralOptions_Tier2MaxConcurrentCount_Tier_2_Max_Concurrent_Count" xml:space="preserve">
     <value>次最大並發線程數</value>
   </data>
