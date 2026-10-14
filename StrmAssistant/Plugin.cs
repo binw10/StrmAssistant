@@ -307,6 +307,9 @@ namespace StrmAssistant
             if (MainOptionsStore.GetOptions().GeneralOptions.CatchupMode) QueueManager.Initialize();
             if (IntroSkipStore.GetOptions().EnableIntroSkip) PlaySessionMonitor.Initialize();
             if (ExperienceEnhanceStore.GetOptions().EnableAutoMarkWatched) AutoMarkWatched.Initialize();
+            MemoryGuard.Apply(Logger,
+                MainOptionsStore.GetOptions().GeneralOptions.EnableMemoryAutoRestart,
+                MainOptionsStore.GetOptions().GeneralOptions.MemoryAutoRestartThresholdMB);
 
             MigrateImageCaptureExcludeContainers();
 
@@ -755,7 +758,8 @@ namespace StrmAssistant
                     _pages = new List<IPluginUIPageController>
                     {
                         new MainPageController(GetPluginInfo(), _libraryManager, MainOptionsStore,
-                            MediaInfoExtractStore, MetadataEnhanceStore, IntroSkipStore, ExperienceEnhanceStore)
+                            MediaInfoExtractStore, MetadataEnhanceStore, IntroSkipStore, ExperienceEnhanceStore,
+                            _taskManager, _sessionManager)
                     };
                 }
 

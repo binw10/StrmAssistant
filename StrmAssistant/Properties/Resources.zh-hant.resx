@@ -653,6 +653,45 @@
   <data name="PluginOptions_CatchupMinWaitMinutes_Minutes_to_wait_after_an_item_enters_the_library_before_catch_up_processes_it__letting_initial_scraping_finish__Default_is_0_" xml:space="preserve">
     <value>媒體入庫後等待指定分鐘再進行追更處理，讓初始刮削先完成。預設為 0。</value>
   </data>
+  <data name="PluginOptions_EnableMemoryAutoRestart_Auto_Restart_On_Memory_Limit" xml:space="preserve">
+    <value>記憶體超限自動重啟</value>
+  </data>
+  <data name="PluginOptions_EnableMemoryAutoRestart_Automatically_restart_the_server_after_working_set_exceeds_the_limit_sustained__Admins_get_a_countdown_notification__Default_is_OFF_" xml:space="preserve">
+    <value>工作集持續超過上限後自動重啟伺服器，管理員會收到倒數通知。預設為關閉。</value>
+  </data>
+  <data name="PluginOptions_MemoryAutoRestartThresholdMB_Memory_Limit" xml:space="preserve">
+    <value>記憶體上限（MB）</value>
+  </data>
+  <data name="PluginOptions_MemoryAutoRestartThresholdMB_Working_set_limit_in_MB_before_restart_countdown_starts__Default_is_4096_" xml:space="preserve">
+    <value>工作集超過該 MB 數後開始重啟倒數。預設為 4096。</value>
+  </data>
+  <data name="GeneralOptions_RuntimeStatus_Runtime_Status" xml:space="preserve">
+    <value>執行狀態</value>
+  </data>
+  <data name="GeneralOptions_CleanMemoryNow_Clean_Memory_Now" xml:space="preserve">
+    <value>立即清理記憶體</value>
+  </data>
+  <data name="GeneralOptions_ScheduleIndexRebuild_Schedule_Search_Index_Rebuild" xml:space="preserve">
+    <value>排程重建搜尋索引</value>
+  </data>
+  <data name="GeneralOptions_RestartServer_Restart_Server" xml:space="preserve">
+    <value>重啟伺服器</value>
+  </data>
+  <data name="RuntimeStatus_Memory" xml:space="preserve">
+    <value>記憶體工作集：{0} MB（GC 堆 {1} MB）</value>
+  </data>
+  <data name="RuntimeStatus_RunningTasks" xml:space="preserve">
+    <value>執行中任務：{0}（{1}）</value>
+  </data>
+  <data name="RuntimeStatus_Sessions" xml:space="preserve">
+    <value>活動會話：{0}（{1}）</value>
+  </data>
+  <data name="RuntimeStatus_SearchIndex" xml:space="preserve">
+    <value>搜尋索引：{0}</value>
+  </data>
+  <data name="RuntimeStatus_ServerRestarting" xml:space="preserve">
+    <value>伺服器正在從外掛選項頁觸發重啟</value>
+  </data>
   <data name="ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Marked_Progress_Threshold" xml:space="preserve">
     <value>標記進度閾值（%）</value>
   </data>

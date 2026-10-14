@@ -139,6 +139,14 @@ namespace StrmAssistant.Options.Store
                         options.GeneralOptions.MemoryCleanupIntervalMinutes);
                 }
 
+                if (changedProperties.Contains(nameof(PluginOptions.GeneralOptions.EnableMemoryAutoRestart)) ||
+                    changedProperties.Contains(nameof(PluginOptions.GeneralOptions.MemoryAutoRestartThresholdMB)))
+                {
+                    MemoryGuard.Apply(_logger,
+                        options.GeneralOptions.EnableMemoryAutoRestart,
+                        options.GeneralOptions.MemoryAutoRestartThresholdMB);
+                }
+
                 if (PatchManager.EnhanceChineseSearch != null)
                 {
                     var isSimpleTokenizer = string.Equals(EnhanceChineseSearch.CurrentTokenizerName, "simple",
@@ -224,6 +232,8 @@ namespace StrmAssistant.Options.Store
                     _logger.Info("CatchupTaskScope is set to {0}",
                         string.IsNullOrEmpty(catchupTaskScope) ? "EMPTY" : catchupTaskScope);
                     _logger.Info("CatchupMinWaitMinutes is set to {0}", options.GeneralOptions.CatchupMinWaitMinutes);
+                    _logger.Info("EnableMemoryAutoRestart is set to {0}", options.GeneralOptions.EnableMemoryAutoRestart);
+                    _logger.Info("MemoryAutoRestartThresholdMB is set to {0}", options.GeneralOptions.MemoryAutoRestartThresholdMB);
 
                     _logger.Info("Master MaxConcurrentCount is set to {0}", options.GeneralOptions.MaxConcurrentCount);
                     _logger.Info("CooldownDurationSeconds is set to {0}", options.GeneralOptions.CooldownDurationSeconds);

@@ -1,0 +1,121 @@
+using MediaBrowser.Model.Logging;
+using System;
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace StrmAssistant.Core
+{
+    /// <summary>
+    /// 内存守护：定期检查进程工作集，持续超限则通知管理员并倒计时自动重启服务器。
+    /// </summary>
+    public static class MemoryGuard
+    {
+        private static readonly object Lock = new object();
+        private static Timer _timer;
+        private static ILogger _logger;
+        private static int _thresholdMb;
+        private static int _overLimitCount;
+        private static volatile bool _restarting;
+
+        private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(5);
+        private const int SustainedLimit = 2;
+        private const int RestartCountdownSeconds = 60;
+
+        public static void Apply(ILogger logger, bool enabled, int thresholdMb)
+        {
+            lock (Lock)
+            {
+                _logger = logger;
+                _thresholdMb = thresholdMb;
+
+                if (!enabled)
+                {
+                    StopInternal();
+                    return;
+                }
+
+                if (_timer != null) return;
+
+                _overLimitCount = 0;
+                _timer = new Timer(Check, null, CheckInterval, CheckInterval);
+                logger?.Info($"MemoryGuard - Started, threshold {thresholdMb} MB, " +
+                             $"sustained {SustainedLimit} checks x {CheckInterval.TotalMinutes:0} min");
+            }
+        }
+
+        public static void Stop()
+        {
+            lock (Lock)
+            {
+                StopInternal();
+            }
+        }
+
+        private static void StopInternal()
+        {
+            _timer?.Dispose();
+            _timer = null;
+            _overLimitCount = 0;
+        }
+
+        private static void Check(object state)
+        {
+            try
+            {
+                if (_restarting) return;
+
+                using var process = Process.GetCurrentProcess();
+                var workingSetMb = process.WorkingSet64 / 1024 / 1024;
+
+                if (workingSetMb < _thresholdMb)
+                {
+                    _overLimitCount = 0;
+                    return;
+                }
+
+                _overLimitCount++;
+
+                _logger?.Warn($"MemoryGuard - Working set {workingSetMb} MB exceeds limit {_thresholdMb} MB " +
+                              $"({_overLimitCount}/{SustainedLimit})");
+
+                if (_overLimitCount < SustainedLimit) return;
+
+                _restarting = true;
+                _logger?.Warn($"MemoryGuard - Triggering auto restart in {RestartCountdownSeconds}s");
+
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        Plugin.NotificationApi?.SendMessageToAdmins(
+                            $"[Strm Assistant] 内存 {workingSetMb} MB 超过上限 {_thresholdMb} MB，" +
+                            $"服务器将在 {RestartCountdownSeconds} 秒后自动重启", 15000);
+
+                        await Task.Delay(TimeSpan.FromSeconds(RestartCountdownSeconds)).ConfigureAwait(false);
+
+                        if (!Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.EnableMemoryAutoRestart)
+                        {
+                            _logger?.Info("MemoryGuard - Option disabled during countdown, restart cancelled");
+                            _restarting = false;
+                            _overLimitCount = 0;
+                            return;
+                        }
+
+                        Plugin.Instance.ApplicationHost.Restart();
+                    }
+                    catch (Exception e)
+                    {
+                        _logger?.Error("MemoryGuard - Auto restart failed: " + e.Message);
+                        _restarting = false;
+                        _overLimitCount = 0;
+                    }
+                });
+            }
+            catch (Exception e)
+            {
+                _logger?.Debug("MemoryGuard - Check failed: " + e.Message);
+            }
+        }
+    }
+}

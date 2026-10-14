@@ -1,6 +1,8 @@
 using Emby.Media.Common.Extensions;
 using Emby.Web.GenericEdit;
 using Emby.Web.GenericEdit.Common;
+using Emby.Web.GenericEdit.Elements;
+using Emby.Web.GenericEdit.Elements.List;
 using Emby.Web.GenericEdit.Validation;
 using MediaBrowser.Model.Attributes;
 using MediaBrowser.Model.LocalizationAttributes;
@@ -26,6 +28,40 @@ namespace StrmAssistant.Options
         [Required, MinValue(0), MaxValue(120)]
         [VisibleCondition(nameof(CatchupMode), SimpleCondition.IsTrue)]
         public int CatchupMinWaitMinutes { get; set; } = 0;
+
+        [DisplayNameL("PluginOptions_EnableMemoryAutoRestart_Auto_Restart_On_Memory_Limit", typeof(Resources))]
+        [DescriptionL("PluginOptions_EnableMemoryAutoRestart_Automatically_restart_the_server_after_working_set_exceeds_the_limit_sustained__Admins_get_a_countdown_notification__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        public bool EnableMemoryAutoRestart { get; set; } = false;
+
+        [DisplayNameL("PluginOptions_MemoryAutoRestartThresholdMB_Memory_Limit", typeof(Resources))]
+        [DescriptionL("PluginOptions_MemoryAutoRestartThresholdMB_Working_set_limit_in_MB_before_restart_countdown_starts__Default_is_4096_", typeof(Resources))]
+        [Required, MinValue(512), MaxValue(65536)]
+        [VisibleCondition(nameof(EnableMemoryAutoRestart), SimpleCondition.IsTrue)]
+        public int MemoryAutoRestartThresholdMB { get; set; } = 4096;
+
+        [DisplayNameL("GeneralOptions_RuntimeStatus_Runtime_Status", typeof(Resources))]
+        public GenericItemList RuntimeStatusList { get; set; } = new GenericItemList();
+
+        public ButtonItem CleanMemoryNowButton =>
+            new ButtonItem(Resources.GeneralOptions_CleanMemoryNow_Clean_Memory_Now)
+            {
+                Icon = IconNames.memory, Data1 = "CleanMemoryNow"
+            };
+
+        public ButtonItem ScheduleIndexRebuildButton =>
+            new ButtonItem(Resources.GeneralOptions_ScheduleIndexRebuild_Schedule_Search_Index_Rebuild)
+            {
+                Icon = IconNames.build, Data1 = "ScheduleIndexRebuild",
+                ConfirmationPrompt = Resources.AreYouSureToContinue
+            };
+
+        public ButtonItem RestartServerButton =>
+            new ButtonItem(Resources.GeneralOptions_RestartServer_Restart_Server)
+            {
+                Icon = IconNames.autorenew, Data1 = "RestartServer",
+                ConfirmationPrompt = Resources.AreYouSureToContinue
+            };
 
         public enum CatchupTask
         {

@@ -45,6 +45,34 @@ namespace StrmAssistant.Mod
         };
 
         /// <summary>
+        /// 搜索索引状态摘要（运维页展示）：分词器名与索引同步状态。
+        /// </summary>
+        public static string GetSearchIndexStatus()
+        {
+            var inSync = HasNormV2Marker() && GetTokenizerMarker() == ComputeSha1(_tokenizerPath);
+
+            return $"{CurrentTokenizerName} ({(inSync ? "InSync" : "RebuildPending")})";
+        }
+
+        /// <summary>
+        /// 排程下次重启重建搜索索引（清除同步标记，Phase2 检测到缺失即重建）。
+        /// </summary>
+        public static void ScheduleIndexRebuild()
+        {
+            try
+            {
+                if (File.Exists(NormV2MarkerPath)) File.Delete(NormV2MarkerPath);
+                if (File.Exists(TokenizerMarkerPath)) File.Delete(TokenizerMarkerPath);
+
+                Plugin.Instance.Logger.Info("EnhanceChineseSearch - Index rebuild scheduled for next restart");
+            }
+            catch (Exception ex)
+            {
+                Plugin.Instance.Logger.Warn($"EnhanceChineseSearch: failed to schedule index rebuild: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// 索引侧归一化：剥离引号/句点/间隔号/连字符，中文统一转为简体，保证索引与查询可简繁互通。
         /// </summary>
         internal static string NormalizeSearchTerm(string searchTerm)

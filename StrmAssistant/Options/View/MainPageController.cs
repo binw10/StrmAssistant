@@ -14,16 +14,22 @@ namespace StrmAssistant.Options.View
     {
         private readonly PluginInfo _pluginInfo;
         private readonly PluginOptionsStore _mainOptionsStore;
+        private readonly MediaBrowser.Model.Tasks.ITaskManager _taskManager;
+        private readonly MediaBrowser.Controller.Session.ISessionManager _sessionManager;
         private readonly List<IPluginUIPageController> _tabPages = new List<IPluginUIPageController>();
 
         public MainPageController(PluginInfo pluginInfo, ILibraryManager libraryManager,
             PluginOptionsStore mainOptionsStore, MediaInfoExtractOptionsStore mediaInfoExtractOptionsStore,
             MetadataEnhanceOptionsStore metadataEnhanceOptionsStore,
-            IntroSkipOptionsStore introSkipOptionsStore, ExperienceEnhanceOptionsStore experienceEnhanceOptionsStore)
+            IntroSkipOptionsStore introSkipOptionsStore, ExperienceEnhanceOptionsStore experienceEnhanceOptionsStore,
+            MediaBrowser.Model.Tasks.ITaskManager taskManager,
+            MediaBrowser.Controller.Session.ISessionManager sessionManager)
             : base(pluginInfo.Id)
         {
             _pluginInfo = pluginInfo;
             _mainOptionsStore = mainOptionsStore;
+            _taskManager = taskManager;
+            _sessionManager = sessionManager;
 
             PageInfo = new PluginPageInfo
             {
@@ -57,7 +63,7 @@ namespace StrmAssistant.Options.View
 
         public override Task<IPluginUIView> CreateDefaultPageView()
         {
-            IPluginUIView view = new HomePageView(_pluginInfo, _mainOptionsStore);
+            IPluginUIView view = new HomePageView(_pluginInfo, _mainOptionsStore, _taskManager, _sessionManager);
             return Task.FromResult(view);
         }
 

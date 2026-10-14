@@ -387,6 +387,123 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Auto Restart On Memory Limit.
+        /// </summary>
+        public static string PluginOptions_EnableMemoryAutoRestart_Auto_Restart_On_Memory_Limit {
+            get {
+                return ResourceManager.GetString("PluginOptions_EnableMemoryAutoRestart_Auto_Restart_On_Memory_Limit", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Automatically restart the server after working set exceeds the limit sustained. Admins get a countdown notification. Default is OFF..
+        /// </summary>
+        public static string PluginOptions_EnableMemoryAutoRestart_Automatically_restart_the_server_after_working_set_exceeds_the_limit_sustained__Admins_get_a_countdown_notification__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("PluginOptions_EnableMemoryAutoRestart_Automatically_restart_the_server_after_working_set_exceeds_the_limit_sustained__Admins_get_a_countdown_notification__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Memory Limit (MB).
+        /// </summary>
+        public static string PluginOptions_MemoryAutoRestartThresholdMB_Memory_Limit {
+            get {
+                return ResourceManager.GetString("PluginOptions_MemoryAutoRestartThresholdMB_Memory_Limit", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Working set limit in MB before restart countdown starts. Default is 4096..
+        /// </summary>
+        public static string PluginOptions_MemoryAutoRestartThresholdMB_Working_set_limit_in_MB_before_restart_countdown_starts__Default_is_4096_ {
+            get {
+                return ResourceManager.GetString("PluginOptions_MemoryAutoRestartThresholdMB_Working_set_limit_in_MB_before_restart_countdown_starts__Default_is_4096_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Runtime Status.
+        /// </summary>
+        public static string GeneralOptions_RuntimeStatus_Runtime_Status {
+            get {
+                return ResourceManager.GetString("GeneralOptions_RuntimeStatus_Runtime_Status", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Clean Memory Now.
+        /// </summary>
+        public static string GeneralOptions_CleanMemoryNow_Clean_Memory_Now {
+            get {
+                return ResourceManager.GetString("GeneralOptions_CleanMemoryNow_Clean_Memory_Now", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Schedule Search Index Rebuild.
+        /// </summary>
+        public static string GeneralOptions_ScheduleIndexRebuild_Schedule_Search_Index_Rebuild {
+            get {
+                return ResourceManager.GetString("GeneralOptions_ScheduleIndexRebuild_Schedule_Search_Index_Rebuild", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Restart Server.
+        /// </summary>
+        public static string GeneralOptions_RestartServer_Restart_Server {
+            get {
+                return ResourceManager.GetString("GeneralOptions_RestartServer_Restart_Server", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Memory working set: {0} MB (GC heap {1} MB).
+        /// </summary>
+        public static string RuntimeStatus_Memory {
+            get {
+                return ResourceManager.GetString("RuntimeStatus_Memory", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Running tasks: {0} ({1}).
+        /// </summary>
+        public static string RuntimeStatus_RunningTasks {
+            get {
+                return ResourceManager.GetString("RuntimeStatus_RunningTasks", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Active sessions: {0} ({1}).
+        /// </summary>
+        public static string RuntimeStatus_Sessions {
+            get {
+                return ResourceManager.GetString("RuntimeStatus_Sessions", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Search index: {0}.
+        /// </summary>
+        public static string RuntimeStatus_SearchIndex {
+            get {
+                return ResourceManager.GetString("RuntimeStatus_SearchIndex", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Server is restarting from the plugin options page.
+        /// </summary>
+        public static string RuntimeStatus_ServerRestarting {
+            get {
+                return ResourceManager.GetString("RuntimeStatus_ServerRestarting", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Exclude Favorite Episodes.
         /// </summary>
         public static string ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Exclude_Favorite_Episodes {
