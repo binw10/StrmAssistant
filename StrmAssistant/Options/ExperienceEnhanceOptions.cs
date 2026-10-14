@@ -79,6 +79,11 @@ namespace StrmAssistant.Options
         [Required]
         public bool EnableAutoMarkWatched { get; set; } = false;
 
+        [DisplayNameL("ExperienceEnhanceOptions_EnableMultiVersionEnhance_Multi_Version_Quality_Badges", typeof(Resources))]
+        [DescriptionL("ExperienceEnhanceOptions_EnableMultiVersionEnhance_Show_quality_badges_and_sort_by_quality_on_multi_version_detail_pages__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        public bool EnableMultiVersionEnhance { get; set; } = false;
+
         [DisplayNameL("ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Marked_Progress_Threshold", typeof(Resources))]
         [DescriptionL("ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Playback_progress_percentage_of_current_episode_required_to_mark_previous_episodes_as_watched__5_to_100__Default_is_90_", typeof(Resources))]
         [VisibleCondition(nameof(EnableAutoMarkWatched), SimpleCondition.IsTrue)]

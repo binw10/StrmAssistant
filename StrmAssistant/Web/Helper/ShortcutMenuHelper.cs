@@ -209,6 +209,7 @@ setTimeout(() => {
 require(['components/strmassistant/strmassistant'], function (responses) {
     var mod = responses && responses[0];
     if (mod && mod.badges) { try { mod.badges.init(); } catch (e) {} }
+    if (mod && mod.versions) { try { mod.versions.init(); } catch (e) {} }
 });
 ";
             ModifiedShortcutsString += injectDoubanBadgeBootstrap;

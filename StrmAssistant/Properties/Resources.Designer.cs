@@ -351,6 +351,24 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Multi-Version Quality Badges.
+        /// </summary>
+        public static string ExperienceEnhanceOptions_EnableMultiVersionEnhance_Multi_Version_Quality_Badges {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_EnableMultiVersionEnhance_Multi_Version_Quality_Badges", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Show quality badges and sort by quality on multi-version detail pages. Default is OFF..
+        /// </summary>
+        public static string ExperienceEnhanceOptions_EnableMultiVersionEnhance_Show_quality_badges_and_sort_by_quality_on_multi_version_detail_pages__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_EnableMultiVersionEnhance_Show_quality_badges_and_sort_by_quality_on_multi_version_detail_pages__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Exclude Favorite Episodes.
         /// </summary>
         public static string ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Exclude_Favorite_Episodes {

@@ -183,6 +183,7 @@ namespace StrmAssistant.Options.Store
                     _logger.Info("EnableAutoMarkWatched is set to {0}", options.EnableAutoMarkWatched);
                     _logger.Info("AutoMarkWatchedThreshold is set to {0}", options.AutoMarkWatchedThreshold);
                     _logger.Info("AutoMarkWatchedExcludeFavorites is set to {0}", options.AutoMarkWatchedExcludeFavorites);
+                    _logger.Info("EnableMultiVersionEnhance is set to {0}", options.EnableMultiVersionEnhance);
 
                     // 系列合并仅 GlobalScope 生效的可见提示（参考 Mod/MergeMultiVersion.cs 行 217-218）
                     if (options.MergeMultiVersion &&

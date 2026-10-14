@@ -635,6 +635,12 @@
   <data name="ExperienceEnhanceOptions_EnableAutoMarkWatched_Automatically_mark_previous_episodes_as_watched_when_current_episode_reaches_the_progress_threshold__Default_is_OFF_" xml:space="preserve">
     <value>當前集播放進度達到閾值時，自動標記同劇前幾集為已看。預設為關閉。</value>
   </data>
+  <data name="ExperienceEnhanceOptions_EnableMultiVersionEnhance_Multi_Version_Quality_Badges" xml:space="preserve">
+    <value>多版本畫質標識</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_EnableMultiVersionEnhance_Show_quality_badges_and_sort_by_quality_on_multi_version_detail_pages__Default_is_OFF_" xml:space="preserve">
+    <value>多版本詳情頁顯示畫質標識並按畫質排序。預設為關閉。</value>
+  </data>
   <data name="ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Marked_Progress_Threshold" xml:space="preserve">
     <value>標記進度閾值（%）</value>
   </data>

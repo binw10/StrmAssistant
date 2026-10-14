@@ -722,6 +722,12 @@
   <data name="ExperienceEnhanceOptions_EnableAutoMarkWatched_Automatically_mark_previous_episodes_as_watched_when_current_episode_reaches_the_progress_threshold__Default_is_OFF_" xml:space="preserve">
     <value>Automatically mark previous episodes of the same series as watched when the current episode reaches the progress threshold. Default is OFF.</value>
   </data>
+  <data name="ExperienceEnhanceOptions_EnableMultiVersionEnhance_Multi_Version_Quality_Badges" xml:space="preserve">
+    <value>Multi-Version Quality Badges</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_EnableMultiVersionEnhance_Show_quality_badges_and_sort_by_quality_on_multi_version_detail_pages__Default_is_OFF_" xml:space="preserve">
+    <value>Show quality badges and sort by quality on multi-version detail pages. Default is OFF.</value>
+  </data>
   <data name="ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Marked_Progress_Threshold" xml:space="preserve">
     <value>Marked Progress Threshold (%)</value>
   </data>

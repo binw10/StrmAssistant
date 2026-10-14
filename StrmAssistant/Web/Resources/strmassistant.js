@@ -312,6 +312,173 @@
             }
 
             return { init: init };
+        })(),
+
+        versions: (function () {
+            let initialized = false;
+            let enabled = null;
+            let scanTimer = null;
+            let currentId = null;
+            let currentRes = null;
+
+            function apiClient() {
+                return connectionManager.currentApiClient();
+            }
+
+            function checkEnabled() {
+                if (enabled !== null) return Promise.resolve(enabled);
+                return apiClient().getJSON(apiClient().getUrl('MultiVersion/Info')).then(function (res) {
+                    enabled = !!(res && (res.Enabled !== undefined ? res.Enabled : res.enabled));
+                    return enabled;
+                }).catch(function () {
+                    enabled = false;
+                    return false;
+                });
+            }
+
+            function scoreOf(info) {
+                if (!info) return -1;
+                const labels = ['8K', '4K', '1440p', '1080p', '720p', 'SD'];
+                const hdrs = ['DV', 'HDR10+', 'HDR'];
+                const label = info.Label || info.label;
+                const hdr = info.Hdr || info.hdr;
+                const lr = Math.max(0, labels.indexOf(label));
+                const hr = hdr ? Math.max(0, hdrs.indexOf(hdr)) : hdrs.length;
+                const bitrate = (info.Bitrate || info.bitrate || 0) / 1000000;
+                return (labels.length - lr) * 10000 + (hdrs.length + 1 - hr) * 100 + Math.min(bitrate, 99);
+            }
+
+            function makeChip(info) {
+                const chip = document.createElement('span');
+                chip.className = 'mediaInfoItem mv-quality-badge';
+                const label = info.Label || info.label;
+                const hdr = info.Hdr || info.hdr;
+                chip.textContent = label + (hdr ? ' \u00b7 ' + hdr : '');
+                chip.setAttribute('style', 'color:#7ee787;background:rgba(46,160,67,.18);font-weight:600;');
+                return chip;
+            }
+
+            function decorateSources(page, res) {
+                const container = page.querySelector('.mediaSources');
+                if (!container || container.getAttribute('data-mv-done')) return;
+
+                const sources = (res && (res.Sources || res.sources)) || [];
+                container.setAttribute('data-mv-done', '1');
+
+                if (!sources.length) return;
+
+                const rows = Array.prototype.slice.call(container.querySelectorAll('.mediaSource'));
+                const entries = rows.map(function (row, i) {
+                    return {
+                        row: row,
+                        wrapper: row.parentElement === container ? row : row.parentElement,
+                        info: sources[i]
+                    };
+                });
+
+                entries.forEach(function (e) {
+                    if (!e.info || e.row.querySelector('.mv-quality-badge')) return;
+                    const items = e.row.querySelector('.mediaInfoItems');
+                    const label = e.info.Label || e.info.label;
+                    if (!items || !label) return;
+                    items.appendChild(makeChip(e.info));
+                });
+
+                const sorted = entries.slice().sort(function (a, b) { return scoreOf(b.info) - scoreOf(a.info); });
+                const changed = entries.some(function (e, i) { return sorted[i].row !== e.row; });
+                if (changed) sorted.forEach(function (e) { container.appendChild(e.wrapper); });
+            }
+
+            function decorateCards(page) {
+                const cards = Array.prototype.slice.call(
+                    page.querySelectorAll('.additionalPartsSection .card[data-id]:not([data-mv-card])'));
+                if (!cards.length) return;
+
+                const ids = [];
+                const seen = {};
+                cards.forEach(function (c) {
+                    const id = c.getAttribute('data-id');
+                    if (id && !seen[id]) { seen[id] = true; ids.push(id); }
+                });
+                if (!ids.length) return;
+
+                apiClient().getJSON(apiClient().getUrl('MultiVersion/Info', { Ids: ids.join(',') })).then(function (res) {
+                    const byId = {};
+                    ((res && (res.Items || res.items)) || []).forEach(function (info) {
+                        byId[info.ItemId !== undefined ? info.ItemId : info.itemId] = info;
+                    });
+                    cards.forEach(function (card) {
+                        card.setAttribute('data-mv-card', '1');
+                        const info = byId[card.getAttribute('data-id')];
+                        const label = info && (info.Label || info.label);
+                        if (!label) return;
+                        const host = card.querySelector('.cardScalable') || card.querySelector('.cardBox') || card;
+                        if (!host) return;
+                        if (host.style.position !== 'absolute' && !host.style.position) host.style.position = 'relative';
+                        const hdr = info.Hdr || info.hdr;
+                        const pill = document.createElement('div');
+                        pill.className = 'mv-quality-pill';
+                        pill.textContent = label + (hdr ? ' \u00b7 ' + hdr : '');
+                        pill.setAttribute('style', 'position:absolute;top:4px;left:4px;z-index:5;background:rgba(46,160,67,.85);' +
+                            'color:#fff;font-size:11px;line-height:15px;padding:0 5px;border-radius:6px;pointer-events:none;white-space:nowrap;');
+                        host.appendChild(pill);
+                    });
+                }).catch(function () {});
+            }
+
+            function scan() {
+                try {
+                    const page = document.querySelector('.itemDetailPage');
+                    if (!page) return;
+
+                    const match = (location.hash || '').match(/[?&]id=(\d+)/);
+                    if (!match) return;
+
+                    decorateCards(page);
+
+                    const container = page.querySelector('.mediaSources');
+                    if (!container || container.getAttribute('data-mv-done')) return;
+
+                    if (currentId !== match[1]) {
+                        currentId = match[1];
+                        currentRes = null;
+
+                        apiClient().getJSON(apiClient().getUrl('MultiVersion/Info', { Id: match[1] })).then(function (res) {
+                            if (res && (res.Enabled === false || res.enabled === false)) {
+                                enabled = false;
+                                return;
+                            }
+                            currentRes = res;
+                            if (currentRes) decorateSources(page, currentRes);
+                        }).catch(function () { currentId = null; });
+                    } else if (currentRes) {
+                        decorateSources(page, currentRes);
+                    }
+                } catch (e) {
+                    // ignore
+                }
+            }
+
+            function scheduleScan() {
+                if (scanTimer) clearTimeout(scanTimer);
+                scanTimer = setTimeout(scan, 600);
+            }
+
+            function init() {
+                if (initialized) return;
+                initialized = true;
+
+                checkEnabled().then(function (on) {
+                    if (!on) return;
+                    scan();
+                    if (window.MutationObserver) {
+                        new MutationObserver(scheduleScan).observe(document.body,
+                            { childList: true, subtree: true });
+                    }
+                });
+            }
+
+            return { init: init };
         })()
     };
 
