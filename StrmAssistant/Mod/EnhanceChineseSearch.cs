@@ -36,6 +36,7 @@ namespace StrmAssistant.Mod
         private static bool _patchPhase2Initialized;
         private static readonly string RebuildMarkerPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath, "strmassistant_chinese_search_rebuild.pending");
         private static readonly string NormV2MarkerPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath, "strmassistant_chinese_search_norm2.done");
+        private static readonly string TokenizerMarkerPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath, "strmassistant_chinese_search_tokenizer.done");
         private static readonly Dictionary<string, Regex> patterns = new Dictionary<string, Regex>
         {
             { "imdb", new Regex(@"^tt\d{7,8}$", RegexOptions.IgnoreCase | RegexOptions.Compiled) },
@@ -371,22 +372,28 @@ namespace StrmAssistant.Mod
                                     "EnhanceChineseSearch: tokenizer already 'simple'; cleared stale scheduled rebuild marker");
                             }
 
-                            // 归一化 v2（简繁互通 + 间隔号/连字符清理）未落到索引时，升级后触发一次重建
-                            if (!HasNormV2Marker())
+                            // 归一化 v2 或分词器二进制变更未落到索引时，升级后触发一次重建
+                            var tokenizerSha1 = ComputeSha1(_tokenizerPath);
+                            var tokenizerChanged = GetTokenizerMarker() != tokenizerSha1;
+
+                            if (!HasNormV2Marker() || tokenizerChanged)
                             {
-                                Plugin.Instance.Logger.Info(
-                                    "EnhanceChineseSearch: norm v2 (simp-trad + interpunct/hyphen) pending, rebuilding FTS index");
+                                Plugin.Instance.Logger.Info(tokenizerChanged
+                                    ? "EnhanceChineseSearch: tokenizer binary changed, rebuilding FTS index"
+                                    : "EnhanceChineseSearch: norm v2 (simp-trad + interpunct/hyphen) pending, rebuilding FTS index");
 
                                 rebuildFtsResult = RebuildFts(connection, ftsTableName, "simple");
                                 if (rebuildFtsResult)
                                 {
                                     CurrentTokenizerName = "simple";
-                                    Plugin.Instance.Logger.Info("EnhanceChineseSearch - Norm v2 rebuild completed");
+                                    Plugin.Instance.Logger.Info(tokenizerChanged
+                                        ? "EnhanceChineseSearch - Tokenizer upgrade rebuild completed"
+                                        : "EnhanceChineseSearch - Norm v2 rebuild completed");
                                 }
                                 else
                                 {
                                     Plugin.Instance.Logger.Warn(
-                                        "EnhanceChineseSearch - Norm v2 rebuild failed; retry on next restart");
+                                        "EnhanceChineseSearch - Rebuild failed; retry on next restart");
                                 }
                             }
                             else
@@ -481,6 +488,7 @@ namespace StrmAssistant.Mod
                 connection.CommitTransaction();
 
                 WriteNormV2Marker();
+                WriteTokenizerMarker(ComputeSha1(_tokenizerPath));
 
                 Plugin.Instance.Logger.Info($"EnhanceChineseSearch - Filling {ftsTableName} Complete");
 
@@ -591,6 +599,39 @@ namespace StrmAssistant.Mod
             catch
             {
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// 分词器变更检测：标记记录上次建索引用的分词器二进制哈希，
+        /// 二进制升级后哈希不一致即触发 FTS 重建（新分词器切分规则变化，旧索引必须重建）。
+        /// </summary>
+        private static string GetTokenizerMarker()
+        {
+            try
+            {
+                return File.Exists(TokenizerMarkerPath) ? File.ReadAllText(TokenizerMarkerPath).Trim() : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static void WriteTokenizerMarker(string sha1)
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(TokenizerMarkerPath);
+                if (!string.IsNullOrEmpty(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+                File.WriteAllText(TokenizerMarkerPath, sha1 ?? string.Empty);
+            }
+            catch (Exception ex)
+            {
+                Plugin.Instance.Logger.Warn($"EnhanceChineseSearch: failed to write tokenizer marker: {ex.Message}");
             }
         }
 
@@ -786,14 +827,17 @@ namespace StrmAssistant.Mod
                 case PlatformID.Win32NT:
                     return new Dictionary<Version, string>
                     {
-                        { new Version(0, 5, 0), "aed57350b46b51bb7d04321b7fe8e5e60b0cdbdc" }
+                        { new Version(0, 5, 0), "aed57350b46b51bb7d04321b7fe8e5e60b0cdbdc" },
+                        { new Version(0, 7, 1), "f8a3c2d9374ceff6e24275f148e4767dc23c674c" }
                     };
                 case PlatformID.Unix when architecture == Architecture.X64:
                     return new Dictionary<Version, string>
                     {
-                        { new Version(0, 5, 0), "8e36162f96c67d77c44b36093f31ae4d297b15c0" }
+                        { new Version(0, 5, 0), "8e36162f96c67d77c44b36093f31ae4d297b15c0" },
+                        { new Version(0, 7, 1), "44f471dc18f1c2d6ec84410088f084e7e99c61b3" }
                     };
-                // ★ arm64 支持：arm64 版 libsimple.so（v0.5.0 源码在 aarch64 上编译）
+                // ★ arm64 支持：保留自建 v0.5.0（上游 0.7.1 arm64 构建要求 glibc 2.38，
+                //   老 NAS 发行版不满足；分词器名与 SQL API 与 0.7.1 一致，混用无影响）
                 case PlatformID.Unix when architecture == Architecture.Arm64:
                     return new Dictionary<Version, string>
                     {
