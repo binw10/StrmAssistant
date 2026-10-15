@@ -163,11 +163,23 @@
 6. 简繁基建收尾：`PreferTraditionalChinese`、简繁海报徽标区分、新建库默认 TMDB。
 
 ### Phase 4 · 重型能力（每项独立立项）
+
+> **状态（2026-10-15 执行完 P1–P3 后的立项评估）**：P4 各项均为数据面/架构面改动，无法在常规迭代批次中安全落地，逐项给出前置条件，具备条件即可按项开工。
+
 1. **本地 TMDB 刮削源**：`MetadataCacheMode/RootFolder/OptionalImageTypes` + 磁盘持久化（TMDB 限流/断网时仍可刮削）——**长期价值最高**。
+   - 前置：设计磁盘缓存目录结构与失效策略（可参考豆瓣缓存 `strmassistant_douban_cache.json` 的落盘范式，但需按 provider/language 分目录）；patch 点为 MovieDb provider 的 HTTP 层（需实探 `MovieDb` 程序集 4.10 下的请求方法）。
 2. **ISO 提取**：静态 ffprobe + 多线程分段探测（官方 ffprobe 不支持）。
+   - 前置：需自建 ProcessRunner（PRO 为自建 runner）；依赖 Phase 1 已落地的 `CustomProbePath` 指向静态 ffprobe；分段偏移探测协议需实机验证（bluray 目录结构）。
 3. **音乐持久化**：`PersistMediaInfoTask` 扩展专辑/艺术家/内嵌封面序列化与恢复。
+   - 前置：Audio 条目的 MediaStreams/专辑结构梳理；写回冲突面大（音乐库刷新频繁），需先设计字段级合并白名单。
 4. **分布式提取**：`SyncMediaInfo` API 壳 + rffmpeg 负载均衡（复用 Phase 1 的 `CustomProbePath`/`CustomEncoderPath`，节点部署为纯运维）。
+   - 前置：rffmpeg 节点先部署好（用户侧运维）；插件侧为 API 壳 + 队列，约 2–3 天量级，随时可做。
 5. **跨库多版本进度** `LibraryScopePlayProgress`（需改播放进度键）。
+   - 前置：patch `PresentationUniqueKey` 计算链路，**数据面高风险**（影响播放进度/收藏键），必须先在测试库验证迁移行为；建议放最后。
+
+**本轮（待实探，信息到位即可做）**：
+- `OptimizeSubtitle`：需实探 OpenSubtitles 插件在 4.10 下的程序集与方法签名。
+- TIDB 第二源：需 TIDB 服务真实端点/响应结构。
 
 ---
 
