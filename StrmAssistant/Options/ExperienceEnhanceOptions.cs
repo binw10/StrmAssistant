@@ -95,6 +95,12 @@ namespace StrmAssistant.Options
         [Required]
         public bool EnableMultiVersionEnhance { get; set; } = false;
 
+        [DisplayNameL("ExperienceEnhanceOptions_OptimizeSubtitle_Optimize_Subtitle", typeof(Resources))]
+        [DescriptionL("ExperienceEnhanceOptions_OptimizeSubtitle_Resolve_strm_media_path_to_local_mount_for_open_subtitles_hash_and_filename_search__requires_open_subtitles_plugin__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
+        public bool OptimizeSubtitle { get; set; } = false;
+
         [DisplayNameL("ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Marked_Progress_Threshold", typeof(Resources))]
         [DescriptionL("ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Playback_progress_percentage_of_current_episode_required_to_mark_previous_episodes_as_watched__5_to_100__Default_is_90_", typeof(Resources))]
         [VisibleCondition(nameof(EnableAutoMarkWatched), SimpleCondition.IsTrue)]

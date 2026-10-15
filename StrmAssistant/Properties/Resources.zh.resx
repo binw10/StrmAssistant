@@ -758,6 +758,12 @@
   <data name="ExperienceEnhanceOptions_EnableMultiVersionEnhance_Show_quality_badges_and_sort_by_quality_on_multi_version_detail_pages__Default_is_OFF_" xml:space="preserve">
     <value>多版本详情页显示画质标识并按画质排序。默认关闭。</value>
   </data>
+  <data name="ExperienceEnhanceOptions_OptimizeSubtitle_Optimize_Subtitle" xml:space="preserve">
+    <value>优化字幕下载</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_OptimizeSubtitle_Resolve_strm_media_path_to_local_mount_for_open_subtitles_hash_and_filename_search__requires_open_subtitles_plugin__Default_is_OFF_" xml:space="preserve">
+    <value>将 strm 媒体路径解析为本地挂载路径，使 Open Subtitles 插件可计算哈希并按文件名搜索（需安装 Open Subtitles 插件）。默认关闭。</value>
+  </data>
   <data name="ExperienceEnhanceOptions_FolderVideoGroupingLimit_Folder_Video_Grouping_Limit" xml:space="preserve">
     <value>同目录版本合并上限</value>
   </data>
@@ -832,6 +838,30 @@
   </data>
   <data name="IntroSkipOptions_IntroDbApiKey_Optional_TheIntroDB_API_key_sent_via_Bearer_auth_to_raise_the_daily_request_limit__Default_is_empty_" xml:space="preserve">
     <value>可选的 TheIntroDB API Key，通过 Bearer 认证提高每日请求限额。默认留空。</value>
+  </data>
+  <data name="IntroSkipOptions_TidbApiKey_TIDB_API_Key" xml:space="preserve">
+    <value>TIDB API 密钥</value>
+  </data>
+  <data name="IntroSkipOptions_TidbApiKey_API_key_increases_daily_usage_limits__Default_is_empty_" xml:space="preserve">
+    <value>用于提升每日请求限额的 TIDB API 密钥。默认为空。</value>
+  </data>
+  <data name="IntroSkipOptions_UnifiedIntroDbProviders_Unified_IntroDb_Providers" xml:space="preserve">
+    <value>统一片头数据源</value>
+  </data>
+  <data name="IntroSkipOptions_UnifiedIntroDbProviders_Tried_in_order_until_one_succeeds__Default_is_IntroDb_Tidb_" xml:space="preserve">
+    <value>按顺序尝试直到成功，可选 IntroDb 或 Tidb，逗号分隔。默认 IntroDb,Tidb。</value>
+  </data>
+  <data name="IntroSkipOptions_TidbApiKey_TIDB_API_Key" xml:space="preserve">
+    <value>TIDB API 金鑰</value>
+  </data>
+  <data name="IntroSkipOptions_TidbApiKey_API_key_increases_daily_usage_limits__Default_is_empty_" xml:space="preserve">
+    <value>用於提升每日請求限額的 TIDB API 金鑰。預設為空。</value>
+  </data>
+  <data name="IntroSkipOptions_UnifiedIntroDbProviders_Unified_IntroDb_Providers" xml:space="preserve">
+    <value>統一片頭資料源</value>
+  </data>
+  <data name="IntroSkipOptions_UnifiedIntroDbProviders_Tried_in_order_until_one_succeeds__Default_is_IntroDb_Tidb_" xml:space="preserve">
+    <value>按順序嘗試直到成功，可選 IntroDb 或 Tidb，逗號分隔。預設 IntroDb,Tidb。</value>
   </data>
   <data name="ScrapeIntroDbTask_Name_Scrape_Intro_Credits_from_IntroDb" xml:space="preserve">
     <value>从 IntroDb 刮削片头片尾</value>

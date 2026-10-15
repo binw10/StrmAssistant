@@ -845,6 +845,12 @@
   <data name="ExperienceEnhanceOptions_EnableMultiVersionEnhance_Show_quality_badges_and_sort_by_quality_on_multi_version_detail_pages__Default_is_OFF_" xml:space="preserve">
     <value>Show quality badges and sort by quality on multi-version detail pages. Default is OFF.</value>
   </data>
+  <data name="ExperienceEnhanceOptions_OptimizeSubtitle_Optimize_Subtitle" xml:space="preserve">
+    <value>Optimize Subtitle</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_OptimizeSubtitle_Resolve_strm_media_path_to_local_mount_for_open_subtitles_hash_and_filename_search__requires_open_subtitles_plugin__Default_is_OFF_" xml:space="preserve">
+    <value>Resolve strm media path to local mount for OpenSubtitles hash and filename search (requires Open Subtitles plugin). Default is OFF.</value>
+  </data>
   <data name="ExperienceEnhanceOptions_FolderVideoGroupingLimit_Folder_Video_Grouping_Limit" xml:space="preserve">
     <value>Folder Video Grouping Limit</value>
   </data>
@@ -919,6 +925,30 @@
   </data>
   <data name="IntroSkipOptions_IntroDbApiKey_Optional_TheIntroDB_API_key_sent_via_Bearer_auth_to_raise_the_daily_request_limit__Default_is_empty_" xml:space="preserve">
     <value>Optional TheIntroDB API key sent via Bearer auth to raise the daily request limit. Default is empty.</value>
+  </data>
+  <data name="IntroSkipOptions_TidbApiKey_TIDB_API_Key" xml:space="preserve">
+    <value>TIDB API Key</value>
+  </data>
+  <data name="IntroSkipOptions_TidbApiKey_API_key_increases_daily_usage_limits__Default_is_empty_" xml:space="preserve">
+    <value>API key increases daily usage limits. Default is empty.</value>
+  </data>
+  <data name="IntroSkipOptions_UnifiedIntroDbProviders_Unified_IntroDb_Providers" xml:space="preserve">
+    <value>Unified IntroDb Providers</value>
+  </data>
+  <data name="IntroSkipOptions_UnifiedIntroDbProviders_Tried_in_order_until_one_succeeds__Default_is_IntroDb_Tidb_" xml:space="preserve">
+    <value>Tried in order until one succeeds. Default is IntroDb,Tidb.</value>
+  </data>
+  <data name="IntroSkipOptions_TidbApiKey_TIDB_API_Key" xml:space="preserve">
+    <value>TIDB API 密钥</value>
+  </data>
+  <data name="IntroSkipOptions_TidbApiKey_API_key_increases_daily_usage_limits__Default_is_empty_" xml:space="preserve">
+    <value>用于提升每日请求限额的 TIDB API 密钥。默认为空。</value>
+  </data>
+  <data name="IntroSkipOptions_UnifiedIntroDbProviders_Unified_IntroDb_Providers" xml:space="preserve">
+    <value>统一片头数据源</value>
+  </data>
+  <data name="IntroSkipOptions_UnifiedIntroDbProviders_Tried_in_order_until_one_succeeds__Default_is_IntroDb_Tidb_" xml:space="preserve">
+    <value>按顺序尝试直到成功，可选 IntroDb 或 Tidb，逗号分隔。默认 IntroDb,Tidb。</value>
   </data>
   <data name="ScrapeIntroDbTask_Name_Scrape_Intro_Credits_from_IntroDb" xml:space="preserve">
     <value>Scrape Intro/Credits from IntroDb</value>

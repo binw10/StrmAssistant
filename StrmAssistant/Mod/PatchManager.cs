@@ -25,6 +25,7 @@ namespace StrmAssistant.Mod
         public static ClearTagline ClearTagline;
         public static PreferTraditionalChinese PreferTraditionalChinese;
         public static DefaultTmdbLibrary DefaultTmdbLibrary;
+        public static OptimizeSubtitle OptimizeSubtitle;
         public static ChineseTvdb ChineseTvdb;
         public static EnhanceMovieDbPerson EnhanceMovieDbPerson;
         public static AltMovieDbConfig AltMovieDbConfig;
@@ -87,6 +88,7 @@ namespace StrmAssistant.Mod
             ClearTagline = new ClearTagline();
             PreferTraditionalChinese = new PreferTraditionalChinese();
             DefaultTmdbLibrary = new DefaultTmdbLibrary();
+            OptimizeSubtitle = new OptimizeSubtitle();
             ChineseTvdb = new ChineseTvdb();
             EnhanceMovieDbPerson = new EnhanceMovieDbPerson();
             AltMovieDbConfig = new AltMovieDbConfig();

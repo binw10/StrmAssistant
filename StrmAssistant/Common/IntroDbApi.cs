@@ -16,12 +16,13 @@ using System.Threading.Tasks;
 namespace StrmAssistant.Common
 {
     /// <summary>
-    /// TheIntroDB v3 API（https://theintrodb.org）片头片尾数据客户端与刮削编排。
-    /// 数据写入为带 #DB 后缀的章节标记，仅填充缺失标记或更新自身 #DB 标记。
+    /// Unified IntroDb API：IntroDb（api.introdb.app，IMDb 定位）与 Tidb（api.theintrodb.org，TMDB 定位）
+    /// 双源按序尝试。数据写入为带 #DB 后缀的章节标记，仅填充缺失标记或更新自身 #DB 标记。
     /// </summary>
     public class IntroDbApi
     {
-        private const string BaseUrl = "https://api.theintrodb.org/v3";
+        private const string IntroDbAppBaseUrl = "https://api.introdb.app";
+        private const string TheIntroDbBaseUrl = "https://api.theintrodb.org/v3";
         private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(6);
         private static readonly TimeSpan RequestInterval = TimeSpan.FromMilliseconds(250);
 
@@ -64,15 +65,81 @@ namespace StrmAssistant.Common
         }
 
         /// <summary>
-        /// 查询单个媒体（剧集传 season/episode，电影传 type=movie）的片头片尾数据，带 6 小时缓存。
+        /// 查询单个媒体的片头片尾数据，按 UnifiedIntroDbProviders 顺序尝试双源，带 6 小时缓存。
+        /// IntroDb（introdb.app）按 IMDb ID 定位；Tidb（theintrodb.org）按 TMDB ID 定位。
         /// 无数据返回 null；触发限额抛 IntroDbRateLimitException。
         /// </summary>
         public async Task<IntroDbMedia> GetMediaInfoAsync(string tmdbId, int? season, int? episode,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken, string imdbId = null, long? durationMs = null)
         {
-            var url = season.HasValue && episode.HasValue
-                ? $"{BaseUrl}/media?tmdb_id={tmdbId}&season={season.Value}&episode={episode.Value}"
-                : $"{BaseUrl}/media?tmdb_id={tmdbId}&type=movie";
+            var providers = ParseUnifiedProviders(
+                Plugin.Instance.IntroSkipStore.GetOptions().UnifiedIntroDbProviders);
+
+            foreach (var provider in providers)
+            {
+                var data = await QueryProviderAsync(provider, tmdbId, imdbId, durationMs, season, episode,
+                    cancellationToken).ConfigureAwait(false);
+
+                if (data != null &&
+                    ((data.intro?.Count ?? 0) > 0 || (data.credits?.Count ?? 0) > 0))
+                {
+                    return data;
+                }
+            }
+
+            return null;
+        }
+
+        private static List<string> ParseUnifiedProviders(string raw)
+        {
+            var list = (raw ?? string.Empty)
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(p => p.Trim())
+                .Where(p => p.Equals("IntroDb", StringComparison.OrdinalIgnoreCase) ||
+                            p.Equals("Tidb", StringComparison.OrdinalIgnoreCase))
+                .Select(p => p.Equals("Tidb", StringComparison.OrdinalIgnoreCase) ? "Tidb" : "IntroDb")
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (list.Count == 0) list.Add("IntroDb");
+            if (!list.Contains("Tidb")) list.Add("Tidb");
+
+            return list;
+        }
+
+        private async Task<IntroDbMedia> QueryProviderAsync(string provider, string tmdbId, string imdbId,
+            long? durationMs, int? season, int? episode, CancellationToken cancellationToken)
+        {
+            string url;
+            string apiKey;
+
+            if (provider == "IntroDb")
+            {
+                if (string.IsNullOrWhiteSpace(imdbId))
+                {
+                    _logger.Debug("IntroDbScrape - IntroDb source skipped (no IMDb id)");
+                    return null;
+                }
+
+                apiKey = Plugin.Instance.IntroSkipStore.GetOptions().IntroDbApiKey;
+                url = season.HasValue && episode.HasValue
+                    ? $"{IntroDbAppBaseUrl}/segments?imdb_id={Uri.EscapeDataString(imdbId)}&season={season.Value}&episode={episode.Value}"
+                    : $"{IntroDbAppBaseUrl}/segments?imdb_id={Uri.EscapeDataString(imdbId)}";
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(tmdbId)) return null;
+
+                apiKey = Plugin.Instance.IntroSkipStore.GetOptions().TidbApiKey;
+                url = season.HasValue && episode.HasValue
+                    ? $"{TheIntroDbBaseUrl}/media?tmdb_id={tmdbId}&season={season.Value}&episode={episode.Value}"
+                    : $"{TheIntroDbBaseUrl}/media?tmdb_id={tmdbId}&type=movie";
+
+                if (durationMs.HasValue && durationMs.Value > 0)
+                {
+                    url += $"&duration_ms={durationMs.Value}";
+                }
+            }
 
             if (_cache.TryGetValue(url, out var cached) && cached.Expiry > DateTime.UtcNow)
             {
@@ -90,7 +157,6 @@ namespace StrmAssistant.Common
                 UserAgent = Plugin.Instance.UserAgent
             };
 
-            var apiKey = Plugin.Instance.IntroSkipStore.GetOptions().IntroDbApiKey;
             if (!string.IsNullOrWhiteSpace(apiKey))
             {
                 requestOptions.RequestHeaders["Authorization"] = "Bearer " + apiKey.Trim();
@@ -108,7 +174,8 @@ namespace StrmAssistant.Common
 
                 if (response.StatusCode == HttpStatusCode.TooManyRequests)
                 {
-                    throw new IntroDbRateLimitException();
+                    _logger.Warn("IntroDbScrape - {0} rate limit reached", provider);
+                    return null;
                 }
 
                 if (response.StatusCode != HttpStatusCode.OK)
@@ -123,17 +190,13 @@ namespace StrmAssistant.Common
 
                 return data;
             }
-            catch (IntroDbRateLimitException)
-            {
-                throw;
-            }
             catch (OperationCanceledException)
             {
                 throw;
             }
             catch (Exception e)
             {
-                _logger.Warn("IntroDbScrape - Request failed for {0}: {1}", url, e.Message);
+                _logger.Warn("IntroDbScrape - {0} request failed for {1}: {2}", provider, url, e.Message);
                 return null;
             }
         }
@@ -184,7 +247,10 @@ namespace StrmAssistant.Common
                     try
                     {
                         data = await GetMediaInfoAsync(tmdbId, episode.ParentIndexNumber, episode.IndexNumber,
-                            cancellationToken).ConfigureAwait(false);
+                            cancellationToken,
+                            imdbId: episode.Series?.GetProviderId(MetadataProviders.Imdb),
+                            durationMs: episode.RunTimeTicks > 0 ? episode.RunTimeTicks / 10000 : null)
+                            .ConfigureAwait(false);
                     }
                     catch (IntroDbRateLimitException)
                     {
@@ -235,7 +301,10 @@ namespace StrmAssistant.Common
 
                 try
                 {
-                    data = await GetMediaInfoAsync(tmdbId, null, null, cancellationToken).ConfigureAwait(false);
+                    data = await GetMediaInfoAsync(tmdbId, null, null, cancellationToken,
+                        imdbId: movie.GetProviderId(MetadataProviders.Imdb),
+                        durationMs: movie.RunTimeTicks > 0 ? movie.RunTimeTicks / 10000 : null)
+                        .ConfigureAwait(false);
                 }
                 catch (IntroDbRateLimitException)
                 {

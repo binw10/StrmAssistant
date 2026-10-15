@@ -80,6 +80,18 @@ namespace StrmAssistant.Options.Store
                     Web.Helper.ShortcutMenuHelper.Refresh();
                 }
 
+                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.OptimizeSubtitle)))
+                {
+                    if (options.OptimizeSubtitle && options.IsModSupported)
+                    {
+                        PatchManager.OptimizeSubtitle.Patch();
+                    }
+                    else
+                    {
+                        PatchManager.OptimizeSubtitle.Unpatch();
+                    }
+                }
+
                 if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.EnhanceNotificationSystem)))
                 {
                     if (options.EnhanceNotificationSystem)

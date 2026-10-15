@@ -39,6 +39,16 @@ namespace StrmAssistant.Options
         [VisibleCondition(nameof(EnableIntroDbScrape), SimpleCondition.IsTrue)]
         public string IntroDbApiKey { get; set; } = string.Empty;
 
+        [DisplayNameL("IntroSkipOptions_TidbApiKey_TIDB_API_Key", typeof(Resources))]
+        [DescriptionL("IntroSkipOptions_TidbApiKey_API_key_increases_daily_usage_limits__Default_is_empty_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableIntroDbScrape), SimpleCondition.IsTrue)]
+        public string TidbApiKey { get; set; } = string.Empty;
+
+        [DisplayNameL("IntroSkipOptions_UnifiedIntroDbProviders_Unified_IntroDb_Providers", typeof(Resources))]
+        [DescriptionL("IntroSkipOptions_UnifiedIntroDbProviders_Tried_in_order_until_one_succeeds__Default_is_IntroDb_Tidb_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableIntroDbScrape), SimpleCondition.IsTrue)]
+        public string UnifiedIntroDbProviders { get; set; } = "IntroDb,Tidb";
+
         [DisplayNameL("IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Minutes", typeof(Resources))]
         [DescriptionL("IntroSkipOptions_IntroDetectionFingerprintMinutes_It_must_be_between_2_and_20__Default_is_10_", typeof(Resources))]
         [MinValue(2), MaxValue(20)]

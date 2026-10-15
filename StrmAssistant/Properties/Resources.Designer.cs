@@ -1567,6 +1567,62 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to Optimize Subtitle.
+        /// </summary>
+        public static string ExperienceEnhanceOptions_OptimizeSubtitle_Optimize_Subtitle {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_OptimizeSubtitle_Optimize_Subtitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Resolve strm media path to local mount for OpenSubtitles hash and filename search (requires Open Subtitles plugin). Default is OFF..
+        /// </summary>
+        public static string ExperienceEnhanceOptions_OptimizeSubtitle_Resolve_strm_media_path_to_local_mount_for_open_subtitles_hash_and_filename_search__requires_open_subtitles_plugin__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_OptimizeSubtitle_Resolve_strm_media_path_to_local_mount_for_open_subtitles_hash_and_filename_search__requires_open_subtitles_plugin__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to TIDB API Key
+        /// </summary>
+        public static string IntroSkipOptions_TidbApiKey_TIDB_API_Key {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_TidbApiKey_TIDB_API_Key", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to API key increases daily usage limits. Default is empty..
+        /// </summary>
+        public static string IntroSkipOptions_TidbApiKey_API_key_increases_daily_usage_limits__Default_is_empty_ {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_TidbApiKey_API_key_increases_daily_usage_limits__Default_is_empty_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Unified IntroDb Providers
+        /// </summary>
+        public static string IntroSkipOptions_UnifiedIntroDbProviders_Unified_IntroDb_Providers {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_UnifiedIntroDbProviders_Unified_IntroDb_Providers", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Tried in order until one succeeds. Default is IntroDb,Tidb..
+        /// </summary>
+        public static string IntroSkipOptions_UnifiedIntroDbProviders_Tried_in_order_until_one_succeeds__Default_is_IntroDb_Tidb_ {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_UnifiedIntroDbProviders_Tried_in_order_until_one_succeeds__Default_is_IntroDb_Tidb_", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Intro Detection Fingerprint Length (Minute).
         /// </summary>
         public static string IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Minutes {

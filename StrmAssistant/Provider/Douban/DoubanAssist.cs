@@ -42,7 +42,7 @@ namespace StrmAssistant.Provider.Douban
 
             try
             {
-                var url = $"{MdbListBaseUrl}/imdb/{imdbId.Trim()}?apikey={Uri.EscapeDataString(apiKey.Trim())}";
+                var url = $"{MdbListBaseUrl}/imdb/{imdbId.Trim()}?apikey={Uri.EscapeDataString(apiKey.Trim())}&format=json";
 
                 var requestOptions = new HttpRequestOptions
                 {

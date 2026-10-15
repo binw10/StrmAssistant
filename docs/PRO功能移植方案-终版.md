@@ -177,9 +177,10 @@
 5. **跨库多版本进度** `LibraryScopePlayProgress`（需改播放进度键）。
    - 前置：patch `PresentationUniqueKey` 计算链路，**数据面高风险**（影响播放进度/收藏键），必须先在测试库验证迁移行为；建议放最后。
 
-**本轮（待实探，信息到位即可做）**：
-- `OptimizeSubtitle`：需实探 OpenSubtitles 插件在 4.10 下的程序集与方法签名。
-- TIDB 第二源：需 TIDB 服务真实端点/响应结构。
+**2026-10-15 实探更新（两项均已落地）**：
+- ✅ `OptimizeSubtitle`：OpenSubtitles 插件 4.10 已实探（`OpenSubtitleDownloader.Search(SubtitleSearchRequest, CancellationToken)`）。根因：Strm 的 MediaPath 非 File 协议时插件不算 moviehash、不走文件名搜索。实现：Search 入口 prefix 把 strm 路径经 `GetStrmMountPath` 解析为本地挂载路径，失败保持原路径。开关在体验增强页。
+- ✅ TIDB 第二源：端点已从 PRO 字符串 dump 挖出——IntroDb=`https://api.introdb.app/segments?imdb_id=&season=&episode=`（IMDb 定位）、Tidb=`https://api.theintrodb.org/v3/media?tmdb_id=&duration_ms=`（TMDB 定位，本地原实现缺 duration_ms 已补）。`UnifiedIntroDbProviders`（默认 IntroDb,Tidb）+ `TidbApiKey` 落地，逐源尝试、失败静默降级。
+- MdbList URL 勘误：PRO 实探确认 `https://api.mdblist.com/{imdbId}?apikey=&format=json`。
 
 ---
 
