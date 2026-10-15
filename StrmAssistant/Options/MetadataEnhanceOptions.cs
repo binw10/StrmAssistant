@@ -267,12 +267,8 @@ namespace StrmAssistant.Options
         [DisplayNameL("MetadataEnhanceOptions_MetadataCacheRootFolder_Metadata_Cache_Root_Folder", typeof(Resources))]
         [DescriptionL("MetadataEnhanceOptions_MetadataCacheRootFolder_Description", typeof(Resources))]
         [EditFolderPicker]
-        [VisibleCondition(nameof(ShowMetadataCacheRootFolder), SimpleCondition.IsTrue)]
+        [VisibleCondition(nameof(MetadataCacheMode), ValueCondition.IsNotEqual, MetadataCacheOption.None)]
         public string MetadataCacheRootFolder { get; set; } = string.Empty;
-
-        [Browsable(false)]
-        public bool ShowMetadataCacheRootFolder =>
-            !string.Equals(MetadataCacheMode, MetadataCacheOption.None.ToString(), StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// 图像缺失时可跳过的图像类型（逗号分隔，如 Logo,Backdrop）：只要提供了主海报就不再请求图像 API。
