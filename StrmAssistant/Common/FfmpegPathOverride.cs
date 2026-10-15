@@ -74,12 +74,10 @@ namespace StrmAssistant.Common
                                 .FirstOrDefault(f => f.FieldType == typeof(string) &&
                                                      f.Name.IndexOf(propertyName, StringComparison.OrdinalIgnoreCase) >= 0);
 
-                if (field == null || field.IsInitOnly)
-                {
-                    // readonly 字段无法直接写，走反射去除 initonly 标记的最后手段
-                    if (field == null) return false;
-                }
+                if (field == null) return false;
 
+                // .NET Core 下反射写入 initonly（readonly）后备字段是有效的；
+                // 若目标运行时未来禁止此操作，SetValue 会抛异常并落入 catch 返回 false。
                 field.SetValue(configuration, value);
                 return true;
             }

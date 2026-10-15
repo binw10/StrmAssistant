@@ -236,21 +236,35 @@ namespace StrmAssistant.Mod
             var replaced = 0;
             for (var i = 0; i < code.Count - 1; i++)
             {
-                // 目标模式：callvirt get_Count 后紧跟 ldc.i4.8（即 videos.Count <= 8 的比较量）
-                if (code[i].Calls(countGetter) && code[i + 1].opcode == OpCodes.Ldc_I4_8)
+                // 目标模式：callvirt get_Count 后紧跟常量 8（覆盖 ldc.i4.8 / ldc.i4.s 8 / ldc.i4 8 三种编码形态）
+                if (!code[i].Calls(countGetter)) continue;
+
+                var next = code[i + 1];
+                var isLimitConstant =
+                    next.opcode == OpCodes.Ldc_I4_8 ||
+                    (next.opcode == OpCodes.Ldc_I4_S && next.operand is byte b && b == 8) ||
+                    (next.opcode == OpCodes.Ldc_I4 && next.operand is int n && n == 8);
+
+                if (!isLimitConstant) continue;
+
+                code[i + 1] = new CodeInstruction(OpCodes.Ldsfld, limitField)
                 {
-                    code[i + 1] = new CodeInstruction(OpCodes.Ldsfld, limitField)
-                    {
-                        labels = code[i + 1].labels
-                    };
-                    replaced++;
-                }
+                    labels = next.labels
+                };
+                replaced++;
             }
 
-            if (replaced > 0 && Plugin.Instance.DebugMode)
+            if (replaced > 0)
             {
-                Plugin.Instance.Logger.Debug(
+                Plugin.Instance.Logger.Info(
                     $"MergeMultiVersion: FolderGroupingLimit transpiler replaced {replaced} constant(s)");
+            }
+            else
+            {
+                // 静默不替换比报错更危险：任何形态变化都必须暴露
+                Plugin.Instance.Logger.Warn(
+                    "MergeMultiVersion: FolderGroupingLimit transpiler matched 0 instructions - " +
+                    "Emby IL layout may have changed, folder grouping limit patch is INACTIVE");
             }
 
             return code;

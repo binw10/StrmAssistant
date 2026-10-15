@@ -5,6 +5,7 @@ using StrmAssistant.Mod;
 using StrmAssistant.Options.UIBaseClasses.Store;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using static StrmAssistant.Options.MediaInfoExtractOptions;
 using static StrmAssistant.Options.Utility;
@@ -30,6 +31,19 @@ namespace StrmAssistant.Options.Store
         {
             if (e.Options is MediaInfoExtractOptions options)
             {
+                // 自定义 ffmpeg/ffprobe 路径保存期校验：不存在时立即告警，避免用户以为已生效
+                foreach (var (label, path) in new[]
+                         {
+                             ("CustomProbePath", options.CustomProbePath),
+                             ("CustomEncoderPath", options.CustomEncoderPath)
+                         })
+                {
+                    if (!string.IsNullOrWhiteSpace(path) && !File.Exists(path))
+                    {
+                        _logger.Warn($"MediaInfoExtractOptions - {label} does not exist and will be ignored: {path}");
+                    }
+                }
+
                 options.LibraryScope = string.Join(",",
                     options.LibraryScope
                         ?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)

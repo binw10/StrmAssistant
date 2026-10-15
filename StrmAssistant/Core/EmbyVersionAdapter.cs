@@ -71,6 +71,8 @@ namespace StrmAssistant.Core
         private EmbyApiVersion DetermineApiVersion(Version version)
         {
             // 从高到低检查版本，确保准确匹配
+            if (version >= new Version("4.10.0.0"))
+                return EmbyApiVersion.V4_10;
             if (version >= new Version("4.9.2.0"))
                 return EmbyApiVersion.V4_9_2;
             if (version >= new Version("4.9.1.90"))
