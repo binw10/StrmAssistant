@@ -411,3 +411,25 @@ v1 的「URL 原始响应」升级为 **PRO 同构的按 TMDB 实体落盘**：
 - `dotnet build -c Release`：**0 错误**；警告 9 → 1（仅剩既有 `SubtitleApi.cs:205 CS1998`）。
 - 部署：`D:\下载\embyserver-win-x64-4.10.1.0\programdata\plugins\StrmAssistant.dll`（13:26，7,117,824 字节）。
 - **待用户重启 Emby 验证**：启动日志应出现 `API Version: V4_10`；`ChineseMovieDb: MovieDb <ver> (tier ...) - all components located` 或明确的缺失告警。
+
+## 十、v3.0.0.55 全量回归测试记录（2026-10-15 正式环境实测）
+
+| 测试项 | 方法 | 结果 |
+|---|---|---|
+| 启动健康度 | 日志 | ✅ 35 模块全部初始化，0 报错 |
+| BUG-1 版本枚举 | 日志 `API Version: V4_10` | ✅ |
+| BUG-3 MovieDb 分档 | 日志 tier 1.9.2.0-1.9.8.x | ✅ |
+| 本地 TMDB 缓存 | Debug 日志 + 诊断 | ✅ `CACHE HIT` 与 `OVERRIDE HIT` 实测命中，读写链路全通 |
+| 音乐持久化 | 运行任务 | ✅ Completed（72/72 跳过=已持久化且未变化，预期） |
+| 提取媒体信息 | 运行任务 | ✅ 73/73 成功，0 FfProbe Error（strmPrefix 修复后） |
+| 剧集刷新 | 运行任务 | ✅ Lookback/Scope 正常（0 项=回看期内无需刷新） |
+| 库列表加载 | 用户打开设置页 | ✅ `EpisodeRefreshLibraryList: 1 library(ies) - 混合内容` |
+| 豆瓣辅助生效范围 | 重做为字段多选（PRO 同构） | ✅ 已随 3.0.55 部署（Rating/CastCharacter/NameOverview/Poster） |
+| 冲突检测/仪表盘/豆瓣图标 | 代码级+JS 资源 | ✅（UI 肉眼确认待用户） |
+| 调试环境 | 已还原 | ✅ EnableDebugLevelLogging 还原为 false，DebugMode 一次性自动复位 |
+
+### 测试期间发现并澄清的事实
+1. 「缓存未生效」是误判：PreferCacheThenOnline 模式下后续刷新全被缓存命中（无网络请求 → 无 HttpClient 日志），CACHE HIT 为 Debug 级日志需开启服务器 `EnableDebugLevelLogging` + 插件一次性 DebugMode（AboutOptions.DebugMode=true，启动时消费后自动复位）才可见。
+2. 17:49:56 的非预期重启源自 faststrm（Go-http-client）调用 `/system/restart`，非插件问题。
+3. 测试期间 movie 12155 的 NFO 被写入过测试名，已修正回「爱丽丝梦游仙境」；条目显示名受插件刷新去重窗口压制暂未回读，下次刷新窗口自愈（或在 UI 中手动刷新一次）。
+4. 缓存根目录设在媒体库根（D:/视频）内可用（cache/override/patches 子目录会被库扫描忽略，json 非媒体文件），但更稳妥做法是放在库外。
