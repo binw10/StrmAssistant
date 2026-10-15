@@ -416,7 +416,7 @@ namespace StrmAssistant.Provider.Douban
             var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();
             if (!options.EnableDoubanAssist || item == null || item.IsLocked) return false;
 
-            var language = item.PreferredMetadataLanguage;
+            var language = ResolveMetadataLanguage(item);
             if (string.IsNullOrEmpty(language) || !language.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
                 return false;
 
@@ -450,6 +450,24 @@ namespace StrmAssistant.Provider.Douban
             }
         }
 
+        /// <summary>
+        /// 解析条目生效的元数据语言：条目级为空时回退到所属媒体库的 LibraryOptions。
+        /// （Emby 4.10 的 item.PreferredMetadataLanguage 不再继承库设置，实测返回空。）
+        /// </summary>
+        private static string ResolveMetadataLanguage(BaseItem item)
+        {
+            if (!string.IsNullOrEmpty(item.PreferredMetadataLanguage)) return item.PreferredMetadataLanguage;
+
+            try
+            {
+                return BaseItem.LibraryManager.GetLibraryOptions(item)?.PreferredMetadataLanguage;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         private async Task ApplyAsync(BaseItem item, string suggestType, int? seasonNumber,
             CancellationToken cancellationToken)
         {
@@ -457,16 +475,25 @@ namespace StrmAssistant.Provider.Douban
 
             if (!options.EnableDoubanAssist || item == null || item.IsLocked) return;
 
-            var language = item.PreferredMetadataLanguage;
+            var language = ResolveMetadataLanguage(item);
             if (string.IsNullOrEmpty(language) || !language.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.Info("DoubanAssist - Skipped (language={0}): {1}", language ?? "(empty)", item.Name);
                 return;
+            }
 
             if (!_inFlight.TryAdd(item.InternalId, 0)) return;
 
             try
             {
                 var subject = await FindSubjectAsync(item, suggestType, seasonNumber, cancellationToken).ConfigureAwait(false);
-                if (subject == null) return;
+                if (subject == null)
+                {
+                    _logger.Info("DoubanAssist - No douban match for: {0}", item.Name);
+                    return;
+                }
+
+                _logger.Info("DoubanAssist - Matched {0} -> subject {1}", item.Name, subject.SubjectId);
 
                 var changed = false;
 
@@ -531,6 +558,12 @@ namespace StrmAssistant.Provider.Douban
                     {
                         item.CommunityRating = (float)subject.Rating.Value;
                         changed = true;
+                        _logger.Info("DoubanAssist - Rating updated for {0}: {1} (douban {2}, votes {3})",
+                            item.Name, subject.Rating.Value, subject.Rating.Value, subject.Votes);
+                    }
+                    else if (!ratingAllowed)
+                    {
+                        _logger.Info("DoubanAssist - Rating skipped (outside lookback {0}d): {1}", lookbackDays, item.Name);
                     }
                 }
 
@@ -799,7 +832,10 @@ namespace StrmAssistant.Provider.Douban
                 var doubanId = await ResolveDoubanIdByImdbAsync(imdbId, cancellationToken).ConfigureAwait(false);
                 if (!string.IsNullOrEmpty(doubanId))
                 {
-                    return await FetchSubjectAsync(doubanId, cancellationToken).ConfigureAwait(false);
+                    var byImdb = await FetchSubjectAsync(doubanId, cancellationToken).ConfigureAwait(false);
+                    if (byImdb != null) return byImdb;
+
+                    // IMDb 路径失败（404/风控）时回退标题搜索，而不是直接放弃
                 }
             }
 
@@ -895,7 +931,8 @@ namespace StrmAssistant.Provider.Douban
             var cached = GetCache<string>(key);
             if (cached != null) return cached;
 
-            var query = $"SELECT ?doubanId WHERE {{ ?item wdt:P345 \"{imdbId}\" ; wdt:P4529 ?doubanId. }} LIMIT 1";
+            var query = $"SELECT ?doubanId WHERE {{ ?item wdt:P345 \"{imdbId}\" ; wdt:P4529 ?doubanId. " +
+                        "FILTER(ISLITERAL(?doubanId)) }} LIMIT 1";
             var url = $"{SparqlUrl}?query={Uri.EscapeDataString(query)}&format=json";
 
             var json = await RequestAsync(url, cancellationToken).ConfigureAwait(false);
@@ -905,6 +942,13 @@ namespace StrmAssistant.Provider.Douban
             {
                 var response = _jsonSerializer.DeserializeFromString<SparqlResponse>(json);
                 var doubanId = response?.results?.bindings?.FirstOrDefault()?.doubanId?.value;
+
+                // 防御：只接受纯数字的豆瓣 subject id（过滤 blank-node/genid 等 URL 值）
+                if (string.IsNullOrEmpty(doubanId) || !Regex.IsMatch(doubanId, @"^\d+$"))
+                {
+                    _logger.Info("DoubanAssist - Wikidata returned no valid douban id for {0}", imdbId);
+                    return null;
+                }
 
                 SetCache(key, doubanId);
 
@@ -933,6 +977,8 @@ namespace StrmAssistant.Provider.Douban
                 (!html.Contains("v:average", StringComparison.Ordinal) &&
                  !html.Contains("id=\"info\"", StringComparison.Ordinal)))
             {
+                _logger.Info("DoubanAssist - Subject {0} blocked by douban risk control (sec page). " +
+                             "Configure a logged-in DoubanCookie in settings to bypass.", subjectId);
                 RegisterBlocked(subjectId);
                 return null;
             }
@@ -1033,7 +1079,7 @@ namespace StrmAssistant.Provider.Douban
 
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    _logger.Debug("DoubanAssist - {0} returned {1}", url, response.StatusCode);
+                    _logger.Info("DoubanAssist - {0} returned {1}", url, response.StatusCode);
                     return null;
                 }
 
