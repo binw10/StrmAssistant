@@ -1548,6 +1548,25 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to MdbList Api Key.
+        /// </summary>
+        public static string MetadataEnhanceOptions_MdbListApiKey_MdbList_Api_Key {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_MdbListApiKey_MdbList_Api_Key", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Optional MdbList API key used to refresh critic ratings (Rotten Tomatoes, Metacritic) alongside Douban rating updates. Default is empty..
+        /// </summary>
+        public static string MetadataEnhanceOptions_MdbListApiKey_Optional_MdbList_API_key_used_to_refresh_critic_ratings_Rotten_Tomatoes_Metacritic_alongside_Douban_rating_updates__Default_is_empty_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_MdbListApiKey_Optional_MdbList_API_key_used_to_refresh_critic_ratings_Rotten_Tomatoes_Metacritic_alongside_Douban_rating_updates__Default_is_empty_", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Intro Detection Fingerprint Length (Minute).
         /// </summary>
         public static string IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Minutes {

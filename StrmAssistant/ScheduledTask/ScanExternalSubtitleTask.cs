@@ -85,6 +85,14 @@ namespace StrmAssistant.ScheduledTask
 
                             _logger.Info("ExternalSubtitle - Item Processed: " + taskItem.Name + " - " + taskItem.Path);
                         }
+
+                        // 外挂音轨扫描（4.9+ external audio）
+                        if (Plugin.SubtitleApi.HasExternalAudioChanged(taskItem))
+                        {
+                            Plugin.SubtitleApi.UpdateExternalAudioTracks(taskItem, persistMediaInfo);
+
+                            _logger.Info("ExternalAudio - Item Processed: " + taskItem.Name + " - " + taskItem.Path);
+                        }
                     }
                     catch (OperationCanceledException)
                     {

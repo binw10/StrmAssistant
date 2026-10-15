@@ -116,6 +116,11 @@ namespace StrmAssistant.Options
         [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
         public string DoubanAssistScrapeScope { get; set; } = string.Empty;
 
+        [DisplayNameL("MetadataEnhanceOptions_MdbListApiKey_MdbList_Api_Key", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_MdbListApiKey_Optional_MdbList_API_key_used_to_refresh_critic_ratings_Rotten_Tomatoes_Metacritic_alongside_Douban_rating_updates__Default_is_empty_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
+        public string MdbListApiKey { get; set; } = string.Empty;
+
         [DisplayNameL("MetadataEnhanceOptions_ClearTagline_Clear_Tagline", typeof(Resources))]
         [DescriptionL("MetadataEnhanceOptions_ClearTagline_Clear_taglines_populated_by_the_MovieDb_provider_on_refresh__Default_is_OFF_", typeof(Resources))]
         [Required]

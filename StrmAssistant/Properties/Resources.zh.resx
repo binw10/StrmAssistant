@@ -875,6 +875,12 @@
   <data name="MetadataEnhanceOptions_DoubanAssistScrapeScope_Comma_separated_library_IDs_where_Douban_assist_applies__blank_applies_to_all_libraries__Default_is_EMPTY_" xml:space="preserve">
     <value>逗号分隔的媒体库 ID，豆瓣辅助仅对这些库生效（留空对所有库生效）。默认为空。</value>
   </data>
+  <data name="MetadataEnhanceOptions_MdbListApiKey_MdbList_Api_Key" xml:space="preserve">
+    <value>MdbList API 密钥</value>
+  </data>
+  <data name="MetadataEnhanceOptions_MdbListApiKey_Optional_MdbList_API_key_used_to_refresh_critic_ratings_Rotten_Tomatoes_Metacritic_alongside_Douban_rating_updates__Default_is_empty_" xml:space="preserve">
+    <value>可选的 MdbList API 密钥，在豆瓣评分更新时顺带刷新影评人评分（烂番茄、Metacritic）。默认为空。</value>
+  </data>
   <data name="MetadataEnhanceOptions_ClearTagline_Clear_Tagline" xml:space="preserve">
     <value>清标语</value>
   </data>

@@ -27,6 +27,107 @@ namespace StrmAssistant.Provider.Douban
     public class DoubanAssist
     {
         private const string BaseUrl = "https://movie.douban.com";
+
+        private const string MdbListBaseUrl = "https://api.mdblist.com";
+
+        /// <summary>
+        /// MdbList 评分源：按 IMDb ID 拉取烂番茄/Metacritic 等评分，
+        /// 写入 CriticRating（烂番茄 %）与 CriticRatingSummary（评分汇总）。
+        /// </summary>
+        public async Task<bool> UpdateMdbListRatingsAsync(BaseItem item, string apiKey,
+            CancellationToken cancellationToken)
+        {
+            var imdbId = item.GetProviderId(MetadataProviders.Imdb);
+            if (string.IsNullOrWhiteSpace(imdbId)) return false;
+
+            try
+            {
+                var url = $"{MdbListBaseUrl}/imdb/{imdbId.Trim()}?apikey={Uri.EscapeDataString(apiKey.Trim())}";
+
+                var requestOptions = new HttpRequestOptions
+                {
+                    Url = url,
+                    CancellationToken = cancellationToken,
+                    AcceptHeader = "application/json",
+                    BufferContent = true,
+                    UserAgent = Plugin.Instance.UserAgent
+                };
+
+                using var response = await _httpClient.SendAsync(requestOptions, "GET").ConfigureAwait(false);
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    _logger.Debug("MdbList - Unexpected status {0} for {1}", response.StatusCode, imdbId);
+                    return false;
+                }
+
+                await using var contentStream = response.Content;
+                var payload = _jsonSerializer.DeserializeFromStream<MdbListResponse>(contentStream);
+                var ratings = payload?.ratings;
+                if (ratings == null || ratings.Count == 0) return false;
+
+                double? tomatoes = null;
+                double? imdb = null;
+                double? metacritic = null;
+
+                foreach (var rating in ratings)
+                {
+                    if (rating.value == null) continue;
+
+                    var source = rating.source ?? string.Empty;
+                    if (source.IndexOf("tomato", StringComparison.OrdinalIgnoreCase) >= 0)
+                        tomatoes = rating.value;
+                    else if (source.IndexOf("imdb", StringComparison.OrdinalIgnoreCase) >= 0)
+                        imdb = rating.value;
+                    else if (source.IndexOf("metacritic", StringComparison.OrdinalIgnoreCase) >= 0)
+                        metacritic = rating.value;
+                }
+
+                if (!tomatoes.HasValue) return false;
+
+                var changed = false;
+
+                var newCriticRating = (float)Math.Round(tomatoes.Value, 0);
+                if (Math.Abs((item.CriticRating ?? 0) - newCriticRating) > 0.01)
+                {
+                    item.CriticRating = newCriticRating;
+                    changed = true;
+                }
+
+                // 4.9 的 BaseItem 无 CriticRatingSummary，汇总仅记日志
+                var summaryParts = new List<string>();
+                if (imdb.HasValue) summaryParts.Add($"IMDb: {imdb.Value:0.0}");
+                if (metacritic.HasValue) summaryParts.Add($"Metacritic: {metacritic.Value:0}");
+                summaryParts.Add($"Rotten Tomatoes: {tomatoes.Value:0}%");
+
+                if (changed)
+                {
+                    _logger.Info("MdbList - Ratings updated for {0}: {1}", item.Name,
+                        string.Join(" · ", summaryParts));
+                }
+
+                return changed;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug("MdbList - Request failed for {0}: {1}", imdbId, ex.Message);
+                return false;
+            }
+        }
+
+        private class MdbListResponse
+        {
+            public List<MdbListRating> ratings { get; set; }
+        }
+
+        private class MdbListRating
+        {
+            public string source { get; set; }
+            public double? value { get; set; }
+        }
         private const string SuggestUrl = BaseUrl + "/j/subject_suggest";
         private const string SparqlUrl = "https://query.wikidata.org/sparql";
         private const string DoubanProviderId = "Douban";
@@ -414,6 +515,12 @@ namespace StrmAssistant.Provider.Douban
                         item.CommunityRating = (float)subject.Rating.Value;
                         changed = true;
                     }
+                }
+
+                if (!string.IsNullOrWhiteSpace(options.MdbListApiKey))
+                {
+                    changed = await UpdateMdbListRatingsAsync(item, options.MdbListApiKey, cancellationToken)
+                        .ConfigureAwait(false) || changed;
                 }
 
                 if (options.DoubanCastChinese)

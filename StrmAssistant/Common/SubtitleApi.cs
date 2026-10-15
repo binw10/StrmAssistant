@@ -307,5 +307,145 @@ namespace StrmAssistant.Common
                 }
             }
         }
+
+        #region External Audio Tracks
+
+        /// <summary>
+        /// 外挂音轨扩展名（与视频同目录同名前缀的独立音频文件）。
+        /// </summary>
+        private static readonly HashSet<string> AudioExtensions =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".mka", ".m4a", ".ac3", ".eac3", ".dts", ".dtshd", ".thd", ".truehd",
+                ".flac", ".opus", ".wav", ".aac", ".mp3"
+            };
+
+        private static readonly Dictionary<string, string> AudioLanguageAliases =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "chs", "chi" }, { "sc", "chi" }, { "zho", "chi" }, { "zh", "chi" },
+                { "cht", "chi" }, { "tc", "chi" },
+                { "en", "eng" }, { "jp", "jpn" }, { "kr", "kor" }
+            };
+
+        /// <summary>
+        /// 枚举与条目同目录、文件名同前缀（或条目名后缀式命名）的外挂音频文件。
+        /// </summary>
+        private List<MediaStream> GetExternalAudioStreams(BaseItem item, int startIndex)
+        {
+            var result = new List<MediaStream>();
+
+            if (item.IsShortcut || !item.IsFileProtocol || string.IsNullOrEmpty(item.Path)) return result;
+
+            var containingFolder = item.ContainingFolderPath;
+            var namePrefix = Path.GetFileNameWithoutExtension(item.Path);
+
+            if (string.IsNullOrEmpty(containingFolder) || !Directory.Exists(containingFolder)) return result;
+
+            foreach (var file in Directory.EnumerateFiles(containingFolder, namePrefix + "*", SearchOption.TopDirectoryOnly))
+            {
+                var extension = Path.GetExtension(file);
+                if (!AudioExtensions.Contains(extension)) continue;
+
+                if (string.Equals(Path.GetFullPath(file), Path.GetFullPath(item.Path), StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                // 前缀必须完整匹配条目名，后缀仅允许语言标记段（如 xxx.chs.mka）
+                var stem = Path.GetFileNameWithoutExtension(file);
+                var languageCode = string.Empty;
+
+                if (!string.Equals(stem, namePrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (stem.StartsWith(namePrefix + ".", StringComparison.OrdinalIgnoreCase))
+                    {
+                        languageCode = stem.Substring(namePrefix.Length + 1).Trim();
+                        if (languageCode.Contains('.')) continue; // 多余段一律不认
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+
+                var stream = new MediaStream
+                {
+                    Type = MediaStreamType.Audio,
+                    IsExternal = true,
+                    Protocol = MediaProtocol.File,
+                    Path = file,
+                    Index = startIndex + result.Count,
+                    SupportsExternalStream = true
+                };
+
+                if (!string.IsNullOrEmpty(languageCode))
+                {
+                    stream.Language = AudioLanguageAliases.TryGetValue(languageCode, out var lang)
+                        ? lang
+                        : languageCode.ToLowerInvariant();
+                    stream.Title = languageCode.ToUpperInvariant();
+                }
+
+                result.Add(stream);
+            }
+
+            return result;
+        }
+
+        public bool HasExternalAudioChanged(BaseItem item)
+        {
+            var current = item.GetMediaStreams()
+                .Where(s => s.Type == MediaStreamType.Audio && s.IsExternal)
+                .Select(s => s.Path)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            List<MediaStream> detected;
+            try
+            {
+                detected = GetExternalAudioStreams(item, 0);
+            }
+            catch
+            {
+                return false;
+            }
+
+            var detectedPaths = detected.Select(s => s.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            return !current.SetEquals(detectedPaths);
+        }
+
+        /// <summary>
+        /// 同步外挂音轨：移除已消失的旧外挂音轨，追加新发现的外挂音轨后整体保存。
+        /// </summary>
+        public void UpdateExternalAudioTracks(BaseItem item, bool persistMediaInfo)
+        {
+            var existingStreams = item.GetMediaStreams();
+
+            var currentStreams = existingStreams
+                .Where(i => !(i.IsExternal && i.Type == MediaStreamType.Audio && i.Protocol == MediaProtocol.File))
+                .ToList();
+
+            if (currentStreams.Count == existingStreams.Count && !GetExternalAudioStreams(item, 0).Any())
+            {
+                return;
+            }
+
+            var startIndex = currentStreams.Count == 0 ? 0 : currentStreams.Max(i => i.Index) + 1;
+
+            var externalAudioStreams = GetExternalAudioStreams(item, startIndex);
+
+            currentStreams.AddRange(externalAudioStreams);
+            _itemRepository.SaveMediaStreams(item.InternalId, currentStreams, CancellationToken.None);
+
+            _logger.Info("ExternalAudio - {0} external audio track(s) saved for {1}",
+                externalAudioStreams.Count, item.Name);
+
+            if (persistMediaInfo && Plugin.LibraryApi.IsLibraryInScope(item))
+            {
+                _ = Plugin.MediaInfoApi.SerializeMediaInfo(item.InternalId, null, true, "External Audio Update")
+                    .ConfigureAwait(false);
+            }
+        }
+
+        #endregion
     }
 }

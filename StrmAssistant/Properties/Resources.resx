@@ -962,6 +962,12 @@
   <data name="MetadataEnhanceOptions_DoubanAssistScrapeScope_Comma_separated_library_IDs_where_Douban_assist_applies__blank_applies_to_all_libraries__Default_is_EMPTY_" xml:space="preserve">
     <value>Comma-separated library IDs where Douban assist applies (blank applies to all libraries). Default is EMPTY.</value>
   </data>
+  <data name="MetadataEnhanceOptions_MdbListApiKey_MdbList_Api_Key" xml:space="preserve">
+    <value>MdbList Api Key</value>
+  </data>
+  <data name="MetadataEnhanceOptions_MdbListApiKey_Optional_MdbList_API_key_used_to_refresh_critic_ratings_Rotten_Tomatoes_Metacritic_alongside_Douban_rating_updates__Default_is_empty_" xml:space="preserve">
+    <value>Optional MdbList API key used to refresh critic ratings (Rotten Tomatoes, Metacritic) alongside Douban rating updates. Default is empty.</value>
+  </data>
   <data name="MetadataEnhanceOptions_ClearTagline_Clear_Tagline" xml:space="preserve">
     <value>Clear Tagline</value>
   </data>
