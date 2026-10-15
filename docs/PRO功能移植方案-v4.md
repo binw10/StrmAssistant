@@ -304,11 +304,29 @@
 - **本地实现**：不改全局 `GetLocalApiUrl`（影响面大），改为在 **`UdpServer.SendMessage` 前缀改写 `localUrl`** —— 只影响 UDP 发现响应体，安全。
 - 选项 `NetworkOptions.LocalDiscoveryUrl` + URL 校验（http/https 绝对地址）+ 保存即时 Patch/Unpatch；默认空 = 不打补丁。
 
-### 🟡 部分完成 · ISO 提取（提交 `2b79ba7`）
-- **硬阻塞（不可移植部分）**：PRO 的 ISO 依赖**独立程序集 `BlurayMounter.dll`**（`csproj: <Reference Include="BlurayMounter" />`，含 `IsoMounter` / `BlurayDiscInfo` / `CanMount`），该 dll 在 `StrmAssistant.Releases` **全树不存在** → 挂载式 ISO/BDMV 无法同构。
-- **可移植部分（已做）**：PRO 第二条路线是「自定义 ffprobe 的 `dvd-iso demuxer` / `bluray input protocol`」（strings.txt 有对应能力探测日志），**不依赖该 dll**。据此新增选项 `MediaInfoExtractOptions.EnableIsoExtraction`（默认 OFF），
-  开启后 `LibraryApi.ExcludeMediaContainers` / `ExcludeMediaExtensions` 不再强制排除 `MediaContainers.Iso`，ISO 进入提取链。
-- **局限（如实）**：仅覆盖 ffprobe 原生可读的 DVD-Video ISO；Bluray ISO 的挂载 / `bluray:` 路径改写仍需 `BlurayMounter`，不做猜测实现。
+### ✅ 已完成 · ISO 提取（提交 `06c9399`，**真正可用**）
+- **关键侦察**：Emby 4.10 的探测入口是
+  `Emby.Server.MediaEncoding.Probing.MediaProbeManager.GetMediaInfoInternal(mediaSource, inputPath, primaryPath, protocol, ...)`，
+  其中 `inputPath` / `primaryPath` **只用于 ffprobe 参数**，`MediaSourceInfo.Path` 不受影响
+  → 「只换探测输入、不动播放路径与条目身份」的理想钩子。
+  （PRO 在相邻位置补 `ProbeResultNormalizer.GetMediaInfo(...)` 并把 Container 置为 `Iso`/`DvdIso`。）
+- **免依赖实现**（替代 PRO 的 `BlurayMounter.dll`，该 dll 在 Releases 全树不存在）：
+  - `Common/IsoMounter.cs`：调用 **Windows 自带** `Mount-DiskImage` / `Dismount-DiskImage` 把本地 `.iso`
+    挂成虚拟光驱；按 `BDMV\STREAM` 最大 `.m2ts` → `VIDEO_TS\VTS_01_1.VOB` → 卷内最大视频 定位正片；
+    按路径缓存挂载、空闲 10 分钟自动卸载、插件卸载时全部卸载。
+  - `Mod/IsoExtraction.cs`：Harmony **前缀只改 `inputPath`/`primaryPath`**，且仅在「本地存在的 `.iso`」时介入
+    （http 流 / 普通视频原样放行）。
+  - 开关复用 `MediaInfoExtractOptions.EnableIsoExtraction`（默认 OFF）。
+- **实测**（自建测试 ISO：pycdlib 造盘 + Emby ffmpeg 生成真视频）：挂载 → 盘符 `E:` → 解析出 `00000.m2ts`
+  → Emby ffprobe 返回完整流信息（h264 / 320x240 / 3s）→ 正常卸载，链路通过。
+- **局限（如实）**：仅 Windows；正片选择为启发式（不解析 `.mpls` 播放列表，PRO 用 BlurayMounter 精确选片）；
+  仅适用本地 `.iso`，ISO-over-strm（远程 http）不适用。
+
+### ✅ 已完成 · 元数据缓存根目录误报修复（同提交）
+- 根因：选了缓存模式但**未填目录**时，复用了 `MetadataCacheRootFolderNotExist`（文案「不存在或不可写」），与场景不符。
+- 修法：新增无副作用校验 `LocalMetadataCache.Validate(root)`（EMPTY / INVALID / ROOT_NOT_ALLOWED / NOT_WRITABLE）；
+  目录不存在但父目录存在 ⇒ 允许（初始化自动创建）；拒绝盘符根、Windows 目录、Emby programdata 本身（对齐 PRO 语义）；
+  新增三语文案「请先指定缓存根目录」。
 
 ### ⛔ 明确不做（附证据）
 - **分布式提取 `SyncMediaInfo`**：PRO 的 `POST /Items/SyncMediaInfo`（`List<MediaInfoBundle>`，Admin-only）**全库无内部调用者**（C# 与 JS 均无），它是给**外部/分布式 worker** 用的集成端点；本地 rffmpeg 路线（`CustomProbePath`）已可用。单独移植服务端 = 凭空多一个无人调用的数据写入口，**宁缺毋滥**。若你确有「集中共享」场景（多实例协同提取），再立项。
