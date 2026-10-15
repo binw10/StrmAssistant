@@ -80,6 +80,9 @@ namespace StrmAssistant
 
         public static IHttpClient HttpClient { get; private set; }
 
+        /// <summary>共享 JSON 序列化器（本地 TMDB patches 合并等静态工具使用）。</summary>
+        public static IJsonSerializer JsonSerializer { get; private set; }
+
         private readonly Guid _id = new Guid("63c322b7-a371-41a3-b11f-04f8418b37d8");
 
         public readonly ILogger Logger;
@@ -151,6 +154,7 @@ namespace StrmAssistant
 
             LibraryManager = libraryManager;
             HttpClient = httpClient;
+            JsonSerializer = jsonSerializer;
 
             MainOptionsStore = new PluginOptionsStore(applicationHost, Logger, ConfigName);
             MediaInfoExtractStore =

@@ -18,11 +18,12 @@ namespace StrmAssistant.Mod
     ///   1. override 覆盖缓存（恒最高优先级，用户自定义）
     ///   2. cache 被动缓存（仅「优先使用缓存 / 仅用覆盖缓存」模式读取）
     ///   3. 在线请求（未命中时）
-    /// 写入：仅「优先使用缓存 / 在线并缓存」模式把在线结果写入 cache 被动缓存。
+    /// 得到基础数据后叠加 patches/ 合并补丁（部分字段覆盖）。
+    /// 写入：仅「优先使用缓存 / 在线并缓存」模式把最终结果写入 cache 被动缓存。
     ///
     /// 仅当 <see cref="Options.MetadataEnhanceOptions.IsMetadataCacheEnabled"/> 为真时才打补丁，
     /// 默认（模式 None）完全不介入，保证零行为变化。
-    /// 图像 API（GetImageResponse，不带 language 参数）与 patches 合并留待 v3。
+    /// 图像 API（GetImageResponse，不带 language 参数）留待后续。
     /// </summary>
     public class LocalTmdbCache : PatchBase<LocalTmdbCache>
     {
@@ -92,6 +93,7 @@ namespace StrmAssistant.Mod
                 // P1：override 覆盖缓存（无论模式，只要读取开启即优先）
                 if (LocalMetadataCache.TryReadOverride(entry, out bytes))
                 {
+                    bytes = LocalMetadataCache.ApplyPatches(entry, bytes);
                     __result = Task.FromResult(LocalMetadataCache.BuildResponse(bytes, url));
                     Plugin.Instance.Logger.Debug(
                         $"LocalTmdbCache - OVERRIDE HIT {entry.RelativePath} ({bytes.Length} bytes)");
@@ -101,6 +103,7 @@ namespace StrmAssistant.Mod
                 // P2：被动缓存
                 if (LocalMetadataCache.TryReadPassive(entry, out bytes))
                 {
+                    bytes = LocalMetadataCache.ApplyPatches(entry, bytes);
                     __result = Task.FromResult(LocalMetadataCache.BuildResponse(bytes, url));
                     if (Plugin.Instance.DebugMode)
                     {
@@ -149,6 +152,8 @@ namespace StrmAssistant.Mod
                     var bytes = LocalMetadataCache.ReadAll(response.Content);
                     if (bytes is { Length: > 0 })
                     {
+                        // 先打补丁，再把最终结果存入被动缓存（与 PRO 语义一致）
+                        bytes = LocalMetadataCache.ApplyPatches(entry, bytes);
                         LocalMetadataCache.WritePassive(entry, bytes);
                         // 原流已被读空，返回一个新的可读流供调用方反序列化
                         response.Content = new MemoryStream(bytes, false);

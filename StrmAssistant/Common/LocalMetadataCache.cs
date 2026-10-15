@@ -1,7 +1,9 @@
 using MediaBrowser.Common.Net;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace StrmAssistant.Common
@@ -204,6 +206,56 @@ namespace StrmAssistant.Common
             using var ms = new MemoryStream();
             stream.CopyTo(ms);
             return ms.ToArray();
+        }
+
+        /// <summary>
+        /// 合并补丁：若存在 <c>patches/&lt;type&gt;/&lt;tmdbid&gt;/&lt;file&gt;.json</c>，
+        /// 则把其顶层字段合并到 base 之上（部分信息覆盖，如标题/简介）。无补丁或失败时原样返回。
+        /// 顶层字段合并为幂等操作，故「读缓存后再合并」不会产生漂移。
+        /// </summary>
+        public static byte[] ApplyPatches(CacheEntry entry, byte[] baseBytes)
+        {
+            if (entry == null || baseBytes == null || baseBytes.Length == 0) return baseBytes;
+
+            var patchPath = GetPatchFilePath(entry);
+
+            try
+            {
+                if (string.IsNullOrEmpty(patchPath) || !File.Exists(patchPath)) return baseBytes;
+
+                var serializer = Plugin.JsonSerializer;
+                if (serializer == null) return baseBytes;
+
+                var patchText = File.ReadAllText(patchPath);
+                if (string.IsNullOrWhiteSpace(patchText)) return baseBytes;
+
+                var baseObj = serializer.DeserializeFromString<Dictionary<string, object>>(
+                    Encoding.UTF8.GetString(baseBytes));
+                var patchObj = serializer.DeserializeFromString<Dictionary<string, object>>(patchText);
+
+                if (baseObj == null ||
+                    patchObj == null) return baseBytes;
+
+                foreach (var kv in patchObj)
+                {
+                    baseObj[kv.Key] = kv.Value;
+                }
+
+                var merged = serializer.SerializeToString(baseObj);
+
+                if (Plugin.Instance.DebugMode)
+                {
+                    Plugin.Instance.Logger.Debug(
+                        $"LocalTmdbCache - PATCH applied ({patchObj.Count} field(s)) {entry.RelativePath}");
+                }
+
+                return Encoding.UTF8.GetBytes(merged);
+            }
+            catch (Exception e)
+            {
+                Plugin.Instance.Logger.Debug("LocalTmdbCache patch merge failed: " + e.Message);
+                return baseBytes;
+            }
         }
 
         /// <summary>

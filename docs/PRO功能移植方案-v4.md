@@ -284,6 +284,22 @@ v1 的「URL 原始响应」升级为 **PRO 同构的按 TMDB 实体落盘**：
 - 目录新增 `patches/`（v3 合并补丁用）。非实体请求（人物/搜索/配置）不缓存，避免误命中。
 - 已知限制：缓存不区分 language（与 PRO「备选语言综合结果」一致）；图像 API 与 patches 合并属 v3。
 
+### ✅ 已完成 · Phase 4-1 v3 合并补丁（patches，PRO 同构）
+- `LocalMetadataCache.ApplyPatches(entry, baseBytes)`：存在 `patches/<type>/<tmdbid>/<file>.json` 时，把其**顶层字段**合并到 base（部分信息覆盖，如标题/简介）；使用 `Plugin.JsonSerializer`（新增 `Plugin.JsonSerializer` 静态属性）。
+- 生效路径：override / cache / 在线 三条读取路径之后统一打补丁；在线结果**先打补丁再写入 cache**（与 PRO「最终结果存于被动缓存」一致）。
+- 幂等性：顶层字段合并在重复应用下结果不变，故「读缓存再合并」不产生漂移。
+- 已知限制：仅顶层字段合并（嵌套对象整体替换）；图像 API 缓存（`GetImageResponse`）与 `MetadataCacheOptionalImageTypes` **暂缓**——图像 URL 不含 tmdbid，需 item 级 hook，且收益/风险比不划算，待专项。
+
+### 本地 TMDB 缓存 完成度小结（v1→v3）
+| 能力 | 状态 |
+|---|---|
+| 目录初始化（cache/override/patches × 三类型） | ✅ |
+| 语义化按实体落盘（all/series/season-N/season-N-episode-M） | ✅ |
+| override 优先读取（P1） | ✅ |
+| cache 被动缓存读/写（按模式） | ✅ |
+| patches 部分字段合并 | ✅ |
+| 图像 API 缓存 / MetadataCacheOptionalImageTypes | ⏸（暂缓，理由见上） |
+
 ### 构建/部署记录
 - `dotnet build -c Release`：**0 错误**；警告 9 → 1（仅剩既有 `SubtitleApi.cs:205 CS1998`）。
 - 部署：`D:\下载\embyserver-win-x64-4.10.1.0\programdata\plugins\StrmAssistant.dll`（13:26，7,117,824 字节）。
