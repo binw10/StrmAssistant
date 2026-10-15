@@ -12,10 +12,13 @@ namespace StrmAssistant.Web.Helper
 
         public static MemoryStream StrmAssistantJs { get; private set; }
 
+        private static IServerConfigurationManager _configurationManager;
+
         public static void Initialize(IServerConfigurationManager configurationManager)
         {
             try
             {
+                _configurationManager = configurationManager;
                 StrmAssistantJs = GetResourceStream("strmassistant.js");
                 ModifyShortcutMenu(configurationManager);
             }
@@ -24,6 +27,23 @@ namespace StrmAssistant.Web.Helper
                 Plugin.Instance.Logger.Error($"{nameof(ShortcutMenuHelper)} Init Failed");
                 Plugin.Instance.Logger.Error(e.Message);
                 Plugin.Instance.Logger.Debug(e.StackTrace);
+            }
+        }
+
+        /// <summary>
+        /// UI 选项变更时重新生成注入字符串（读原文件幂等），下次前端请求即生效。
+        /// </summary>
+        public static void Refresh()
+        {
+            if (_configurationManager == null) return;
+            try
+            {
+                ModifyShortcutMenu(_configurationManager);
+            }
+            catch (Exception e)
+            {
+                Plugin.Instance.Logger.Error($"{nameof(ShortcutMenuHelper)} Refresh Failed");
+                Plugin.Instance.Logger.Error(e.Message);
             }
         }
 
@@ -206,13 +226,21 @@ setTimeout(() => {
 
             const string injectDoubanBadgeBootstrap = @"
 // StrmAssistant Douban badge bootstrap
+window.__saUI = { replaceUnplayedWithTotal: REPLACE_UNPLAYED_TOTAL, showLibraryItemCount: SHOW_LIB_COUNT, reverseLogLines: REVERSE_LOGS, blockSearchRecommend: BLOCK_SEARCH_RECS };
 require(['components/strmassistant/strmassistant'], function (responses) {
     var mod = responses && responses[0];
     if (mod && mod.badges) { try { mod.badges.init(); } catch (e) {} }
     if (mod && mod.versions) { try { mod.versions.init(); } catch (e) {} }
+    if (mod && mod.ui) { try { mod.ui.init(); } catch (e) {} }
 });
 ";
-            ModifiedShortcutsString += injectDoubanBadgeBootstrap;
+            var uiOptions = Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions;
+            var uiConfig = injectDoubanBadgeBootstrap
+                .Replace("REPLACE_UNPLAYED_TOTAL", uiOptions.ReplaceUnplayedWithTotal ? "true" : "false")
+                .Replace("SHOW_LIB_COUNT", uiOptions.ShowLibraryItemCount ? "true" : "false")
+                .Replace("REVERSE_LOGS", uiOptions.ReverseLogLines ? "true" : "false")
+                .Replace("BLOCK_SEARCH_RECS", uiOptions.BlockSearchRecommend ? "true" : "false");
+            ModifiedShortcutsString += uiConfig;
 
             if (dataExplorer2Assembly != null)
             {

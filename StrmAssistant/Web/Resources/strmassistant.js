@@ -479,6 +479,153 @@
             }
 
             return { init: init };
+        })(),
+
+        ui: (function () {
+            let initialized = false;
+            let scanTimer = null;
+            let countCache = {};
+            let logReversed = false;
+
+            function cfg() { return window.__saUI || {}; }
+
+            function apiClient() { return connectionManager.currentApiClient(); }
+
+            function scheduleScan() {
+                if (scanTimer) clearTimeout(scanTimer);
+                scanTimer = setTimeout(scan, 500);
+            }
+
+            function anyEnabled() {
+                const c = cfg();
+                return c.replaceUnplayedWithTotal || c.showLibraryItemCount ||
+                    c.reverseLogLines || c.blockSearchRecommend;
+            }
+
+            function scanTotalEpisodes() {
+                if (!cfg().replaceUnplayedWithTotal) return;
+                const cards = Array.prototype.slice.call(
+                    document.querySelectorAll('.card[data-type="Series"][data-id]:not([data-sa-total])'));
+                if (!cards.length) return;
+
+                const ids = [];
+                cards.forEach(function (c) {
+                    const id = c.getAttribute('data-id');
+                    if (id && ids.indexOf(id) < 0) ids.push(id);
+                    c.setAttribute('data-sa-total', 'pending');
+                });
+                if (!ids.length) return;
+
+                apiClient().getJSON(apiClient().getUrl('Items', {
+                    Ids: ids.join(','), Fields: 'RecursiveItemCount', Limit: ids.length,
+                    EnableTotalRecordCount: false
+                })).then(function (res) {
+                    const byId = {};
+                    ((res && res.Items) || []).forEach(function (it) {
+                        byId[it.Id] = it.RecursiveItemCount;
+                    });
+                    cards.forEach(function (card) {
+                        const total = byId[card.getAttribute('data-id')];
+                        if (total === undefined) { card.setAttribute('data-sa-total', '1'); return; }
+                        card.setAttribute('data-sa-total', '1');
+                        const ind = card.querySelector('.cardIndicators .indicator') ||
+                            card.querySelector('.indicator');
+                        if (ind && /^\d+$/.test((ind.textContent || '').trim())) {
+                            ind.textContent = total;
+                            ind.title = total + ' Episodes';
+                        }
+                    });
+                }).catch(function () { });
+            }
+
+            function applyCount(card, count) {
+                card.setAttribute('data-sa-count', '1');
+                const host = card.querySelector('.cardScalable') || card.querySelector('.cardBox') || card;
+                if (!host) return;
+                const pill = document.createElement('div');
+                pill.className = 'sa-lib-count';
+                pill.textContent = count;
+                pill.setAttribute('style', 'position:absolute;top:4px;left:4px;z-index:5;' +
+                    'background:rgba(0,0,0,.72);color:#fff;font-size:11px;line-height:16px;' +
+                    'padding:0 6px;border-radius:8px;pointer-events:none;');
+                if (!host.style.position) host.style.position = 'relative';
+                host.appendChild(pill);
+            }
+
+            function scanLibraryCounts() {
+                if (!cfg().showLibraryItemCount) return;
+                const cards = Array.prototype.slice.call(
+                    document.querySelectorAll('.card[data-type="CollectionFolder"][data-id]:not([data-sa-count])'));
+                if (!cards.length) return;
+
+                cards.forEach(function (card) {
+                    const id = card.getAttribute('data-id');
+                    if (!id) { card.setAttribute('data-sa-count', '1'); return; }
+                    card.setAttribute('data-sa-count', 'pending');
+
+                    const cached = countCache[id];
+                    if (cached && Date.now() - cached.ts < 300000) {
+                        applyCount(card, cached.count);
+                        return;
+                    }
+
+                    apiClient().getJSON(apiClient().getUrl('Items', {
+                        ParentId: id, Recursive: true, Limit: 0, EnableTotalRecordCount: true
+                    })).then(function (res) {
+                        const total = res && res.TotalRecordCount;
+                        if (typeof total !== 'number') { card.setAttribute('data-sa-count', '1'); return; }
+                        countCache[id] = { count: total, ts: Date.now() };
+                        applyCount(card, total);
+                    }).catch(function () { card.setAttribute('data-sa-count', '1'); });
+                });
+            }
+
+            function scanLogLines() {
+                if (!cfg().reverseLogLines || logReversed) return;
+                const hash = location.hash || '';
+                if (hash.toLowerCase().indexOf('log') < 0) return;
+                const container = document.querySelector('.listItemContainer, [data-role="listview"]');
+                if (!container || container.children.length < 2) return;
+                if (container.getAttribute('data-sa-reversed')) { logReversed = true; return; }
+                container.setAttribute('data-sa-reversed', '1');
+                const items = Array.prototype.slice.call(container.children);
+                for (let i = items.length - 1; i >= 0; i--) container.appendChild(items[i]);
+                logReversed = true;
+            }
+
+            function scanSearchRecs() {
+                if (!cfg().blockSearchRecommend) return;
+                const recs = document.querySelectorAll(
+                    '.searchSuggestions, [class*="searchSuggestion"], #searchSuggestions');
+                for (const el of recs) {
+                    if (el.style.display !== 'none') el.style.display = 'none';
+                }
+            }
+
+            function scan() {
+                try {
+                    scanTotalEpisodes();
+                    scanLibraryCounts();
+                    scanLogLines();
+                    scanSearchRecs();
+                } catch (e) {
+                    // ignore
+                }
+            }
+
+            function init() {
+                if (initialized) return;
+                initialized = true;
+
+                if (!anyEnabled()) return;
+                scan();
+                if (window.MutationObserver) {
+                    new MutationObserver(scheduleScan).observe(document.body,
+                        { childList: true, subtree: true });
+                }
+            }
+
+            return { init: init };
         })()
     };
 

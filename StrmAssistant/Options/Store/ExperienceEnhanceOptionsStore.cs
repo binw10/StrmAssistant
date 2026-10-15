@@ -71,6 +71,15 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
+                // UI 注入选项变更：重新生成前端注入字符串，下次请求即生效
+                if (changedProperties.Contains(nameof(UIFunctionOptions.ReplaceUnplayedWithTotal)) ||
+                    changedProperties.Contains(nameof(UIFunctionOptions.ShowLibraryItemCount)) ||
+                    changedProperties.Contains(nameof(UIFunctionOptions.ReverseLogLines)) ||
+                    changedProperties.Contains(nameof(UIFunctionOptions.BlockSearchRecommend)))
+                {
+                    Web.Helper.ShortcutMenuHelper.Refresh();
+                }
+
                 if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.EnhanceNotificationSystem)))
                 {
                     if (options.EnhanceNotificationSystem)

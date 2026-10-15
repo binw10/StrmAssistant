@@ -63,6 +63,26 @@ namespace StrmAssistant.Options
         [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
         public bool NoBoxsetsAutoCreation { get; set; } = false;
 
+        [DisplayNameL("UIFunctionOptions_ReplaceUnplayedWithTotal_Show_Total_Episodes", typeof(Resources))]
+        [DescriptionL("UIFunctionOptions_ReplaceUnplayedWithTotal_Show_total_episode_count_instead_of_unplayed_count_on_series_cards__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        public bool ReplaceUnplayedWithTotal { get; set; } = false;
+
+        [DisplayNameL("UIFunctionOptions_ShowLibraryItemCount_Show_Library_Item_Count", typeof(Resources))]
+        [DescriptionL("UIFunctionOptions_ShowLibraryItemCount_Show_item_count_badge_on_library_cards_on_the_home_screen__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        public bool ShowLibraryItemCount { get; set; } = false;
+
+        [DisplayNameL("UIFunctionOptions_ReverseLogLines_Logs_Newest_First", typeof(Resources))]
+        [DescriptionL("UIFunctionOptions_ReverseLogLines_List_server_log_files_from_newest_to_oldest__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        public bool ReverseLogLines { get; set; } = false;
+
+        [DisplayNameL("UIFunctionOptions_BlockSearchRecommend_Block_Search_Recommendations", typeof(Resources))]
+        [DescriptionL("UIFunctionOptions_BlockSearchRecommend_Hide_the_recommendations_section_on_the_search_page__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        public bool BlockSearchRecommend { get; set; } = false;
+
         [Browsable(false)]
         public bool IsModSupported => RuntimeInformation.ProcessArchitecture == Architecture.X64 || RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
 

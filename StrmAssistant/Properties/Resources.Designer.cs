@@ -1389,6 +1389,79 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to Show Total Episodes.
+        /// </summary>
+        public static string UIFunctionOptions_ReplaceUnplayedWithTotal_Show_Total_Episodes {
+            get {
+                return ResourceManager.GetString("UIFunctionOptions_ReplaceUnplayedWithTotal_Show_Total_Episodes", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Show total episode count instead of unplayed count on series cards. Default is OFF.
+        /// </summary>
+        public static string UIFunctionOptions_ReplaceUnplayedWithTotal_Show_total_episode_count_instead_of_unplayed_count_on_series_cards__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("UIFunctionOptions_ReplaceUnplayedWithTotal_Show_total_episode_count_instead_of_unplayed_count_on_series_cards__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Show Library Item Count.
+        /// </summary>
+        public static string UIFunctionOptions_ShowLibraryItemCount_Show_Library_Item_Count {
+            get {
+                return ResourceManager.GetString("UIFunctionOptions_ShowLibraryItemCount_Show_Library_Item_Count", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Show item count badge on library cards on the home screen. Default is OFF.
+        /// </summary>
+        public static string UIFunctionOptions_ShowLibraryItemCount_Show_item_count_badge_on_library_cards_on_the_home_screen__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("UIFunctionOptions_ShowLibraryItemCount_Show_item_count_badge_on_library_cards_on_the_home_screen__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Logs Newest First.
+        /// </summary>
+        public static string UIFunctionOptions_ReverseLogLines_Logs_Newest_First {
+            get {
+                return ResourceManager.GetString("UIFunctionOptions_ReverseLogLines_Logs_Newest_First", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to List server log files from newest to oldest. Default is OFF.
+        /// </summary>
+        public static string UIFunctionOptions_ReverseLogLines_List_server_log_files_from_newest_to_oldest__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("UIFunctionOptions_ReverseLogLines_List_server_log_files_from_newest_to_oldest__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Block Search Recommendations.
+        /// </summary>
+        public static string UIFunctionOptions_BlockSearchRecommend_Block_Search_Recommendations {
+            get {
+                return ResourceManager.GetString("UIFunctionOptions_BlockSearchRecommend_Block_Search_Recommendations", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Hide the recommendations section on the search page. Default is OFF.
+        /// </summary>
+        public static string UIFunctionOptions_BlockSearchRecommend_Hide_the_recommendations_section_on_the_search_page__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("UIFunctionOptions_BlockSearchRecommend_Hide_the_recommendations_section_on_the_search_page__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Intro Detection Fingerprint Length (Minute).
         /// </summary>
         public static string IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Minutes {

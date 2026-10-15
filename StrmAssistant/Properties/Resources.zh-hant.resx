@@ -587,6 +587,30 @@
   <data name="UIFunctionOptions_NoBoxsetsAutoCreation_Prevent_automatic_boxset_library_creation__Default_is_OFF_" xml:space="preserve">
     <value>使用者介面隱藏合集媒體庫，若刪除可避免掃庫時自動創建，預設為關閉。</value>
   </data>
+  <data name="UIFunctionOptions_ReplaceUnplayedWithTotal_Show_Total_Episodes" xml:space="preserve">
+    <value>顯示總集數</value>
+  </data>
+  <data name="UIFunctionOptions_ReplaceUnplayedWithTotal_Show_total_episode_count_instead_of_unplayed_count_on_series_cards__Default_is_OFF_" xml:space="preserve">
+    <value>劇集卡片顯示總集數而非未觀看數。預設為關閉。</value>
+  </data>
+  <data name="UIFunctionOptions_ShowLibraryItemCount_Show_Library_Item_Count" xml:space="preserve">
+    <value>顯示媒體庫項目數量</value>
+  </data>
+  <data name="UIFunctionOptions_ShowLibraryItemCount_Show_item_count_badge_on_library_cards_on_the_home_screen__Default_is_OFF_" xml:space="preserve">
+    <value>主螢幕媒體庫卡片顯示項目數量角標。預設為關閉。</value>
+  </data>
+  <data name="UIFunctionOptions_ReverseLogLines_Logs_Newest_First" xml:space="preserve">
+    <value>日誌最新在前</value>
+  </data>
+  <data name="UIFunctionOptions_ReverseLogLines_List_server_log_files_from_newest_to_oldest__Default_is_OFF_" xml:space="preserve">
+    <value>伺服器日誌檔案按從新到舊排列。預設為關閉。</value>
+  </data>
+  <data name="UIFunctionOptions_BlockSearchRecommend_Block_Search_Recommendations" xml:space="preserve">
+    <value>屏蔽搜索推薦</value>
+  </data>
+  <data name="UIFunctionOptions_BlockSearchRecommend_Hide_the_recommendations_section_on_the_search_page__Default_is_OFF_" xml:space="preserve">
+    <value>隱藏搜索頁的推薦區塊。預設為關閉。</value>
+  </data>
   <data name="ServerPreferredMetadataLanguageIsNotZh" xml:space="preserve">
     <value>伺服器首選元資料語言未設定為中文，刷新演員任務已中止。</value>
   </data>
