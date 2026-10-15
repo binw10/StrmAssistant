@@ -1510,6 +1510,25 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to Default New Library Tmdb.
+        /// </summary>
+        public static string MetadataEnhanceOptions_DefaultNewLibraryTmdb_Default_New_Library_Tmdb {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_DefaultNewLibraryTmdb_Default_New_Library_Tmdb", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Prefer TheMovieDb over Tvdb as the default fetcher when creating new libraries. Default is OFF..
+        /// </summary>
+        public static string MetadataEnhanceOptions_DefaultNewLibraryTmdb_Prefer_TheMovieDb_over_Tvdb_as_the_default_fetcher_when_creating_new_libraries__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_DefaultNewLibraryTmdb_Prefer_TheMovieDb_over_Tvdb_as_the_default_fetcher_when_creating_new_libraries__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Intro Detection Fingerprint Length (Minute).
         /// </summary>
         public static string IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Minutes {

@@ -128,6 +128,12 @@ namespace StrmAssistant.Options
         [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
         public bool PreferTraditionalChinese { get; set; } = false;
 
+        [DisplayNameL("MetadataEnhanceOptions_DefaultNewLibraryTmdb_Default_New_Library_Tmdb", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_DefaultNewLibraryTmdb_Prefer_TheMovieDb_over_Tvdb_as_the_default_fetcher_when_creating_new_libraries__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
+        public bool DefaultNewLibraryTmdb { get; set; } = false;
+
         [DisplayNameL("MetadataEnhanceOptions_DoubanCastChinese_Douban_Cast_Chinese_Names", typeof(Resources))]
         [DescriptionL("MetadataEnhanceOptions_DoubanCastChinese_Replace_English_actor_names_with_Douban_Chinese_names_for_matched_items__Default_is_OFF_", typeof(Resources))]
         [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]

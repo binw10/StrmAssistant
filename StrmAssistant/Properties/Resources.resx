@@ -974,6 +974,12 @@
   <data name="MetadataEnhanceOptions_PreferTraditionalChinese_Convert_simplified_Chinese_overviews_from_the_MovieDb_provider_to_traditional_on_refresh__Default_is_OFF_" xml:space="preserve">
     <value>Convert simplified Chinese overviews from the MovieDb provider to traditional on refresh. Default is OFF.</value>
   </data>
+  <data name="MetadataEnhanceOptions_DefaultNewLibraryTmdb_Default_New_Library_Tmdb" xml:space="preserve">
+    <value>Default New Library Tmdb</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DefaultNewLibraryTmdb_Prefer_TheMovieDb_over_Tvdb_as_the_default_fetcher_when_creating_new_libraries__Default_is_OFF_" xml:space="preserve">
+    <value>Prefer TheMovieDb over Tvdb as the default fetcher when creating new libraries. Default is OFF.</value>
+  </data>
   <data name="MetadataEnhanceOptions_DoubanCastChinese_Douban_Cast_Chinese_Names" xml:space="preserve">
     <value>Douban Cast Chinese Names</value>
   </data>

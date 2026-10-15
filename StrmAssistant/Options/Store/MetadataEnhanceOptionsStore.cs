@@ -159,6 +159,18 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
+                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.DefaultNewLibraryTmdb)))
+                {
+                    if (options.DefaultNewLibraryTmdb && options.IsModSupported)
+                    {
+                        PatchManager.DefaultTmdbLibrary.Patch();
+                    }
+                    else
+                    {
+                        PatchManager.DefaultTmdbLibrary.Unpatch();
+                    }
+                }
+
                 if (changedProperties.Contains(nameof(MetadataEnhanceOptions.AltMovieDbConfig)))
                 {
                     if (options.AltMovieDbConfig)

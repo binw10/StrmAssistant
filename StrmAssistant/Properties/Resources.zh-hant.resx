@@ -887,6 +887,12 @@
   <data name="MetadataEnhanceOptions_PreferTraditionalChinese_Convert_simplified_Chinese_overviews_from_the_MovieDb_provider_to_traditional_on_refresh__Default_is_OFF_" xml:space="preserve">
     <value>重新整理時將 MovieDb 刮削的簡體中文概要轉換為繁體。預設為關閉。</value>
   </data>
+  <data name="MetadataEnhanceOptions_DefaultNewLibraryTmdb_Default_New_Library_Tmdb" xml:space="preserve">
+    <value>新建媒體庫預設 TMDB</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DefaultNewLibraryTmdb_Prefer_TheMovieDb_over_Tvdb_as_the_default_fetcher_when_creating_new_libraries__Default_is_OFF_" xml:space="preserve">
+    <value>新建媒體庫時優先使用 TheMovieDb 作為預設刮削器。預設為關閉。</value>
+  </data>
   <data name="MetadataEnhanceOptions_DoubanCastChinese_Douban_Cast_Chinese_Names" xml:space="preserve">
     <value>豆瓣演員中文名</value>
   </data>
