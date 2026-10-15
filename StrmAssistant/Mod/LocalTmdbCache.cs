@@ -11,15 +11,18 @@ using static StrmAssistant.Mod.PatchManager;
 namespace StrmAssistant.Mod
 {
     /// <summary>
-    /// 本地 TMDB 被动缓存（v1）：在 MovieDb 的元数据 HTTP 唯一出口
-    /// <c>MovieDbProviderBase.GetMovieDbResponse(HttpRequestOptions)</c> 上读写磁盘缓存。
+    /// 本地 TMDB 缓存（v2，语义化）：在 MovieDb 的元数据 HTTP 唯一出口
+    /// <c>MovieDbProviderBase.GetMovieDbResponse(HttpRequestOptions)</c> 上按 TMDB 实体读写磁盘缓存。
     ///
-    /// - 命中且允许读（缓存优先 / 仅用缓存）→ 直接返回缓存响应，跳过网络请求；
-    /// - 未命中且允许写（缓存优先 / 在线并缓存）→ 原样请求，落盘后返回。
+    /// 读取优先级（见 <see cref="LocalMetadataCache"/>）：
+    ///   1. override 覆盖缓存（恒最高优先级，用户自定义）
+    ///   2. cache 被动缓存（仅「优先使用缓存 / 仅用覆盖缓存」模式读取）
+    ///   3. 在线请求（未命中时）
+    /// 写入：仅「优先使用缓存 / 在线并缓存」模式把在线结果写入 cache 被动缓存。
     ///
     /// 仅当 <see cref="Options.MetadataEnhanceOptions.IsMetadataCacheEnabled"/> 为真时才打补丁，
     /// 默认（模式 None）完全不介入，保证零行为变化。
-    /// 图像 API（GetImageResponse，不带 language 参数）暂不缓存，留待 v2。
+    /// 图像 API（GetImageResponse，不带 language 参数）与 patches 合并留待 v3。
     /// </summary>
     public class LocalTmdbCache : PatchBase<LocalTmdbCache>
     {
@@ -82,16 +85,33 @@ namespace StrmAssistant.Mod
             {
                 if (options?.Url is not { Length: > 0 } url) return true;
                 if (!Plugin.Instance.MetadataEnhanceStore.GetOptions().IsMetadataCacheReadEnabled) return true;
-                if (!LocalMetadataCache.TryGet(url, out var bytes)) return true;
+                if (!LocalMetadataCache.TryParseEntity(url, out var entry)) return true;
 
-                __result = Task.FromResult(LocalMetadataCache.BuildResponse(bytes, url));
+                byte[] bytes;
 
-                if (Plugin.Instance.DebugMode)
+                // P1：override 覆盖缓存（无论模式，只要读取开启即优先）
+                if (LocalMetadataCache.TryReadOverride(entry, out bytes))
                 {
-                    Plugin.Instance.Logger.Debug($"LocalTmdbCache - HIT ({bytes.Length} bytes) {url}");
+                    __result = Task.FromResult(LocalMetadataCache.BuildResponse(bytes, url));
+                    Plugin.Instance.Logger.Debug(
+                        $"LocalTmdbCache - OVERRIDE HIT {entry.RelativePath} ({bytes.Length} bytes)");
+                    return false;
                 }
 
-                return false; // 跳过原方法（含网络请求）
+                // P2：被动缓存
+                if (LocalMetadataCache.TryReadPassive(entry, out bytes))
+                {
+                    __result = Task.FromResult(LocalMetadataCache.BuildResponse(bytes, url));
+                    if (Plugin.Instance.DebugMode)
+                    {
+                        Plugin.Instance.Logger.Debug(
+                            $"LocalTmdbCache - CACHE HIT {entry.RelativePath} ({bytes.Length} bytes)");
+                    }
+
+                    return false;
+                }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -107,8 +127,9 @@ namespace StrmAssistant.Mod
             {
                 if (__result == null || options?.Url is not { Length: > 0 } url) return;
                 if (!Plugin.Instance.MetadataEnhanceStore.GetOptions().IsMetadataCacheWriteEnabled) return;
+                if (!LocalMetadataCache.TryParseEntity(url, out var entry)) return;
 
-                __result = CacheAndReturn(__result, url);
+                __result = CacheAndReturn(__result, entry);
             }
             catch (Exception ex)
             {
@@ -116,7 +137,8 @@ namespace StrmAssistant.Mod
             }
         }
 
-        private static async Task<HttpResponseInfo> CacheAndReturn(Task<HttpResponseInfo> inner, string url)
+        private static async Task<HttpResponseInfo> CacheAndReturn(Task<HttpResponseInfo> inner,
+            LocalMetadataCache.CacheEntry entry)
         {
             var response = await inner.ConfigureAwait(false);
 
@@ -127,13 +149,14 @@ namespace StrmAssistant.Mod
                     var bytes = LocalMetadataCache.ReadAll(response.Content);
                     if (bytes is { Length: > 0 })
                     {
-                        LocalMetadataCache.Set(url, bytes);
+                        LocalMetadataCache.WritePassive(entry, bytes);
                         // 原流已被读空，返回一个新的可读流供调用方反序列化
                         response.Content = new MemoryStream(bytes, false);
 
                         if (Plugin.Instance.DebugMode)
                         {
-                            Plugin.Instance.Logger.Debug($"LocalTmdbCache - STORE ({bytes.Length} bytes) {url}");
+                            Plugin.Instance.Logger.Debug(
+                                $"LocalTmdbCache - STORE {entry.RelativePath} ({bytes.Length} bytes)");
                         }
                     }
                 }

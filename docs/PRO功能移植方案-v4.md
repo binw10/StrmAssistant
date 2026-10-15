@@ -276,6 +276,14 @@
 **与 PRO 的差异（已知，v2 收敛）**：v1 只做「原始响应按 URL 落盘」，未做「按 tmdbid 的语义化 json + override/patches 合并」；目录布局已按 PRO 同名预留，便于 v2 演进。
 **待用户验证**：设为「在线刮削并缓存」+ 指定根目录 → 保存后应创建目录结构；刮削一次后 `cache/_http` 出现 `.bin`；切「优先使用缓存」后断网仍可刮削已缓存条目。
 
+### ✅ 已完成 · Phase 4-1 v2 语义化缓存（PRO 同构，提交见 git）
+v1 的「URL 原始响应」升级为 **PRO 同构的按 TMDB 实体落盘**：
+- `LocalMetadataCache` 新增 URL→实体解析（正则 `^https?://[^/]+/3/(movie|tv|collection)/(\d+)(/season/(\d+))?(/episode/(\d+))?`）：
+  `/3/movie/{id}`→`tmdb-movies2/all.json`；`/3/tv/{id}`→`tmdb-tv/series.json`；`/3/tv/{id}/season/{n}`→`season-{n}.json`；`.../episode/{e}`→`season-{s}-episode-{e}.json`；`/3/collection/{id}`→`tmdb-collections/all.json`。
+- 读取优先级：**override（P1，恒最高）→ cache（P2，读取模式允许时）→ 在线**；写入：在线结果落 `cache/`（写入模式允许时）。
+- 目录新增 `patches/`（v3 合并补丁用）。非实体请求（人物/搜索/配置）不缓存，避免误命中。
+- 已知限制：缓存不区分 language（与 PRO「备选语言综合结果」一致）；图像 API 与 patches 合并属 v3。
+
 ### 构建/部署记录
 - `dotnet build -c Release`：**0 错误**；警告 9 → 1（仅剩既有 `SubtitleApi.cs:205 CS1998`）。
 - 部署：`D:\下载\embyserver-win-x64-4.10.1.0\programdata\plugins\StrmAssistant.dll`（13:26，7,117,824 字节）。

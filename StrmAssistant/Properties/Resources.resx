@@ -1161,7 +1161,7 @@
     <value>Build Local Metadata Cache</value>
   </data>
   <data name="MetadataEnhanceOptions_MetadataCacheMode_Description" xml:space="preserve">
-    <value>Optional local TMDB response cache: read/write MovieDb metadata responses on disk for rate-limit or offline resilience. Default is OFF.</value>
+    <value>Local TMDB cache: reads override/&lt;type&gt;/&lt;tmdbid&gt; first (your custom JSON, highest priority), then cache/&lt;type&gt;/&lt;tmdbid&gt; (passive, written from online results). Speeds up re-scans and works offline. Default is OFF.</value>
   </data>
   <data name="MetadataEnhanceOptions_MetadataCacheRootFolder_Metadata_Cache_Root_Folder" xml:space="preserve">
     <value>Metadata Cache Root Folder</value>

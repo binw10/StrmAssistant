@@ -1074,7 +1074,7 @@
     <value>建立本機中繼資料快取</value>
   </data>
   <data name="MetadataEnhanceOptions_MetadataCacheMode_Description" xml:space="preserve">
-    <value>可選的本機 TMDB 回應快取：將 MovieDb 中繼資料回應讀寫到磁碟，用於限流或離線時重用。預設關閉。</value>
+    <value>本機 TMDB 快取：優先讀取 override/&lt;類型&gt;/&lt;tmdbid&gt;（你的自訂 JSON，最高優先），其次 cache/&lt;類型&gt;/&lt;tmdbid&gt;（被動快取，由線上結果寫入）。可加速重建媒體庫、離線可用。預設關閉。</value>
   </data>
   <data name="MetadataEnhanceOptions_MetadataCacheRootFolder_Metadata_Cache_Root_Folder" xml:space="preserve">
     <value>中繼資料快取根目錄</value>

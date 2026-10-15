@@ -1074,7 +1074,7 @@
     <value>构建本地元数据缓存</value>
   </data>
   <data name="MetadataEnhanceOptions_MetadataCacheMode_Description" xml:space="preserve">
-    <value>可选的本地 TMDB 响应缓存：把 MovieDb 元数据响应读写到磁盘，用于限流或断网时复用。默认关闭。</value>
+    <value>本地 TMDB 缓存：优先读取 override/&lt;类型&gt;/&lt;tmdbid&gt;（你的自定义 JSON，最高优先级），其次 cache/&lt;类型&gt;/&lt;tmdbid&gt;（被动缓存，由在线结果写入）。可加速重建媒体库、断网可用。默认关闭。</value>
   </data>
   <data name="MetadataEnhanceOptions_MetadataCacheRootFolder_Metadata_Cache_Root_Folder" xml:space="preserve">
     <value>元数据缓存根目录</value>

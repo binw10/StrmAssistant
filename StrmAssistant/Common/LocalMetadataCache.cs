@@ -2,29 +2,52 @@ using MediaBrowser.Common.Net;
 using System;
 using System.IO;
 using System.Net;
-using System.Security.Cryptography;
-using System.Text;
+using System.Text.RegularExpressions;
 
 namespace StrmAssistant.Common
 {
     /// <summary>
-    /// 本地 TMDB 被动缓存（v1）：把 MovieDb 元数据 API 的原始响应按 URL 落地到磁盘，
-    /// 用于限流/断网时复用，并为后续语义化 override/patches（PRO 同构）预留目录结构。
+    /// 本地 TMDB 语义化缓存（v2）：把 MovieDb 的元数据请求按 TMDB 实体（电影/剧集/季/集/合集）
+    /// 映射到 PRO 同构的目录布局，实现「override 优先 + 被动缓存」。
     ///
-    /// 目录布局（与 PRO 保持同名，便于将来演进）：
-    ///   &lt;root&gt;\cache\tmdb-movies2 | tmdb-tv | tmdb-collections   （被动缓存，语义化：v2 使用）
-    ///   &lt;root&gt;\cache\_http                                         （v1 原始响应，按 URL 的 SHA256 命名）
-    ///   &lt;root&gt;\override\tmdb-movies2 | tmdb-tv | tmdb-collections （覆盖缓存：v2 使用）
+    /// 目录布局（与 PRO 同名，可直接复用 PRO 的 override 资源）：
+    ///   &lt;root&gt;\override\tmdb-movies2\&lt;tmdbid&gt;\all.json          （覆盖缓存，恒 P1，用户自定义）
+    ///   &lt;root&gt;\override\tmdb-tv\&lt;tmdbid&gt;\series.json
+    ///   &lt;root&gt;\override\tmdb-tv\&lt;tmdbid&gt;\season-&lt;n&gt;.json
+    ///   &lt;root&gt;\override\tmdb-tv\&lt;tmdbid&gt;\season-&lt;s&gt;-episode-&lt;e&gt;.json
+    ///   &lt;root&gt;\override\tmdb-collections\&lt;tmdbid&gt;\all.json
+    ///   &lt;root&gt;\cache\&lt;同上&gt;                                      （被动缓存，读写）
+    ///   &lt;root&gt;\patches\&lt;同上&gt;                                    （合并补丁，v3 使用）
+    ///
+    /// URL 映射（MovieDb 元数据出口的 URL 特征）：
+    ///   /3/movie/{id}                        -> tmdb-movies2 / all.json
+    ///   /3/tv/{id}                           -> tmdb-tv / series.json
+    ///   /3/tv/{id}/season/{n}                -> tmdb-tv / season-{n}.json
+    ///   /3/tv/{id}/season/{s}/episode/{e}    -> tmdb-tv / season-{s}-episode-{e}.json
+    ///   /3/collection/{id}                   -> tmdb-collections / all.json
+    ///
+    /// 注意：PRO 的缓存是「备选语言刮削处理后的综合结果」，本实现按实体落盘、不区分 language，
+    /// 与用户固定的备选语言顺序一致；若需多语言并存，需在 v3 引入语言后缀。
     /// </summary>
     public static class LocalMetadataCache
     {
         private static readonly object _lock = new object();
         private static string _root;
 
+        private static readonly Regex EntityUrl = new Regex(
+            @"^https?://[^/]+/3/(movie|tv|collection)/(\d+)(?:/season/(\d+))?(?:/episode/(\d+))?",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         public static string Root => _root;
 
-        public static string RawResponseDir =>
-            string.IsNullOrEmpty(_root) ? null : Path.Combine(_root, "cache", "_http");
+        public sealed class CacheEntry
+        {
+            public string TypeDir { get; set; }
+            public string TmdbId { get; set; }
+            public string FileName { get; set; }
+
+            public string RelativePath => Path.Combine(TypeDir, TmdbId, FileName);
+        }
 
         /// <summary>
         /// 校验并初始化缓存根目录，创建所需子目录。返回是否可用及原因。
@@ -50,13 +73,13 @@ namespace StrmAssistant.Common
                 if (!Directory.Exists(full))
                     Directory.CreateDirectory(full);
 
-                foreach (var type in new[] { "tmdb-movies2", "tmdb-tv", "tmdb-collections" })
+                foreach (var scope in new[] { "cache", "override", "patches" })
                 {
-                    Directory.CreateDirectory(Path.Combine(full, "cache", type));
-                    Directory.CreateDirectory(Path.Combine(full, "override", type));
+                    foreach (var type in new[] { "tmdb-movies2", "tmdb-tv", "tmdb-collections" })
+                    {
+                        Directory.CreateDirectory(Path.Combine(full, scope, type));
+                    }
                 }
-
-                Directory.CreateDirectory(Path.Combine(full, "cache", "_http"));
 
                 lock (_lock) { _root = full; }
                 return (true, null);
@@ -72,25 +95,72 @@ namespace StrmAssistant.Common
             lock (_lock) { _root = null; }
         }
 
-        private static string CachePath(string url)
+        /// <summary>
+        /// 把 MovieDb 元数据请求 URL 解析为 TMDB 实体条目；非实体请求（人物/搜索/配置等）返回 false。
+        /// </summary>
+        public static bool TryParseEntity(string url, out CacheEntry entry)
         {
-            var dir = RawResponseDir;
-            if (string.IsNullOrEmpty(dir)) return null;
+            entry = null;
+            if (string.IsNullOrWhiteSpace(url)) return false;
 
-            using var sha = SHA256.Create();
-            var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(url));
-            var name = BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
-            return Path.Combine(dir, name + ".bin");
+            try
+            {
+                var match = EntityUrl.Match(url);
+                if (!match.Success) return false;
+
+                var kind = match.Groups[1].Value.ToLowerInvariant();
+                var id = match.Groups[2].Value;
+                var season = match.Groups[3].Success ? match.Groups[3].Value : null;
+                var episode = match.Groups[4].Success ? match.Groups[4].Value : null;
+
+                string typeDir, fileName;
+                switch (kind)
+                {
+                    case "movie":
+                        typeDir = "tmdb-movies2";
+                        fileName = "all.json";
+                        break;
+                    case "collection":
+                        typeDir = "tmdb-collections";
+                        fileName = "all.json";
+                        break;
+                    default: // tv
+                        typeDir = "tmdb-tv";
+                        if (episode != null && season != null)
+                            fileName = $"season-{season}-episode-{episode}.json";
+                        else if (season != null)
+                            fileName = $"season-{season}.json";
+                        else
+                            fileName = "series.json";
+                        break;
+                }
+
+                entry = new CacheEntry { TypeDir = typeDir, TmdbId = id, FileName = fileName };
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
-        public static bool TryGet(string url, out byte[] bytes)
+        private static string BuildPath(string scope, CacheEntry entry)
+        {
+            var root = _root;
+            if (string.IsNullOrEmpty(root) || entry == null) return null;
+            return Path.Combine(root, scope, entry.TypeDir, entry.TmdbId, entry.FileName);
+        }
+
+        public static string GetOverrideFilePath(CacheEntry entry) => BuildPath("override", entry);
+        public static string GetPassiveFilePath(CacheEntry entry) => BuildPath("cache", entry);
+        public static string GetPatchFilePath(CacheEntry entry) => BuildPath("patches", entry);
+
+        private static bool TryRead(string path, out byte[] bytes)
         {
             bytes = null;
             try
             {
-                var path = CachePath(url);
-                if (path == null || !File.Exists(path)) return false;
-
+                if (string.IsNullOrEmpty(path) || !File.Exists(path)) return false;
                 bytes = File.ReadAllBytes(path);
                 return bytes.Length > 0;
             }
@@ -100,14 +170,20 @@ namespace StrmAssistant.Common
             }
         }
 
-        public static void Set(string url, byte[] bytes)
+        public static bool TryReadOverride(CacheEntry entry, out byte[] bytes) =>
+            TryRead(GetOverrideFilePath(entry), out bytes);
+
+        public static bool TryReadPassive(CacheEntry entry, out byte[] bytes) =>
+            TryRead(GetPassiveFilePath(entry), out bytes);
+
+        public static void WritePassive(CacheEntry entry, byte[] bytes)
         {
             if (bytes == null || bytes.Length == 0) return;
 
             try
             {
-                var path = CachePath(url);
-                if (path == null) return;
+                var path = GetPassiveFilePath(entry);
+                if (string.IsNullOrEmpty(path)) return;
 
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 var tmp = path + ".tmp";
