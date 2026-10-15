@@ -9,11 +9,14 @@ using System.Threading;
 namespace StrmAssistant.Common
 {
     /// <summary>
-    /// Windows 原生 ISO 挂载器（免第三方依赖，替代 PRO 的 <c>BlurayMounter.dll</c>）。
+    /// ISO 正片定位器（跨平台，免 OS 强依赖）。
     ///
-    /// 原理：调用 PowerShell 的 <c>Mount-DiskImage</c> 把 .iso 挂成一个虚拟光驱，
-    /// 再在其根目录里定位「正片」文件（BDMV/STREAM 的最大 .m2ts，或 VIDEO_TS 的 VTS_01_1.VOB），
-    /// 交给 Emby 自带的 ffprobe 探测 —— 这样 DVD-ISO / Bluray-ISO 都能取到媒资信息。
+    /// - **Windows**：调用 PowerShell 的 <c>Mount-DiskImage</c> 把 .iso 挂成虚拟光驱，
+    ///   再由 <see cref="UdfTitleResolver.ResolveFromMount"/> 在挂载卷上按 playlist 选出正片
+    ///   （失败回退「最大 .m2ts / VTS_01_1.VOB」），交给 ffprobe 探测。
+    /// - **Linux / Docker**：无法挂载，改由 <see cref="UdfTitleResolver.Resolve"/> 进程内读 UDF
+    ///   选出正片（仅用于发现与日志校验），.iso 本身仍交由 <c>CustomProbePath</c> 指定的
+    ///   带 ISO 支持的自定义 ffprobe 直读。
     ///
     /// 生命周期：按 ISO 路径缓存挂载结果（含最后使用时间），后台清扫器在空闲超过
     /// <see cref="IdleTimeout"/> 后自动卸载；插件卸载时全部卸载。
@@ -39,7 +42,7 @@ namespace StrmAssistant.Common
         private static Timer _sweeper;
         private static bool? _supported;
 
-        /// <summary>当前平台是否支持（Windows + 存在 Mount-DiskImage）。</summary>
+        /// <summary>当前平台是否支持「OS 原生挂载」（Windows + 存在 Mount-DiskImage）。</summary>
         public static bool IsSupported
         {
             get
@@ -60,6 +63,9 @@ namespace StrmAssistant.Common
                 return _supported.Value;
             }
         }
+
+        /// <summary>是否具备进程内 UDF 读盘能力（本插件内建 DiscUtils，跨平台恒可用）。</summary>
+        public static bool UdfReadSupported => true;
 
         /// <summary>
         /// 判断是否为本地 ISO 文件路径。
@@ -100,35 +106,94 @@ namespace StrmAssistant.Common
         }
 
         /// <summary>
-        /// 返回可用于 ffprobe 的「正片」路径；失败返回 null（调用方应保持原路径）。
+        /// 返回可用于 ffprobe 的「正片」路径；无可用真实路径时返回 null（调用方保持原路径）。
+        ///
+        /// Windows 挂载成功 → 返回挂载卷上的正片路径；
+        /// 非 Windows 或挂载失败 → 返回 null，仅做一次进程内 UDF 选片记录（Linux/Docker 由自定义 ffprobe 直读 .iso）。
         /// </summary>
         public static string GetProbePath(string isoPath)
         {
-            if (!IsSupported || string.IsNullOrEmpty(isoPath)) return null;
+            if (string.IsNullOrEmpty(isoPath)) return null;
 
-            try
+            if (IsSupported)
             {
-                var entry = Mounts.GetOrAdd(isoPath, k => Mount(k));
-                entry.LastUsedUtc = DateTime.UtcNow;
+                try
+                {
+                    var entry = Mounts.GetOrAdd(isoPath, k => Mount(k));
+                    entry.LastUsedUtc = DateTime.UtcNow;
 
-                if (entry.Failed || string.IsNullOrEmpty(entry.DriveRoot)) return null;
+                    if (!entry.Failed && !string.IsNullOrEmpty(entry.DriveRoot))
+                    {
+                        var title = ResolveMountedTitle(isoPath, entry.DriveRoot);
+                        if (!string.IsNullOrEmpty(title)) return title;
 
-                var title = ResolveMainTitle(entry.DriveRoot);
+                        Plugin.Instance?.Logger?.Info(
+                            $"IsoExtraction - no main title found under {entry.DriveRoot} for {isoPath}");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Plugin.Instance?.Logger?.Warn("IsoExtraction - mount failed: " + e.Message);
+                }
+            }
 
-                if (string.IsNullOrEmpty(title))
+            ResolveInProcessTitle(isoPath);
+            return null;
+        }
+
+        /// <summary>
+        /// 已挂载卷上定位正片：优先按 playlist 选片（多 m2ts / 无缝分支才不会选错），再回退旧逻辑。
+        /// </summary>
+        private static string ResolveMountedTitle(string isoPath, string driveRoot)
+        {
+            var info = UdfTitleResolver.ResolveFromMount(driveRoot);
+
+            if (!string.IsNullOrEmpty(info?.RelativePath))
+            {
+                var path = Path.Combine(driveRoot, info.RelativePath);
+
+                if (File.Exists(path))
                 {
                     Plugin.Instance?.Logger?.Info(
-                        $"IsoExtraction - no main title found under {entry.DriveRoot} for {isoPath}");
-                    return null;
+                        $"IsoExtraction - selected {info.RelativePath} " +
+                        $"(playlist {info.SourceName}, {info.DurationSeconds:F1}s) from {isoPath}");
+                    return path;
                 }
 
-                return title;
+                Plugin.Instance?.Logger?.Warn(
+                    $"IsoExtraction - selected title {info.RelativePath} not found on {driveRoot} for {isoPath}");
             }
-            catch (Exception e)
+
+            var fallback = ResolveMainTitle(driveRoot);
+            if (!string.IsNullOrEmpty(fallback))
             {
-                Plugin.Instance?.Logger?.Warn("IsoExtraction - mount failed: " + e.Message);
-                return null;
+                Plugin.Instance?.Logger?.Info(
+                    $"IsoExtraction - fallback to largest title {fallback} for {isoPath}");
             }
+
+            return fallback;
+        }
+
+        /// <summary>
+        /// 非挂载路径：进程内读 UDF 选出正片，仅记录结果用于发现与日志校验（不改探测输入）。
+        /// </summary>
+        private static void ResolveInProcessTitle(string isoPath)
+        {
+            if (!UdfReadSupported) return;
+
+            var info = UdfTitleResolver.Resolve(isoPath);
+            var logger = Plugin.Instance?.Logger;
+            if (logger == null) return;
+
+            if (info == null)
+            {
+                logger.Debug($"IsoExtraction - UDF title resolution found nothing in {isoPath}");
+                return;
+            }
+
+            logger.Info(
+                $"IsoExtraction - UDF resolved {(info.IsBluray ? "bluray" : "dvd")} title {info.RelativePath} " +
+                $"(playlist {info.SourceName}, {info.DurationSeconds:F1}s) in {isoPath}; probing the iso directly");
         }
 
         private static MountEntry Mount(string isoPath)

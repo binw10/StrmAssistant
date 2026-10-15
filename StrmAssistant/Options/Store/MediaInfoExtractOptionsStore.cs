@@ -121,7 +121,7 @@ namespace StrmAssistant.Options.Store
 
                 if (changedProperties.Contains(nameof(MediaInfoExtractOptions.EnableIsoExtraction)))
                 {
-                    if (options.EnableIsoExtraction && Common.IsoMounter.IsSupported)
+                    if (options.EnableIsoExtraction)
                     {
                         PatchManager.IsoExtraction.Patch();
                     }
@@ -153,6 +153,7 @@ namespace StrmAssistant.Options.Store
                 _logger.Info("ForcePortraitPoster is set to {0}", options.ForcePortraitPoster);
                 _logger.Info("EnsureEpisode16x9 is set to {0}", options.EnsureEpisode16x9);
                 _logger.Info("ExclusiveExtract is set to {0}", options.ExclusiveExtract);
+                _logger.Info("ClearEmbeddedMetadata is set to {0}", options.ClearEmbeddedMetadata);
 
                 var controlFeatures = GetSelectedExclusiveFeatureDescription();
                 _logger.Info("ExclusiveExtract - ControlFeatures is set to {0}",

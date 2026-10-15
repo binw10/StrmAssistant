@@ -8,16 +8,17 @@ using static StrmAssistant.Mod.PatchManager;
 namespace StrmAssistant.Mod
 {
     /// <summary>
-    /// ISO 提取（免第三方依赖版）：
+    /// ISO 提取（跨平台，免第三方强依赖）：
     /// 挂钩 <c>Emby.Server.MediaEncoding.Probing.MediaProbeManager.GetMediaInfoInternal</c> 的
-    /// 前缀，把「本地 .iso 文件」的探测输入替换为**挂载后**的正片路径
-    /// （见 <see cref="IsoMounter"/>）。
+    /// 前缀，把「本地 .iso 文件」的探测输入替换为**正片路径**（见 <see cref="IsoMounter"/>）。
     ///
     /// 关键安全性：
     /// - 只替换 `inputPath` / `primaryPath`（仅用于 ffprobe 参数），**不改** `MediaSourceInfo.Path`，
     ///   因此播放路径与条目身份完全不受影响。
     /// - 仅当路径是**本地存在的 .iso 文件**时才介入；其余情况（含 http 流、普通视频）原样放行。
-    /// - 选项 <c>EnableIsoExtraction</c> 默认 OFF；Windows 以外或 <c>Mount-DiskImage</c> 不可用时自动跳过。
+    /// - 选项 <c>EnableIsoExtraction</c> 默认 OFF。
+    /// - Windows 挂载成功才替换输入路径；Linux/Docker 无挂载能力，前缀保持原路径放行，
+    ///   `.iso` 交由 <c>CustomProbePath</c> 指定的自定义 ffprobe 直读（正片发现仅用于日志校验）。
     /// </summary>
     public class IsoExtraction : PatchBase<IsoExtraction>
     {
@@ -27,8 +28,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableIsoExtraction &&
-                IsoMounter.IsSupported)
+            if (Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableIsoExtraction)
             {
                 Patch();
             }
@@ -53,7 +53,7 @@ namespace StrmAssistant.Mod
                 else if (Plugin.Instance.DebugMode)
                 {
                     Plugin.Instance.Logger.Debug(
-                        $"IsoExtraction - resolved {_getMediaInfoInternal}, IsoMounter supported={IsoMounter.IsSupported}");
+                        $"IsoExtraction - resolved {_getMediaInfoInternal}, mount supported={IsoMounter.IsSupported}, udf supported={IsoMounter.UdfReadSupported}");
                 }
             }
             catch (Exception ex)

@@ -66,8 +66,8 @@ namespace StrmAssistant.Common
         }
 
         /// <summary>
-        /// ISO 默认被排除（Emby 原生 ffprobe 通常无法直接读取）；当用户开启「ISO 提取」时不再强制排除，
-        /// 交由自定义 ffprobe（含 dvd-iso demuxer）处理。
+        /// ISO 默认被排除（Emby 原生 ffprobe 通常无法直接读取）；当用户开启「ISO 提取」时不再强制排除：
+        /// Windows 由挂载卷上的正片作答，Linux/Docker 交由 <c>CustomProbePath</c> 指定的自定义 ffprobe 直读 ISO。
         /// </summary>
         private static IEnumerable<MediaContainers> IsoContainersIfExcluded =>
             Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableIsoExtraction

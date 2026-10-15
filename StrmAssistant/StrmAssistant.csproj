@@ -25,6 +25,9 @@
   <ItemGroup>
     <PackageReference Include="CHTCHSConv" Version="1.0.0">
     </PackageReference>
+    <PackageReference Include="DiscUtils.Udf" Version="0.16.13">
+      <!-- 跨平台 ISO 读取（MIT）；传递引入 DiscUtils.Core / DiscUtils.Streams / DiscUtils.Iso9660 -->
+    </PackageReference>
     <PackageReference Include="ILRepack" Version="2.0.42">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -63,7 +66,7 @@
   </ItemGroup>
   <PropertyGroup>
     <!-- 可通过 /p:StrmAssistantPluginOutputDir=... 覆盖部署目录 -->
-    <StrmAssistantPluginOutputDir Condition="'$(StrmAssistantPluginOutputDir)'=='' and '$(OS)'=='Windows_NT'">D:\下载\embyserver-win-x64-4.10.1.0\programdata\plugins</StrmAssistantPluginOutputDir>
+    <StrmAssistantPluginOutputDir Condition="'$(StrmAssistantPluginOutputDir)'=='' and '$(OS)'=='Windows_NT'">D:\Downloads\embyserver\programdata\plugins</StrmAssistantPluginOutputDir>
 
     <!-- 显式拼接输出目录，避免 Build 目标里 TargetPath/TargetDir 为空 -->
     <StrmAssistantBuildOutputDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(TargetFramework)\</StrmAssistantBuildOutputDir>
@@ -78,7 +81,7 @@
     <Message Importance="high" Text="StrmAssistant: build output dir -> $(StrmAssistantBuildOutputDir)" />
     <Message Importance="high" Text="StrmAssistant: ILRepack merge -> $(StrmAssistantMergedAssembly)" />
     <Message Importance="high" Text="StrmAssistant: ILRepack exe -> $(ILRepackExe)" />
-    <Exec Command="&quot;$(ILRepackExe)&quot; /out:&quot;$(StrmAssistantMergedAssembly)&quot; &quot;$(StrmAssistantMergedAssembly)&quot; &quot;$(StrmAssistantBuildOutputDir)0Harmony.dll&quot; &quot;$(StrmAssistantBuildOutputDir)ChineseConverter.dll&quot; &quot;$(StrmAssistantBuildOutputDir)TinyPinyin.dll&quot; /lib:&quot;$(StrmAssistantBuildOutputDir)&quot;" />
+    <Exec Command="&quot;$(ILRepackExe)&quot; /out:&quot;$(StrmAssistantMergedAssembly)&quot; &quot;$(StrmAssistantMergedAssembly)&quot; &quot;$(StrmAssistantBuildOutputDir)0Harmony.dll&quot; &quot;$(StrmAssistantBuildOutputDir)ChineseConverter.dll&quot; &quot;$(StrmAssistantBuildOutputDir)TinyPinyin.dll&quot; &quot;$(StrmAssistantBuildOutputDir)DiscUtils.Core.dll&quot; &quot;$(StrmAssistantBuildOutputDir)DiscUtils.Streams.dll&quot; &quot;$(StrmAssistantBuildOutputDir)DiscUtils.Udf.dll&quot; &quot;$(StrmAssistantBuildOutputDir)DiscUtils.Iso9660.dll&quot; /lib:&quot;$(StrmAssistantBuildOutputDir)&quot;" />
 
     <MakeDir Condition="'$(StrmAssistantPluginOutputDir)'!=''" Directories="$(StrmAssistantPluginOutputDir)" />
     <Copy Condition="'$(StrmAssistantPluginOutputDir)'!=''"

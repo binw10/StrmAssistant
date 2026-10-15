@@ -386,7 +386,8 @@ namespace StrmAssistant.Properties {
             }
         }
 
-        /// <summary>        /// <summary>
+        /// <summary>
+        /// <summary>
         ///   Looks up a localized string similar to Media Info Exclude Keywords
         /// </summary>
         public static string MediaInfoExtractOptions_MediaInfoExcludeKeywords_Media_Info_Exclude_Keywords {
@@ -423,11 +424,29 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Include ISO images in media info extraction..
+        ///   Looks up a localized string similar to Include ISO images in media info extraction. Windows: native OS mount, read by the built-in ffprobe. Linux/Docker: in-process UDF read for main-title selection plus a custom ffprobe to read the ISO. Default is OFF..
         /// </summary>
-        public static string MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__requires_a_custom_ffprobe_with_DVD_ISO_demuxer_support__Default_is_OFF_ {
+        public static string MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__Windows_native_OS_mount__Linux_Docker_in_process_UDF_read_with_custom_ffprobe__Default_is_OFF_ {
             get {
-                return ResourceManager.GetString("MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__requires_a_custom_ffprobe_with_DVD_ISO_demuxer_support__Default_is_OFF_", resourceCulture);
+                return ResourceManager.GetString("MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__Windows_native_OS_mount__Linux_Docker_in_process_UDF_read_with_custom_ffprobe__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Clear Embedded Metadata.
+        /// </summary>
+        public static string MediaInfoExtractOptions_ClearEmbeddedMetadata_Clear_Embedded_Metadata {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_ClearEmbeddedMetadata_Clear_Embedded_Metadata", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Remove metadata embedded in the media container (name, overview, premiere date, production year, studios, tags, artists, genres) from movie and episode probe results, so it does not leak into item metadata. Default is ON..
+        /// </summary>
+        public static string MediaInfoExtractOptions_ClearEmbeddedMetadata_Strip_embedded_metadata_from_movie_and_episode_probe_results__Default_is_ON_ {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_ClearEmbeddedMetadata_Strip_embedded_metadata_from_movie_and_episode_probe_results__Default_is_ON_", resourceCulture);
             }
         }
 
@@ -726,6 +745,24 @@ namespace StrmAssistant.Properties {
         public static string ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Playback_progress_percentage_of_current_episode_required_to_mark_previous_episodes_as_watched__5_to_100__Default_is_90_ {
             get {
                 return ResourceManager.GetString("ExperienceEnhanceOptions_AutoMarkWatchedThreshold_Playback_progress_percentage_of_current_episode_required_to_mark_previous_episodes_as_watched__5_to_100__Default_is_90_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Enable Automatic Scraping.
+        /// </summary>
+        public static string IntroSkipOptions_EnableAutomaticIntroScraping_Enable_Automatic_Scraping {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_EnableAutomaticIntroScraping_Enable_Automatic_Scraping", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Scrape intro/credits markers for new content automatically once a series or movie finishes refreshing. When OFF, only the scheduled task scrapes. Default is OFF..
+        /// </summary>
+        public static string IntroSkipOptions_EnableAutomaticIntroScraping_Scrape_intro_credits_markers_for_new_content__May_slow_down_library_scans__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_EnableAutomaticIntroScraping_Scrape_intro_credits_markers_for_new_content__May_slow_down_library_scans__Default_is_OFF_", resourceCulture);
             }
         }
 

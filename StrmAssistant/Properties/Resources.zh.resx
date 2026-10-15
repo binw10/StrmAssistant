@@ -731,8 +731,14 @@
   <data name="MediaInfoExtractOptions_EnableIsoExtraction_Enable_ISO_Extraction" xml:space="preserve">
     <value>启用 ISO 提取</value>
   </data>
-  <data name="MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__requires_a_custom_ffprobe_with_DVD_ISO_demuxer_support__Default_is_OFF_" xml:space="preserve">
-    <value>把 ISO 镜像用系统原生方式挂载（Windows 自带 ISO 挂载）后再纳入媒体信息提取，无需自定义 ffprobe。默认关闭。</value>
+  <data name="MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__Windows_native_OS_mount__Linux_Docker_in_process_UDF_read_with_custom_ffprobe__Default_is_OFF_" xml:space="preserve">
+    <value>把 ISO 镜像纳入媒体信息提取。Windows：系统原生挂载，由内置 ffprobe 读取；Linux/Docker：进程内 UDF 选出正片，并由自定义 ffprobe 直接读取 ISO。默认关闭。</value>
+  </data>
+  <data name="MediaInfoExtractOptions_ClearEmbeddedMetadata_Clear_Embedded_Metadata" xml:space="preserve">
+    <value>清除内嵌元数据</value>
+  </data>
+  <data name="MediaInfoExtractOptions_ClearEmbeddedMetadata_Strip_embedded_metadata_from_movie_and_episode_probe_results__Default_is_ON_" xml:space="preserve">
+    <value>在影片与剧集的探测结果中移除媒体容器内嵌的元数据（名称、简介、首映日期、制作年份、制片公司、标签、艺人、类型），避免其污染条目元数据。默认开启。</value>
   </data>
   <data name="MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Video_Thumbnail_Exclude_Keywords" xml:space="preserve">
     <value>视频缩略图排除关键字</value>
@@ -898,6 +904,12 @@
   </data>
   <data name="ExperienceEnhanceOptions_AutoMarkWatchedExcludeFavorites_Favorite_episodes_will_not_be_automatically_marked_as_watched__Default_is_OFF_" xml:space="preserve">
     <value>收藏的集不会被自动标记为已看。默认关闭。</value>
+  </data>
+  <data name="IntroSkipOptions_EnableAutomaticIntroScraping_Enable_Automatic_Scraping" xml:space="preserve">
+    <value>启用自动刮削</value>
+  </data>
+  <data name="IntroSkipOptions_EnableAutomaticIntroScraping_Scrape_intro_credits_markers_for_new_content__May_slow_down_library_scans__Default_is_OFF_" xml:space="preserve">
+    <value>剧集或电影刷新完成后自动刮削片头片尾标记（可能拖慢媒体库扫描）；关闭后仅由计划任务刮削。默认关闭。</value>
   </data>
   <data name="IntroSkipOptions_EnableIntroDbScrape_IntroDb_Intro_Credits_Scraper" xml:space="preserve">
     <value>片头片尾刮削（IntroDb）</value>

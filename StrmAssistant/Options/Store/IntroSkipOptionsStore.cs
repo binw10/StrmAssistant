@@ -230,6 +230,8 @@ namespace StrmAssistant.Options.Store
                     string.IsNullOrEmpty(introSkipPreferences) ? "EMPTY" : introSkipPreferences);
 
                 _logger.Info("EnableIntroDbScrape is set to {0}", options.EnableIntroDbScrape);
+                _logger.Info("EnableAutomaticIntroScraping is set to {0}",
+                    options.EnableAutomaticIntroScraping);
                 _logger.Info("IntroDbApiKey is set to {0}",
                     !string.IsNullOrEmpty(options.IntroDbApiKey) ? "CONFIGURED" : "EMPTY");
                 _logger.Info("FingerprintBlacklistKeywords is set to {0}",

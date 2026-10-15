@@ -374,7 +374,9 @@ namespace StrmAssistant
 
             var options = ExperienceEnhanceStore.GetOptions();
 
-            if (IntroSkipStore.GetOptions().EnableIntroDbScrape)
+            var introSkipOptions = IntroSkipStore.GetOptions();
+
+            if (introSkipOptions.EnableIntroDbScrape && introSkipOptions.EnableAutomaticIntroScraping)
             {
                 if (e.Argument.Item is Series refreshedSeries)
                 {

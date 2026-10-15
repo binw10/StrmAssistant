@@ -218,6 +218,8 @@ namespace StrmAssistant.Mod
 
             if (!ShouldCleanEmbeddedMetadata.Value) return;
 
+            if (!Plugin.Instance.MediaInfoExtractStore.GetOptions().ClearEmbeddedMetadata) return;
+
             __result.Name = null;
             __result.Overview = null;
             __result.PremiereDate = null;

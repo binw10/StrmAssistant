@@ -52,8 +52,13 @@ namespace StrmAssistant.Options
         public string ImageCaptureExcludeMediaContainers { get; set; } = string.Empty;
 
         [DisplayNameL("MediaInfoExtractOptions_EnableIsoExtraction_Enable_ISO_Extraction", typeof(Resources))]
-        [DescriptionL("MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__requires_a_custom_ffprobe_with_DVD_ISO_demuxer_support__Default_is_OFF_", typeof(Resources))]
+        [DescriptionL("MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__Windows_native_OS_mount__Linux_Docker_in_process_UDF_read_with_custom_ffprobe__Default_is_OFF_", typeof(Resources))]
         public bool EnableIsoExtraction { get; set; } = false;
+
+        [DisplayNameL("MediaInfoExtractOptions_ClearEmbeddedMetadata_Clear_Embedded_Metadata", typeof(Resources))]
+        [DescriptionL("MediaInfoExtractOptions_ClearEmbeddedMetadata_Strip_embedded_metadata_from_movie_and_episode_probe_results__Default_is_ON_", typeof(Resources))]
+        [Required]
+        public bool ClearEmbeddedMetadata { get; set; } = true;
 
         [DisplayNameL("MediaInfoExtractOptions_MediaInfoExcludeKeywords_Media_Info_Exclude_Keywords", typeof(Resources))]
         [DescriptionL("MediaInfoExtractOptions_MediaInfoExcludeKeywords_Comma_separated_keywords_matched_against_the_file_path_to_skip_media_info_extraction__Default_is_EMPTY_", typeof(Resources))]

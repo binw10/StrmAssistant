@@ -34,6 +34,12 @@ namespace StrmAssistant.Options
         [Required]
         public bool EnableIntroDbScrape { get; set; } = false;
 
+        [DisplayNameL("IntroSkipOptions_EnableAutomaticIntroScraping_Enable_Automatic_Scraping", typeof(Resources))]
+        [DescriptionL("IntroSkipOptions_EnableAutomaticIntroScraping_Scrape_intro_credits_markers_for_new_content__May_slow_down_library_scans__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        [VisibleCondition(nameof(EnableIntroDbScrape), SimpleCondition.IsTrue)]
+        public bool EnableAutomaticIntroScraping { get; set; } = false;
+
         [DisplayNameL("IntroSkipOptions_IntroDbApiKey_Api_Key", typeof(Resources))]
         [DescriptionL("IntroSkipOptions_IntroDbApiKey_Optional_TheIntroDB_API_key_sent_via_Bearer_auth_to_raise_the_daily_request_limit__Default_is_empty_", typeof(Resources))]
         [VisibleCondition(nameof(EnableIntroDbScrape), SimpleCondition.IsTrue)]
