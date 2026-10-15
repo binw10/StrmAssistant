@@ -433,3 +433,23 @@ v1 的「URL 原始响应」升级为 **PRO 同构的按 TMDB 实体落盘**：
 2. 17:49:56 的非预期重启源自 faststrm（Go-http-client）调用 `/system/restart`，非插件问题。
 3. 测试期间 movie 12155 的 NFO 被写入过测试名，已修正回「爱丽丝梦游仙境」；条目显示名受插件刷新去重窗口压制暂未回读，下次刷新窗口自愈（或在 UI 中手动刷新一次）。
 4. 缓存根目录设在媒体库根（D:/视频）内可用（cache/override/patches 子目录会被库扫描忽略，json 非媒体文件），但更稳妥做法是放在库外。
+
+## 十一、豆瓣评分/ISO 深度排查（2026-10-15 晚，提交 0600208）
+
+### 豆瓣评分不生效——四层根因，全部修复
+| 层 | 问题 | 修复 |
+|---|---|---|
+| 0 | **元数据保存崩溃**：中文搜索增强关闭但 FTS 表仍是 simple 分词器 → `no such tokenizer: simple` → SaveItem 全崩 → 所有刷新/识别静默失败（18:23 起） | 备份 library.db → 置 Restore 开关 → 重启 → `Restore Success`（unicode61），开关自动复位 |
+| 1 | Emby 4.10 条目级 `PreferredMetadataLanguage` 返回空（不继承库设置） | `ResolveMetadataLanguage`：空时回退 `GetLibraryOptions(item)`（库级 zh） |
+| 2 | Wikidata P4529 为 unknown-value snak → 返回 genid URI 被当豆瓣 ID → 404 | `FILTER(ISLITERAL)` + 校验 `^\d+$` |
+| 3 | IMDb 路径失败直接 return，不再回退标题搜索 | 失败后继续标题搜索 |
+
+最终实测（19:06 日志）：wikidata→标题搜索→匹配 subject 36238849→抓取→**sec 风控拦截**。
+链路全通、每步有 Info 日志。**唯一剩余：豆瓣网页端风控（302→sec.douban.com 验证页），
+需在「豆瓣 Cookie」配置登录态 Cookie**（代码已支持，浏览器登录豆瓣后复制 Cookie 粘贴即可）。
+
+### ISO 疑问澄清：BlurayMounter 是 Emby 官方自带插件
+- 反编译本机 `system/plugins/BlurayMounter.dll`：`CanMount` **只接受 BDMV 目录**（`IsDirectory && container==bluray`，**拒绝 .iso 文件**）；`Mount` 用内置 BDInfo 列出 m2ts 清单（`|` 分隔虚拟路径，无真实盘符）。
+- PRO 的 csproj 引用它 = **复用 BDInfo 解析库做精确播放列表（mpls）选片**，并非"用插件挂 ISO"。
+- 对 **.iso 文件**：PRO 走自定义 ffprobe（dvd-iso demuxer）；本地移植用 Windows 原生挂载（Mount-DiskImage），已实测可用，两者等价。
+- 结论：本地方案与 PRO 不冲突；后续可选增强 = 引用本机 BlurayMounter.dll 的 BDInfo 实现 mpls 精确选片（专项）。
