@@ -288,32 +288,40 @@
 
 ---
 
-## 九、剩余工作清单（按可落地性排序，含阻塞原因）
+## 九、剩余工作清单（**本轮已收口**，状态更新）
 
-> 说明：以下各项**体量/风险明显高于前面批次**，且部分依赖外部产物或实测反馈。已在方案中给出第一步落点，建议**各自独立立项**，不混在一批做（避免半成品沉淀）。
+> 本轮（C 档按序推进）完成了：**仪表盘、LocalDiscoveryUrl、ISO 提取开关**；并对两项给出代码级阻塞结论。以下为最新状态。
 
-### A. 中等（有明确落点，可做但需实测）
-1. **LocalDiscoveryUrl（本地发现地址 / 反代 / BLOCKED）**
-   - 落点已定位：`Emby.Server.Implementations.Udp.UdpServer.RespondToMessage(IPEndPoint, Encoding)`（内部 `_appHost.GetLocalApiUrl(ip)` 生成宣告地址）。
-   - 风险：`GetLocalApiUrl` 是**全局**方法，直接改会影响所有本地 URL 生成；`BLOCKED` 需在 UdpServer 层跳过响应；async 方法上的 transpler 成本高。
-   - 建议：限缩到 UdpServer 层（prefix 处理 BLOCKED + transpiler 替换 URL 常量），并在实机验证宣告包。
-2. **SeriesDisplay 的「非 emby」客户端路径**
-   - 已覆盖 `client=emby`（UserSettings）；未覆盖 `displaypreferences_{client}_{id}`（`Emby.Api.UserLibrary.DisplayPreferencesService.Get/Post`）。
-   - 落点：`Post(UpdateDisplayPreferences)` prefix 可做写侧强制；`Get` 返回 `object`（含 `ToOptimizedResult` 包装）需解包，成本较高。
-   - 建议：先确认你的客户端实际走哪条路径（实测 display prefs 存储形态），再决定是否扩展。
+### ✅ 已完成 · 仪表盘运行状态区增强（提交 `1e2da74`）
+- **PRO 结构**：独立 `DashboardOptions` 页，含 内存占用(含上限/百分比) / 搜索索引(含回收量+优化按钮) / 正在运行的领取任务 / 待处理刷新请求 / 活动会话(含播放中) / 重启倒计时。
+- **本地取舍**：本地既有「运行状态区」（`Options/View/HomePageView.PopulateRuntimeStatus`：内存 / 计划任务 / 会话 / 搜索索引 / 冲突）已覆盖大半，**增强既有区而非另建页**（避免与本地领先的运维状态区重复、不引入新 PageController 风险）。
+- **本轮补齐**：会话行加「播放中」计数（`SessionInfo.FullNowPlayingItem`）；新增「处理中」行（`QueueManager.IsMediaInfoProcessTaskRunning` / `IsEpisodeRefreshProcessTaskRunning`）；新增「待处理队列」行（4 条队列计数合计 + 分类明细）。
+- **说明**：内存超限自动重启本地**早已有**（`GeneralOptions.EnableMemoryAutoRestart` + `MemoryGuard`），即 PRO `MemoryOptions.MemoryUsageLimitMB` 的等价物；仅「重启倒计时」未做（本地无 `RestartServerEntryPoint`，属独立特性）。
 
-### B. 依赖外部产物（现在无法做）
-3. **MovieDb 1.9.9.0 适配**：需要 **MovieDb 1.9.9.0 的 dll** 才能比对内部 API 签名（`StrmAssistant.Releases/plugins` 仅有 1.9.5.0）。当前已有 `MovieDbVersionTier` + 缺失组件告警兜底，**升级 MovieDb 后跑一次日志即可判定**是否需要适配。
+### ✅ 已完成 · LocalDiscoveryUrl（提交 `784b088`）
+- **侦察修正**：PRO 多分支适配不同 Emby 版本；Emby **4.10** 实际链路为
+  `UdpServer.RespondToMessage(IPEndPoint, Encoding)` → `SendMessage(string localUrl, IPEndPoint, Encoding)`，其中 `localUrl = _appHost.GetLocalApiUrl(ip)`。
+- **本地实现**：不改全局 `GetLocalApiUrl`（影响面大），改为在 **`UdpServer.SendMessage` 前缀改写 `localUrl`** —— 只影响 UDP 发现响应体，安全。
+- 选项 `NetworkOptions.LocalDiscoveryUrl` + URL 校验（http/https 绝对地址）+ 保存即时 Patch/Unpatch；默认空 = 不打补丁。
 
-### C. 大型（各自独立立项，建议逐个排期）
-4. **仪表盘页（Dashboard）**：PRO 为独立页面（内存/活动会话/运行任务/待处理刷新/索引优化回收）。本地已有 `RuntimeStatusList` 状态区，需新建 `DashboardOptions` 视图 + 命令。（**新 UI 页面**）
-5. **ISO/BDMV 提取**：需先移除 `LibraryApi.cs:62/84` 的 `Concat(Iso)` 硬编码排除，再自建 runner + 静态 ffprobe 分段探测 + `.iso.strm`。（**新提取管线**）
-6. **分布式提取 `SyncMediaInfo` API**：若走 rffmpeg 则已可用（`CustomProbePath`）；若要做 PRO 的「集中共享」，需新增 `POST /Items/SyncMediaInfo` + `MediaInfoBundle` 序列化/恢复。（**新 Web 端点**）
-7. **跨库多版本进度（`LibraryScopePlayProgress`）**：需改 `PresentationUniqueKey` 计算链路，影响播放进度/收藏键。（**数据面高风险，放最后**）
+### 🟡 部分完成 · ISO 提取（提交 `2b79ba7`）
+- **硬阻塞（不可移植部分）**：PRO 的 ISO 依赖**独立程序集 `BlurayMounter.dll`**（`csproj: <Reference Include="BlurayMounter" />`，含 `IsoMounter` / `BlurayDiscInfo` / `CanMount`），该 dll 在 `StrmAssistant.Releases` **全树不存在** → 挂载式 ISO/BDMV 无法同构。
+- **可移植部分（已做）**：PRO 第二条路线是「自定义 ffprobe 的 `dvd-iso demuxer` / `bluray input protocol`」（strings.txt 有对应能力探测日志），**不依赖该 dll**。据此新增选项 `MediaInfoExtractOptions.EnableIsoExtraction`（默认 OFF），
+  开启后 `LibraryApi.ExcludeMediaContainers` / `ExcludeMediaExtensions` 不再强制排除 `MediaContainers.Iso`，ISO 进入提取链。
+- **局限（如实）**：仅覆盖 ffprobe 原生可读的 DVD-Video ISO；Bluray ISO 的挂载 / `bluray:` 路径改写仍需 `BlurayMounter`，不做猜测实现。
 
-### D. 明确不做
-8. **DoubanAccessToken**：本地豆瓣走 `movie.douban.com` HTML + `subject_suggest` + wikidata + mdblist，**不使用 frodo v22 API**，该令牌无落点。
-9. **ClearEmbeddedMetadata**：PRO 混淆代码只见恢复管线旁路引用，语义不可确认，宁缺毋滥。
+### ⛔ 明确不做（附证据）
+- **分布式提取 `SyncMediaInfo`**：PRO 的 `POST /Items/SyncMediaInfo`（`List<MediaInfoBundle>`，Admin-only）**全库无内部调用者**（C# 与 JS 均无），它是给**外部/分布式 worker** 用的集成端点；本地 rffmpeg 路线（`CustomProbePath`）已可用。单独移植服务端 = 凭空多一个无人调用的数据写入口，**宁缺毋滥**。若你确有「集中共享」场景（多实例协同提取），再立项。
+- **跨库多版本进度 `LibraryScopePlayProgress`**：钩子已定位——Emby 4.10 的
+  `Episode.CreatePresentationUniqueKey(BaseItem[] collectionFolders, LibraryOptions, IDataContext, CancellationToken)`（PRO 辅助逻辑：过滤 `CollectionFolder.CollectionType != "boxsets"` 后把**库 id 追加进键**，`Episodes only`）。
+  但这是**数据面身份改造**：键变化会使既有「续播位置 / 已看状态」（按旧键存储的 `UserData`）失联；且 PRO 是否同时补 `GetPresentationUniqueKey`（含 `PresentationUniqueKey` 已缓存的短路分支）无法从混淆码确证。**在用户真实播放数据上做语义不确定的改动 = 高风险**，故不做；如需，请单独排期并先在测试库验证键格式。
+- **`DoubanAccessToken`**：本地豆瓣走 `movie.douban.com` HTML + `subject_suggest` + wikidata + mdblist，**不使用 frodo v22 API**，该令牌无落点。
+- **`ClearEmbeddedMetadata`**：PRO 混淆代码只见恢复管线旁路引用，语义不可确认。
+
+### ⏳ 依赖外部产物 / 实测反馈（仍需你）
+- **MovieDb 1.9.9.0 适配**：需 **MovieDb 1.9.9.0 dll**（Releases 仅有 1.9.5.0）才能比对内部签名。已有 `MovieDbVersionTier` + 缺失组件告警兜底；升级后跑一次日志即可判定。
+- **SeriesDisplay「非 emby」客户端路径**：需确认你的客户端走 `client=emby`（已覆盖）还是 `displaypreferences_{client}_{id}`（未覆盖），再决定是否扩展。
+
 
 ### ✅ 已完成 · ShowCollectionsFromSeasons（钩子已定位并实现）
 **反编译定位（本轮关键突破）**：从 PRO 反编译出发——
