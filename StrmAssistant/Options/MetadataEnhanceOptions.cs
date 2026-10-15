@@ -118,8 +118,13 @@ namespace StrmAssistant.Options
         [Required]
         public bool DoubanRatingOverride { get; set; } = false;
 
+        [Browsable(false)]
+        public List<EditorSelectOption> DoubanAssistLibraryList { get; set; } = new List<EditorSelectOption>();
+
         [DisplayNameL("MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_Assist_Scope", typeof(Resources))]
         [DescriptionL("MetadataEnhanceOptions_DoubanAssistScrapeScope_Comma_separated_library_IDs_where_Douban_assist_applies__blank_applies_to_all_libraries__Default_is_EMPTY_", typeof(Resources))]
+        [EditMultilSelect]
+        [SelectItemsSource(nameof(DoubanAssistLibraryList))]
         [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
         public string DoubanAssistScrapeScope { get; set; } = string.Empty;
 
@@ -399,10 +404,12 @@ namespace StrmAssistant.Options
         {
             LanguageList.Clear();
 
+            // 媒体库范围选项（影片库 / 剧集库 / 混合内容库，即 CollectionType 为 movies、tvshows 或空）。
+            // 消费端（LibraryApi.IsItemLibraryInScope、DoubanAssist）均用 GetCollectionFolders(item).Id 匹配，
+            // 故 Value 取 VirtualFolderInfo.ItemId。
             EpisodeRefreshLibraryList.Clear();
+            DoubanAssistLibraryList.Clear();
 
-            // 剧集刷新媒体库范围的可选项：TvShows 剧集库 + 混合内容库（CollectionType 为空）。
-            // 消费者 LibraryApi.IsItemLibraryInScope 用 GetCollectionFolders(item).Id 匹配，故 Value 取 VirtualFolderInfo.ItemId。
             try
             {
                 var libraries = Plugin.LibraryManager?.GetVirtualFolders();
@@ -413,28 +420,43 @@ namespace StrmAssistant.Options
                     {
                         var collectionType = library.CollectionType;
 
-                        if (string.IsNullOrEmpty(collectionType) ||
-                            string.Equals(collectionType, "tvshows", StringComparison.OrdinalIgnoreCase))
+                        if (!string.IsNullOrEmpty(collectionType) &&
+                            !string.Equals(collectionType, "movies", StringComparison.OrdinalIgnoreCase) &&
+                            !string.Equals(collectionType, "tvshows", StringComparison.OrdinalIgnoreCase))
                         {
-                            EpisodeRefreshLibraryList.Add(new EditorSelectOption
-                            {
-                                Value = library.ItemId,
-                                Name = library.Name,
-                                IsEnabled = true,
-                            });
+                            continue;
                         }
+
+                        EpisodeRefreshLibraryList.Add(new EditorSelectOption
+                        {
+                            Value = library.ItemId,
+                            Name = library.Name,
+                            IsEnabled = true,
+                        });
+
+                        DoubanAssistLibraryList.Add(new EditorSelectOption
+                        {
+                            Value = library.ItemId,
+                            Name = library.Name,
+                            IsEnabled = true,
+                        });
                     }
                 }
             }
             catch (Exception e)
             {
-                Plugin.Instance.Logger.Warn("EpisodeRefreshLibraryList init failed: " + e.Message);
+                Plugin.Instance.Logger.Warn("Library scope list init failed: " + e.Message);
             }
 
             Plugin.Instance.Logger.Info("EpisodeRefreshLibraryList: " + EpisodeRefreshLibraryList.Count +
                                         " library(ies) - " +
                                         (EpisodeRefreshLibraryList.Count > 0
                                             ? string.Join(", ", EpisodeRefreshLibraryList.Select(o => o.Name))
+                                            : "none"));
+            Plugin.Instance.Logger.Info("DoubanAssistLibraryList: " + DoubanAssistLibraryList.Count +
+                                        " library(ies) - " +
+                                        (DoubanAssistLibraryList.Count > 0
+                                            ? string.Join(", ", DoubanAssistLibraryList.Select(o => o.Name))
                                             : "none"));
 
             foreach (var language in LanguageUtility.MovieDbFallbackLanguages)
