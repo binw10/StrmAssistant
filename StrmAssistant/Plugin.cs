@@ -152,14 +152,14 @@ namespace StrmAssistant
             LibraryManager = libraryManager;
             HttpClient = httpClient;
 
-            MainOptionsStore = new PluginOptionsStore(applicationHost, Logger, Name);
+            MainOptionsStore = new PluginOptionsStore(applicationHost, Logger, ConfigName);
             MediaInfoExtractStore =
-                new MediaInfoExtractOptionsStore(applicationHost, Logger, Name + "_" + nameof(MediaInfoExtractOptions));
+                new MediaInfoExtractOptionsStore(applicationHost, Logger, ConfigName + "_" + nameof(MediaInfoExtractOptions));
             MetadataEnhanceStore =
-                new MetadataEnhanceOptionsStore(applicationHost, Logger, Name + "_" + nameof(MetadataEnhanceOptions));
-            IntroSkipStore = new IntroSkipOptionsStore(applicationHost, Logger, Name + "_" + nameof(IntroSkipOptions));
+                new MetadataEnhanceOptionsStore(applicationHost, Logger, ConfigName + "_" + nameof(MetadataEnhanceOptions));
+            IntroSkipStore = new IntroSkipOptionsStore(applicationHost, Logger, ConfigName + "_" + nameof(IntroSkipOptions));
             ExperienceEnhanceStore = new ExperienceEnhanceOptionsStore(applicationHost, Logger,
-                Name + "_" + nameof(ExperienceEnhanceOptions));
+                ConfigName + "_" + nameof(ExperienceEnhanceOptions));
 
             MigrateChineseSearchOptions();
             InitializeOptionCache();
@@ -812,7 +812,12 @@ namespace StrmAssistant
 
         public override Guid Id => _id;
 
-        public sealed override string Name => "StrmAssistant";
+        public sealed override string Name => "StrmAssistantPlus";
+
+        /// <summary>
+        /// 配置文件命名前缀（保持 StrmAssistant 不变以延续旧版配置）。
+        /// </summary>
+        public string ConfigName => "StrmAssistant";
 
         public string CurrentVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString();
 
