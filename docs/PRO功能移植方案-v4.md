@@ -224,3 +224,39 @@
 4. 逐项回归：改配置 → 重启 → 验证行为 → 回滚配置 → 验证恢复。
 5. **涉及 patch/Transpiler 的改动**，须在 4.9.1.90 与 4.10.x 两个 Emby 版本上各跑一次。
 6. **Phase 0 专项**：启动日志出现 `API Version: V4_10`（而非 V4_9_x），且 `IsVersionAtLeast` 语义正确。
+
+---
+
+## 八、执行状态（滚动更新）
+
+### ✅ 已完成 · Phase 0 清雷（提交 `90ff7ea`，已构建 + 已部署到 4.10.1.0 实例）
+| 项 | 改动 | 文件 |
+|---|---|---|
+| BUG-1 | `EmbyApiVersion` 数值序改为 `major*1e6+minor*1e5+build*1e3+rev`；4.10=5000000 恒大于 4.9.x；删除重复的 `V4_10_0` | `Core/EmbyApiVersion.cs` |
+| BUG-2 | `hdrs` 补 `'HDR Vivid'`；新增 `rankOf()`，未知档归最低档（修 `Math.max(0,-1)` 误判最高档） | `Web/Resources/strmassistant.js` |
+| BUG-3 | 新增 `MovieDbVersion`/`MovieDbVersionTier`/`IsMovieDbVersionCompatible`；`ChineseMovieDb.OnInitialize` 输出缺失组件告警 | `Options/MetadataEnhanceOptions.cs`、`Mod/ChineseMovieDb.cs` |
+| BUG-6 | 删除零引用常量 `Version4910/80/90` | `Common/EmbyVersionCompatibility.cs` |
+| **新增 bug（构建时发现）** | 修复 `Resources.resx` / `Resources.zh.resx` 的**跨语言重复键**（MSB3568 静默丢译文：英文 resx 混入中文块、简体 resx 混入繁体块） | `Properties/Resources*.resx` |
+
+### ✅ 已完成 · Phase 1（部分，提交 `90ff7ea`）
+| 项 | 结论 |
+|---|---|
+| `EpisodeRefreshLibraryScope`（剧集刷新按库范围） | ✅ 新增配置项 + `LibraryApi.IsItemLibraryInScope` 过滤 + 三语资源 + Designer |
+| resx 重复键 | ✅ 已清理（9 警告 → 1 警告，剩余为既有 CS1998） |
+
+### ⏸ 已评估但**暂缓**（附理由，非遗漏）
+| 项 | 暂缓理由 |
+|---|---|
+| `ExclusiveControl` 补 3 项（BlockRemoteFetcher / CatchAllAllowChapterImage / UnconditionalBlock） | 仅知选项名、不知 PRO 精确语义；无条件加枚举 = UI 可见但无行为的死开关，违反"宁缺毋滥"红线。需先实探语义再落地 |
+| `ImageCapturePostProcess.GenerateBackdrop` | 需新增"从视频生成 backdrop 图并写回 Backdrop 类型"链路，非配置项改动；语义（何时生成/覆盖策略）未确认，暂缓 |
+| `DoubanAccessToken` | 本地豆瓣走 `movie.douban.com` HTML + `subject_suggest` + wikidata + mdblist，**未使用 frodo v22 API**，该令牌本地无落点；若将来接入 frodo 再加 |
+
+### ⏭ 未开始
+- Phase 2（UI：OptimizeMediaItemOrder 四选补完 / ShowCollectionsFromSeasons / EnforceUserPreferences）
+- Phase 3（MovieDb 1.9.9.0 实测适配 / 仪表盘 / 刷新偏好多选 / LocalDiscoveryUrl / 冲突检测）
+- Phase 4（本地 TMDB 源 / 分布式 API / 音乐持久化 / ISO / 跨库进度）
+
+### 构建/部署记录
+- `dotnet build -c Release`：**0 错误**；警告 9 → 1（仅剩既有 `SubtitleApi.cs:205 CS1998`）。
+- 部署：`D:\下载\embyserver-win-x64-4.10.1.0\programdata\plugins\StrmAssistant.dll`（13:26，7,117,824 字节）。
+- **待用户重启 Emby 验证**：启动日志应出现 `API Version: V4_10`；`ChineseMovieDb: MovieDb <ver> (tier ...) - all components located` 或明确的缺失告警。
