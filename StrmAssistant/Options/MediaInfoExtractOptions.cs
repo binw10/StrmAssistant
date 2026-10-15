@@ -77,6 +77,15 @@ namespace StrmAssistant.Options
         [Required, MinValue(0)]
         public int MediaInfoExtractionTimeoutMs { get; set; } = 0;
 
+        [Browsable(false)]
+        public bool HasExtractionTimeout => MediaInfoExtractionTimeoutMs > 0;
+
+        [DisplayNameL("MediaInfoExtractOptions_ImageExtractionTimeoutMultiplier_Image_Extraction_Timeout_Multiplier", typeof(Resources))]
+        [DescriptionL("MediaInfoExtractOptions_ImageExtractionTimeoutMultiplier_Multiplier_applied_to_the_extraction_timeout_when_image_capture_runs_for_the_item__Default_is_1_", typeof(Resources))]
+        [Required, MinValue(1), MaxValue(10)]
+        [VisibleCondition(nameof(HasExtractionTimeout), SimpleCondition.IsTrue)]
+        public int ImageExtractionTimeoutMultiplier { get; set; } = 1;
+
         [DisplayNameL("ModOptions_ExclusiveExtract_Exclusive_Extract", typeof(Resources))]
         [DescriptionL("ModOptions_ExclusiveExtract_Only_allow_this_plugin_to_extract_media_info__ffprobe__and_capture_image__ffmpeg___Default_is_OFF_", typeof(Resources))]
         [Required]

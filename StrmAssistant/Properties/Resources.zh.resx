@@ -668,6 +668,12 @@
   <data name="MediaInfoExtractOptions_MediaInfoExtractionTimeoutMs_Per_item_extraction_timeout_in_milliseconds__0_disables_the_timeout__Default_is_0_" xml:space="preserve">
     <value>单条目提取超时（毫秒）。0 表示不启用超时。默认为 0。</value>
   </data>
+  <data name="MediaInfoExtractOptions_ImageExtractionTimeoutMultiplier_Image_Extraction_Timeout_Multiplier" xml:space="preserve">
+    <value>截图提取超时倍数</value>
+  </data>
+  <data name="MediaInfoExtractOptions_ImageExtractionTimeoutMultiplier_Multiplier_applied_to_the_extraction_timeout_when_image_capture_runs_for_the_item__Default_is_1_" xml:space="preserve">
+    <value>条目需要截图时，提取超时按此倍数放大。默认为 1。</value>
+  </data>
   <data name="ExperienceEnhanceOptions_EnhanceNotification_Enhance_Notification" xml:space="preserve">
     <value>通知系统增强</value>
   </data>
@@ -829,6 +835,18 @@
   </data>
   <data name="MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_and_VoteCount_with_Douban_rating__Default_is_OFF_" xml:space="preserve">
     <value>用豆瓣评分覆盖 CommunityRating。默认关闭。</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_Assist_Scope" xml:space="preserve">
+    <value>豆瓣辅助生效范围</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanAssistScrapeScope_Comma_separated_library_IDs_where_Douban_assist_applies__blank_applies_to_all_libraries__Default_is_EMPTY_" xml:space="preserve">
+    <value>逗号分隔的媒体库 ID，豆瓣辅助仅对这些库生效（留空对所有库生效）。默认为空。</value>
+  </data>
+  <data name="MetadataEnhanceOptions_ClearTagline_Clear_Tagline" xml:space="preserve">
+    <value>清标语</value>
+  </data>
+  <data name="MetadataEnhanceOptions_ClearTagline_Clear_taglines_populated_by_the_MovieDb_provider_on_refresh__Default_is_OFF_" xml:space="preserve">
+    <value>刷新时清除 MovieDb 刮削器填充的标语。默认关闭。</value>
   </data>
   <data name="MetadataEnhanceOptions_DoubanCastChinese_Douban_Cast_Chinese_Names" xml:space="preserve">
     <value>豆瓣演员中文名</value>

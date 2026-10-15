@@ -105,6 +105,17 @@ namespace StrmAssistant.Options
         [Required]
         public bool DoubanRatingOverride { get; set; } = false;
 
+        [DisplayNameL("MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_Assist_Scope", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_DoubanAssistScrapeScope_Comma_separated_library_IDs_where_Douban_assist_applies__blank_applies_to_all_libraries__Default_is_EMPTY_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
+        public string DoubanAssistScrapeScope { get; set; } = string.Empty;
+
+        [DisplayNameL("MetadataEnhanceOptions_ClearTagline_Clear_Tagline", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_ClearTagline_Clear_taglines_populated_by_the_MovieDb_provider_on_refresh__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
+        public bool ClearTagline { get; set; } = false;
+
         [DisplayNameL("MetadataEnhanceOptions_DoubanCastChinese_Douban_Cast_Chinese_Names", typeof(Resources))]
         [DescriptionL("MetadataEnhanceOptions_DoubanCastChinese_Replace_English_actor_names_with_Douban_Chinese_names_for_matched_items__Default_is_OFF_", typeof(Resources))]
         [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]

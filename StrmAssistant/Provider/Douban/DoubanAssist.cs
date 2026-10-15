@@ -288,6 +288,17 @@ namespace StrmAssistant.Provider.Douban
 
             if (!options.EnableDoubanAssist || item == null || item.IsLocked) return;
 
+            // 按库生效：DoubanAssistScrapeScope 为库 ID 逗号串，留空 = 全部
+            var scope = options.DoubanAssistScrapeScope;
+            if (!string.IsNullOrWhiteSpace(scope))
+            {
+                var scopeIds = scope.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim()).Where(s => s.Length > 0).ToHashSet(StringComparer.Ordinal);
+                var inScope = BaseItem.LibraryManager.GetCollectionFolders(item)
+                    .Any(f => scopeIds.Contains(f.Id.ToString()));
+                if (!inScope) return;
+            }
+
             var language = item.PreferredMetadataLanguage;
             if (string.IsNullOrEmpty(language) || !language.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
                 return;

@@ -1,4 +1,5 @@
 using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Tasks;
 using StrmAssistant.Common;
@@ -30,13 +31,15 @@ namespace StrmAssistant.ScheduledTask
             _logger.Info("Persist MediaInfo Mode: " + persistMediaInfoMode);
             var mediaInfoRestoreMode = persistMediaInfoMode == PersistMediaInfoOption.Restore.ToString();
 
+            var timeoutMs = Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoExtractionTimeoutMs;
+            var imageMultiplier = Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageExtractionTimeoutMultiplier;
             var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableImageCapture;
             _logger.Info("Enable Image Capture: " + enableImageCapture);
             var enableIntroSkip = Plugin.Instance.IntroSkipStore.GetOptions().EnableIntroSkip;
             _logger.Info("Intro Skip Enabled: " + enableIntroSkip);
 
-            var timeoutMs = Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoExtractionTimeoutMs;
-            if (timeoutMs > 0) _logger.Info("Media Info Extraction Timeout (ms): " + timeoutMs);
+            if (timeoutMs > 0) _logger.Info("Media Info Extraction Timeout (ms): " + timeoutMs +
+                                            ", Image Extraction Timeout Multiplier: " + imageMultiplier);
 
             var items = Plugin.LibraryApi.FetchPreExtractTaskItems();
 
@@ -85,8 +88,15 @@ namespace StrmAssistant.ScheduledTask
                         var itemToken = cancellationToken;
                         if (timeoutMs > 0)
                         {
+                            // 需要截图的条目按倍数放大超时（截图耗时显著高于纯探测）
+                            var effectiveTimeout = timeoutMs;
+                            if (enableImageCapture && !taskItem.HasImage(ImageType.Primary, 0))
+                            {
+                                effectiveTimeout = timeoutMs * Math.Max(1, imageMultiplier);
+                            }
+
                             timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                            timeoutCts.CancelAfter(timeoutMs);
+                            timeoutCts.CancelAfter(effectiveTimeout);
                             itemToken = timeoutCts.Token;
                         }
 

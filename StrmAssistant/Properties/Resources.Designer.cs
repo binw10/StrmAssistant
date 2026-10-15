@@ -1334,6 +1334,61 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to Douban Assist Scope
+        /// </summary>
+        public static string MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_Assist_Scope {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_Assist_Scope", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Comma-separated library IDs where Douban assist applies (blank applies to all libraries). Default is EMPTY..
+        /// </summary>
+        public static string MetadataEnhanceOptions_DoubanAssistScrapeScope_Comma_separated_library_IDs_where_Douban_assist_applies__blank_applies_to_all_libraries__Default_is_EMPTY_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanAssistScrapeScope_Comma_separated_library_IDs_where_Douban_assist_applies__blank_applies_to_all_libraries__Default_is_EMPTY_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Clear Tagline
+        /// </summary>
+        public static string MetadataEnhanceOptions_ClearTagline_Clear_Tagline {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_ClearTagline_Clear_Tagline", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Clear taglines populated by the MovieDb provider on refresh. Default is OFF..
+        /// </summary>
+        public static string MetadataEnhanceOptions_ClearTagline_Clear_taglines_populated_by_the_MovieDb_provider_on_refresh__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_ClearTagline_Clear_taglines_populated_by_the_MovieDb_provider_on_refresh__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Image Extraction Timeout Multiplier
+        /// </summary>
+        public static string MediaInfoExtractOptions_ImageExtractionTimeoutMultiplier_Image_Extraction_Timeout_Multiplier {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_ImageExtractionTimeoutMultiplier_Image_Extraction_Timeout_Multiplier", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Multiplier applied to the extraction timeout when image capture runs for the item. Default is 1..
+        /// </summary>
+        public static string MediaInfoExtractOptions_ImageExtractionTimeoutMultiplier_Multiplier_applied_to_the_extraction_timeout_when_image_capture_runs_for_the_item__Default_is_1_ {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_ImageExtractionTimeoutMultiplier_Multiplier_applied_to_the_extraction_timeout_when_image_capture_runs_for_the_item__Default_is_1_", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Intro Detection Fingerprint Length (Minute).
         /// </summary>
         public static string IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Minutes {

@@ -22,6 +22,7 @@ namespace StrmAssistant.Mod
         public static MergeMultiVersion MergeMultiVersion;
         public static ExclusiveExtract ExclusiveExtract;
         public static ChineseMovieDb ChineseMovieDb;
+        public static ClearTagline ClearTagline;
         public static ChineseTvdb ChineseTvdb;
         public static EnhanceMovieDbPerson EnhanceMovieDbPerson;
         public static AltMovieDbConfig AltMovieDbConfig;
@@ -81,6 +82,7 @@ namespace StrmAssistant.Mod
             MergeMultiVersion = new MergeMultiVersion();
             ExclusiveExtract = new ExclusiveExtract();
             ChineseMovieDb = new ChineseMovieDb();
+            ClearTagline = new ClearTagline();
             ChineseTvdb = new ChineseTvdb();
             EnhanceMovieDbPerson = new EnhanceMovieDbPerson();
             AltMovieDbConfig = new AltMovieDbConfig();

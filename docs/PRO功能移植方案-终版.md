@@ -1,6 +1,12 @@
-> 本地工程：`D:\下载\AI\StrmAssistant-myp015`（分支 myp015，HEAD `325a916` + 未提交在制品；插件版本 26.3.25 / net6.0）
+> 本地工程：`D:\下载\AI\StrmAssistant-myp015`（分支 myp015，HEAD `981ea5c` = P1 主体已提交；插件版本 26.3.25 / net6.0）
 > 参照对象：PRO **v3.0.0.54**（Wiki「PRO版的功能」功能清单 + `_pro_tmp/decompiled` 反编译逐字段核对）
 > 本版为 v2，替代并修正早前的 `docs/PRO功能移植方案.md`；日期 2026-10-15
+>
+> **决策记录（2026-10-15 用户拍板）**：
+> 1. `SuppressPluginUpdates` **维持删除**（26.3.25 CHANGELOG 为刻意移除），从缺口清单划掉。
+> 2. `LocalDiscoveryUrl` **挪至 P2/P3**（PRO 为多点 UDP/系统信息补丁，需先探明 Emby 4.9 内部结构）。
+> 3. `EnforceLibraryOrder` 与 PRO `EnforceUserPreferences`（强制季集显示样式）**语义不同，不等价**——后者恢复为缺口（P2/P3 低优先）。
+> 4. P1 收尾批：`ClearTagline`、`DoubanAssistScrapeScope`、`ImageExtractionTimeoutMultiplier` 已实施。
 
 ---
 

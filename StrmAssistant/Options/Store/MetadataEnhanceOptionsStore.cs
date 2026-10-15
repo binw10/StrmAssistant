@@ -135,6 +135,18 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
+                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.ClearTagline)))
+                {
+                    if (options.ClearTagline && options.IsModSupported)
+                    {
+                        PatchManager.ClearTagline.Patch();
+                    }
+                    else
+                    {
+                        PatchManager.ClearTagline.Unpatch();
+                    }
+                }
+
                 if (changedProperties.Contains(nameof(MetadataEnhanceOptions.AltMovieDbConfig)))
                 {
                     if (options.AltMovieDbConfig)
