@@ -168,6 +168,9 @@ namespace StrmAssistant.Common
         public static Dictionary<User, bool> AllUsers = new Dictionary<User, bool>();
         public static string[] AdminOrderedViews = Array.Empty<string>();
 
+        /// <summary>首位管理员（按 DateCreated 最早）的 InternalId；用于把其偏好强制到其他用户。</summary>
+        public static long FirstAdminInternalId;
+
         public LibraryApi(ILibraryManager libraryManager, IProviderManager providerManager, IFileSystem fileSystem,
             IMediaMountManager mediaMountManager, IUserManager userManager)
         {
@@ -229,6 +232,7 @@ namespace StrmAssistant.Common
             var firstAdmin = AllUsers.Where(kvp => kvp.Value).Select(u => u.Key).OrderBy(u => u.DateCreated)
                 .FirstOrDefault();
             AdminOrderedViews = firstAdmin?.Configuration.OrderedViews ?? AdminOrderedViews;
+            FirstAdminInternalId = firstAdmin?.InternalId ?? FirstAdminInternalId;
         }
 
         public bool HasMediaInfo(BaseItem item)

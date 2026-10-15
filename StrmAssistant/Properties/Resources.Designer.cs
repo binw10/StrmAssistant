@@ -3433,6 +3433,43 @@ namespace StrmAssistant.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Library order.
+        /// </summary>
+        public static string EnforceUserDisplayOption_LibraryOrder_LibraryOrder {
+            get {
+                return ResourceManager.GetString("EnforceUserDisplayOption_LibraryOrder_LibraryOrder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Season/Episode display style.
+        /// </summary>
+        public static string EnforceUserDisplayOption_SeriesDisplay_SeriesDisplay {
+            get {
+                return ResourceManager.GetString("EnforceUserDisplayOption_SeriesDisplay_SeriesDisplay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Enforce User Preferences Scope.
+        /// </summary>
+        public static string UIFunctionOptions_EnforceUserPreferencesScope_Enforce_User_Preferences_Scope {
+            get {
+                return ResourceManager.GetString("UIFunctionOptions_EnforceUserPreferencesScope_Enforce_User_Preferences_Scope", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Which of the first admin&apos;s preferences are enforced for all users..
+        /// </summary>
+        public static string UIFunctionOptions_EnforceUserPreferencesScope_Which_of_the_first_admin_s_preferences_are_enforced_for_all_users__Default_is_LibraryOrder_ {
+            get {
+                return ResourceManager.GetString("UIFunctionOptions_EnforceUserPreferencesScope_Which_of_the_first_admin_s_preferen" +
+                        "ces_are_enforced_for_all_users__Default_is_LibraryOrder_", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Add MovieDb support for the view missing episodes function, support Episode Group. Default is OFF..
         /// </summary>
         public static string UIFunctionOptions_EnhanceMissingEpisodes_Add_MovieDb_support_for_the_missing_episodes_function__Default_is_OFF_ {

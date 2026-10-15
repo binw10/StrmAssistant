@@ -305,6 +305,18 @@
   <data name="UIFunctionOptions_EnforceLibraryOrder_Enforce_library_order_per_the_first_admin__Default_if_OFF_" xml:space="preserve">
     <value>首位管理员的自定义媒体库排序作用于所有用户，默认关闭。</value>
   </data>
+  <data name="EnforceUserDisplayOption_LibraryOrder_LibraryOrder" xml:space="preserve">
+    <value>媒体库排序</value>
+  </data>
+  <data name="EnforceUserDisplayOption_SeriesDisplay_SeriesDisplay" xml:space="preserve">
+    <value>季集显示样式</value>
+  </data>
+  <data name="UIFunctionOptions_EnforceUserPreferencesScope_Enforce_User_Preferences_Scope" xml:space="preserve">
+    <value>强制用户偏好范围</value>
+  </data>
+  <data name="UIFunctionOptions_EnforceUserPreferencesScope_Which_of_the_first_admin_s_preferences_are_enforced_for_all_users__Default_is_LibraryOrder_" xml:space="preserve">
+    <value>首位管理员的哪些偏好强制作用于所有用户。默认媒体库排序。</value>
+  </data>
   <data name="IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Minutes" xml:space="preserve">
     <value>片头声纹探测时长 (分钟)</value>
   </data>

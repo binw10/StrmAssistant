@@ -269,6 +269,18 @@
 - 安全边界：三项均未选中 → 不打补丁（零行为变化）；方法缺失逐项跳过；postfix 内 try/catch 不影响主流程。
 - **假设（待实测）**：`CollectionPerItemDateCreated` 取「创建日期升序」。
 
+### ✅ 已完成 · EnforceUserPreferences（SeriesDisplay 分支，PRO 同构）
+**侦察更正**：PRO 的 `EnforceUserPreferences`（bool，**复用 EnforceLibraryOrder 的资源键**）+ 独立属性 `EnforceUserPreferencesScope`（多选 `EnforceUserDisplayOption` = `LibraryOrder` / `SeriesDisplay`）。即本地既有 `EnforceLibraryOrder` ≈ PRO 的 `LibraryOrder` 分支；缺口是 `SeriesDisplay`。
+
+**机制还原（PRO 反编译 `AA---------/A----------.cs:13246-13500`）**：`SeriesDisplay` 通过 **Emby 用户显示偏好**（`DisplayPreferences.CustomPrefs["seriesDisplay"]`）实现——把**首位管理员**的该值强制给其他用户。PRO 挂了 4 处（读侧注入 + 写侧覆盖）。
+
+**本地实现（取最安全子集）**：新增 `Mod/EnforceUserPreferences.cs`，仅在 `Scope` 含 `SeriesDisplay` 时打补丁：
+- 前缀 `UserManager.UpdatePartialUserSettings(long userId, Dictionary<string,string> values)`：首位管理员保存偏好时捕获 `seriesDisplay`。
+- 后缀 `UserManager.GetUserSettings(long userId, CancellationToken)`：对非管理员用户把该值注入返回字典——**只改内存返回值，不落库**，规避误写风险。
+- `LibraryApi` 新增 `FirstAdminInternalId`（复用 `FetchAdminOrderedViews` 已算出的首位管理员）。
+**已知覆盖限制**：`GetUserSettings` 对应 Emby 的 `client=emby` 路径；非 `emby` 客户端的每项 `displaypreferences_{client}_{id}` 路径（`Emby.Api.DisplayPreferencesService`）未纳入，待验证后按需扩展。
+**风险取舍**：PRO 的写侧挂钩会持久化改写用户偏好，本实现刻意只做读侧注入（可逆、不污染用户数据）。
+
 ### ✅ 已完成 · ShowCollectionsFromSeasons（钩子已定位并实现）
 **反编译定位（本轮关键突破）**：从 PRO 反编译出发——
 - PRO 的 patch 目标是一个 **`Emby.Api` 内、非 public、签名为 `(GetItems 请求, ..., User)` 的方法**（PRO 用 `AccessTools.GetDeclaredMethods + name + !IsPublic + 最少参数` 解析）。

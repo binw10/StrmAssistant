@@ -59,6 +59,24 @@ namespace StrmAssistant.Options
         [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
         public bool EnforceLibraryOrder { get; set; } = false;
 
+        public enum EnforceUserDisplayOption
+        {
+            [DescriptionL("EnforceUserDisplayOption_LibraryOrder_LibraryOrder", typeof(Resources))]
+            LibraryOrder,
+            [DescriptionL("EnforceUserDisplayOption_SeriesDisplay_SeriesDisplay", typeof(Resources))]
+            SeriesDisplay
+        }
+
+        [Browsable(false)]
+        public List<EditorSelectOption> EnforceUserDisplayOptionList { get; set; } = new List<EditorSelectOption>();
+
+        [DisplayNameL("UIFunctionOptions_EnforceUserPreferencesScope_Enforce_User_Preferences_Scope", typeof(Resources))]
+        [DescriptionL("UIFunctionOptions_EnforceUserPreferencesScope_Which_of_the_first_admin_s_preferences_are_enforced_for_all_users__Default_is_LibraryOrder_", typeof(Resources))]
+        [EditMultilSelect]
+        [SelectItemsSource(nameof(EnforceUserDisplayOptionList))]
+        [VisibleCondition(nameof(EnforceLibraryOrder), SimpleCondition.IsTrue)]
+        public string EnforceUserPreferencesScope { get; set; } = EnforceUserDisplayOption.LibraryOrder.ToString();
+
         [DisplayNameL("UIFunctionOptions_NoBoxsetsAutoCreation_Prevent_Boxsets_Auto_Creation", typeof(Resources))]
         [DescriptionL("UIFunctionOptions_NoBoxsetsAutoCreation_Prevent_automatic_boxset_library_creation__Default_is_OFF_", typeof(Resources))]
         [Required]
@@ -147,6 +165,20 @@ namespace StrmAssistant.Options
                 };
 
                 ItemOrderOptionList.Add(selectOption);
+            }
+
+            EnforceUserDisplayOptionList.Clear();
+
+            foreach (Enum item in Enum.GetValues(typeof(EnforceUserDisplayOption)))
+            {
+                var selectOption = new EditorSelectOption
+                {
+                    Value = item.ToString(),
+                    Name = Utility.GetEnumDescription(item),
+                    IsEnabled = true,
+                };
+
+                EnforceUserDisplayOptionList.Add(selectOption);
             }
         }
     }

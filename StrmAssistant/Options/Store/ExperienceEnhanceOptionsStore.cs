@@ -140,6 +140,24 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
+                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.EnforceUserPreferencesScope)) ||
+                    changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.EnforceLibraryOrder)))
+                {
+                    var scope = options.UIFunctionOptions.EnforceUserPreferencesScope ?? string.Empty;
+                    var seriesDisplayEnabled =
+                        options.UIFunctionOptions.EnforceLibraryOrder &&
+                        scope.Contains(nameof(EnforceUserDisplayOption.SeriesDisplay), StringComparison.OrdinalIgnoreCase);
+
+                    if (seriesDisplayEnabled)
+                    {
+                        PatchManager.EnforceUserPreferences.Patch();
+                    }
+                    else
+                    {
+                        PatchManager.EnforceUserPreferences.Unpatch();
+                    }
+                }
+
                 if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.BeautifyMissingMetadata)))
                 {
                     if (options.UIFunctionOptions.BeautifyMissingMetadata)
