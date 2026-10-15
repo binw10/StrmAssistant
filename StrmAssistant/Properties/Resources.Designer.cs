@@ -1460,6 +1460,25 @@ namespace StrmAssistant.Properties {
                 return ResourceManager.GetString("UIFunctionOptions_BlockSearchRecommend_Hide_the_recommendations_section_on_the_search_page__Default_is_OFF_", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Collections from Seasons.
+        /// </summary>
+        public static string UIFunctionOptions_ShowCollectionsFromSeasons_Show_Collections_from_Seasons {
+            get {
+                return ResourceManager.GetString("UIFunctionOptions_ShowCollectionsFromSeasons_Show_Collections_from_Seasons", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show collections for TV show considering its seasons..
+        /// </summary>
+        public static string UIFunctionOptions_ShowCollectionsFromSeasons_Show_collections_for_TV_show_considering_its_seasons__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("UIFunctionOptions_ShowCollectionsFromSeasons_Show_collections_for_TV_show_consider" +
+                        "ing_its_seasons__Default_is_OFF_", resourceCulture);
+            }
+        }
 
         /// <summary>
         /// <summary>

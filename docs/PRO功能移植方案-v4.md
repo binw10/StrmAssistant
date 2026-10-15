@@ -269,10 +269,14 @@
 - 安全边界：三项均未选中 → 不打补丁（零行为变化）；方法缺失逐项跳过；postfix 内 try/catch 不影响主流程。
 - **假设（待实测）**：`CollectionPerItemDateCreated` 取「创建日期升序」。
 
-### ⏸ 暂缓 · ShowCollectionsFromSeasons（唯一未完成项）
-- 语义已知（"某季在合集 → 整部剧视为合集成员"），但**挂点未定位**：`Series` 仅暴露 `LibraryManager.GetCollectionFolders(item)`（返回媒体库，非合集），合集归属走 BoxSet 成员查询，PRO 的落点埋在混淆 helper。
-- 需在 `Emby.Api` / `Emby.Server.Implementations` 中定位"剧集详情页合集列表"的 id 列表构建点，再并入季的 InternalId。
-- 判定：改错会破坏剧集页合集展示，**不做无把握的猜测实现**（红线：宁缺毋滥）。
+### ✅ 已完成 · ShowCollectionsFromSeasons（钩子已定位并实现）
+**反编译定位（本轮关键突破）**：从 PRO 反编译出发——
+- PRO 的 patch 目标是一个 **`Emby.Api` 内、非 public、签名为 `(GetItems 请求, ..., User)` 的方法**（PRO 用 `AccessTools.GetDeclaredMethods + name + !IsPublic + 最少参数` 解析）。
+- 逐层比对后确定唯一匹配：**`Emby.Api.UserLibrary.ItemsService.GetQueryResult(GetItems request, DtoOptions, User user, IDataContext, CancellationToken)`**——`/Items` 查询入口，经 `GetItemsQuery(...)` 消费 `request.ListItemIds`。
+- PRO 前缀逻辑还原：`request is GetItems` && `Limit == 12` && `IncludeItemTypes == "BoxSet"` && `ListItemIds` 恰为**单个 id** → 取该 id 的 `Series`，`series.GetChildren(user).Where(is Season)` 的 `InternalId` 字符串**追加进 `request.ListItemIds`**（"系列id,季id1,季id2…"），使"包含任一季度"的合集也命中。
+（`Limit=12`/`IncludeItemTypes=BoxSet` 正是 Emby 客户端"合集"区域请求的特征。）
+
+**实现（本地）**：新增 `Mod/ShowCollectionsFromSeasons.cs`——反射解析 `Emby.Api.UserLibrary.ItemsService.GetQueryResult`（不引入 Emby.Api 编译引用，沿用 `Assembly.Load("Emby.Api")` 范式），Harmony prefix 复刻上述逻辑；选项 `UIFunctionOptions.ShowCollectionsFromSeasons`；默认 OFF 不打补丁；类型/方法缺失静默跳过。
 
 ### ✅ 已完成 · Phase 4-1 本地 TMDB 缓存（v1，被动缓存；默认关闭）
 **关键侦察（本轮反编译 MovieDb 10.9.5.0 得出，权威）**：

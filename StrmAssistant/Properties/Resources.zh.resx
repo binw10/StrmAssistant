@@ -623,6 +623,12 @@
   <data name="UIFunctionOptions_BlockSearchRecommend_Hide_the_recommendations_section_on_the_search_page__Default_is_OFF_" xml:space="preserve">
     <value>隐藏搜索页的推荐区块。默认关闭。</value>
   </data>
+  <data name="UIFunctionOptions_ShowCollectionsFromSeasons_Show_Collections_from_Seasons" xml:space="preserve">
+    <value>显示季的合集归属</value>
+  </data>
+  <data name="UIFunctionOptions_ShowCollectionsFromSeasons_Show_collections_for_TV_show_considering_its_seasons__Default_is_OFF_" xml:space="preserve">
+    <value>在剧集页显示合集时，同时考虑其季的合集归属。默认关闭。</value>
+  </data>
   <data name="ServerPreferredMetadataLanguageIsNotZh" xml:space="preserve">
     <value>服务器首选元数据语言未设置为中文，刷新演员任务已中止。</value>
   </data>

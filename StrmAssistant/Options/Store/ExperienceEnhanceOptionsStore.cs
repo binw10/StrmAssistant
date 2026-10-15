@@ -178,8 +178,7 @@ namespace StrmAssistant.Options.Store
 
                 if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.OptimizeItemOrderPreferences)) ||
                     changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.OptimizeMediaItemOrder)))
-                {
-                    var prefs = options.UIFunctionOptions.OptimizeItemOrderPreferences ?? string.Empty;
+                {                    var prefs = options.UIFunctionOptions.OptimizeItemOrderPreferences ?? string.Empty;
                     var orderModuleOn =
                         prefs.Contains(nameof(ItemOrderOption.ReverseSeasonOrder), StringComparison.OrdinalIgnoreCase) ||
                         prefs.Contains(nameof(ItemOrderOption.ReverseEpisodeOrder), StringComparison.OrdinalIgnoreCase) ||
@@ -192,6 +191,18 @@ namespace StrmAssistant.Options.Store
                     else
                     {
                         PatchManager.OptimizeItemOrder.Unpatch();
+                    }
+                }
+
+                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.ShowCollectionsFromSeasons)))
+                {
+                    if (options.UIFunctionOptions.ShowCollectionsFromSeasons)
+                    {
+                        PatchManager.ShowCollectionsFromSeasons.Patch();
+                    }
+                    else
+                    {
+                        PatchManager.ShowCollectionsFromSeasons.Unpatch();
                     }
                 }
             }

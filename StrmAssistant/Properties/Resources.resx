@@ -710,6 +710,12 @@
   <data name="UIFunctionOptions_BlockSearchRecommend_Hide_the_recommendations_section_on_the_search_page__Default_is_OFF_" xml:space="preserve">
     <value>Hide the recommendations section on the search page. Default is OFF.</value>
   </data>
+  <data name="UIFunctionOptions_ShowCollectionsFromSeasons_Show_Collections_from_Seasons" xml:space="preserve">
+    <value>Show Collections from Seasons</value>
+  </data>
+  <data name="UIFunctionOptions_ShowCollectionsFromSeasons_Show_collections_for_TV_show_considering_its_seasons__Default_is_OFF_" xml:space="preserve">
+    <value>Show collections for TV show considering its seasons. Default is OFF.</value>
+  </data>
   <data name="ServerPreferredMetadataLanguageIsNotZh" xml:space="preserve">
     <value>Server Preferred Metadata Language is not set to Chinese. RefreshPerson Task Aborted.</value>
   </data>

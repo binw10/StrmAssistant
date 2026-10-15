@@ -111,6 +111,11 @@ namespace StrmAssistant.Options
         [Required]
         public bool BlockSearchRecommend { get; set; } = false;
 
+        [DisplayNameL("UIFunctionOptions_ShowCollectionsFromSeasons_Show_Collections_from_Seasons", typeof(Resources))]
+        [DescriptionL("UIFunctionOptions_ShowCollectionsFromSeasons_Show_collections_for_TV_show_considering_its_seasons__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        public bool ShowCollectionsFromSeasons { get; set; } = false;
+
         [Browsable(false)]
         public bool IsModSupported => RuntimeInformation.ProcessArchitecture == Architecture.X64 || RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
 
