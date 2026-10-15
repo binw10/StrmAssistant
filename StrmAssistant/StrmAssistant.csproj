@@ -6,7 +6,7 @@
     <Version>3.0.54</Version>
     <InformationalVersion>3.0.54</InformationalVersion>
     <CopyLocalLockFileAssemblies>True</CopyLocalLockFileAssemblies>
-    <IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
