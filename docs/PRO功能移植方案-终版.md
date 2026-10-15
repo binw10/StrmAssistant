@@ -66,9 +66,9 @@
 | 项 | 状态 | 说明 |
 |---|---|---|
 | `ClearEmbeddedMetadata`（清内嵌元数据） | ❌ | 本地无此开关（`MediaInfoExtractOptions` 已全文核对） |
-| 搜索词转换（繁→简，语音搜索） | ❌ | `CHTCHSConv` 已随 ILRepack 打进产物，**可复用**，只缺接入搜索入口 |
+| 搜索词转换（繁→简，语音搜索） | ✅ | **已覆盖**：`NormalizeQueryTerm` 挂在 SQLite `@SearchTerm` 绑定参数 + 索引侧 `NormalizeSearchTerm` 双侧归一化 |
 | `RatingUpdateLookbackDays`（豆瓣评分回看天数） | ❌ | PRO 在 `MetadataRefreshOptions`；本地为即时评分 |
-| `EnableAutomaticIntroScraping` | ❌ | PRO `IntroSkipScrapeOptions.cs:61-64`；本地只有手动/计划任务 |
+| `EnableAutomaticIntroScraping` | ✅ | **已等价实现**：`Plugin.OnRefreshCompleted` 在 `EnableIntroDbScrape` 开启时自动对刷新完成的 Series/Movie 触发 `ScrapeSeriesAsync/ScrapeMovieAsync` |
 | 多版本排序/美化细分偏好组 | 🔧 | 本地 `EnableMultiVersionEnhance` 已实现主体，缺 PRO 的 `MultiVersionDisplayOption`/`SortOption`/`ReorderPreference` 细分 |
 
 ### P2 · UI / 前端注入补完
@@ -114,14 +114,14 @@
 
 1. **Transpiler 单形态匹配** — [MergeMultiVersion.cs:240](file:///d:/下载/AI/StrmAssistant-myp015/StrmAssistant/Mod/MergeMultiVersion.cs#L240) `FolderGroupingLimitTranspiler` 只匹配 `code[i].Calls(get_Count) && code[i+1].opcode == OpCodes.Ldc_I4_8`。
    - 风险：仅覆盖 `ldc.i4.8`（即 C# 字面量 `8` 的常态编码）。若某编译版本把 `8` 编成 `ldc.i4.s 8` / `ldc.i4 8`，则**静默不替换**（`replaced==0`，仅 DebugMode 才打印）。
-   - 建议：扩展为同时匹配 `Ldc_I4_8`/`Ldc_I4_S(value==8)`/`Ldc_I4(value==8)`；并在 `replaced==0` 时**至少 Warn 一次**。**须在 4.9.1.90 与 4.10.0.29 双 IL 实测**。
+   - ✅ **已修复**：Transpiler 已扩展匹配三种编码形态，`replaced==0` 时 Warn（不再静默）。双 IL 实测仍建议执行。
 2. **`FfmpegPathOverride.SetBackingField` 的 initonly 分支为空操作** — [FfmpegPathOverride.cs:77-81](file:///d:/下载/AI/StrmAssistant-myp015/StrmAssistant/Common/FfmpegPathOverride.cs#L77-L81)。
    - `if (field == null || field.IsInitOnly) { if (field == null) return false; }` —— 当字段为 `initonly` 时**不拦截**，直接落到 `field.SetValue`；.NET Core 下对 initonly 字段写入会抛 `FieldAccessException`，被 catch 后返回 false。**注释所称「走反射去除 initonly 标记」并未实现**，属误导性死代码。
-   - 建议：要么实现 `FieldInfo` 的 initonly 去除（`RuntimeHelpers`/`FieldAccessor` 路径），要么删掉该分支并保留清晰 Warn。
-3. **`FfmpegPathOverride` 缺 PRO 的路径校验语义** — PRO 有 `CustomProbePathNotExist` 之类校验；本地仅在 `Apply` 时 `File.Exists` 跳过，**配置保存时不报错**，用户可能长期以为生效。建议改为保存期校验 + 状态区提示。
+   - ✅ **已修复**：移除误导性 initonly 分支，直接 `SetValue`（.NET Core 反射写 initonly 字段有效，失败落入 catch）。
+3. **`FfmpegPathOverride` 缺 PRO 的路径校验语义** — PRO 有 `CustomProbePathNotExist` 之类校验；本地仅在 `Apply` 时 `File.Exists` 跳过，**配置保存时不报错**，用户可能长期以为生效。✅ **已修复**：`MediaInfoExtractOptionsStore.OnFileSaving` 保存期校验自定义路径，不存在即 Warn。
 4. **MovieDb 无版本分档** — [MetadataEnhanceOptions.cs:247-248](file:///d:/下载/AI/StrmAssistant-myp015/StrmAssistant/Options/MetadataEnhanceOptions.cs#L247-L248) 只 `Any(a => a.GetName().Name == "MovieDb")`。PRO 已适配 MovieDb 1.9.9.0（v3.0.0.55）。若 MovieDb 内部 API 变动，本地 patch 会静默失效。
 5. **`MergeMultiVersion` 反射按方法名查找** — [MergeMultiVersion.cs:91](file:///d:/下载/AI/StrmAssistant-myp015/StrmAssistant/Mod/MergeMultiVersion.cs#L91) `typeof(Series).GetMethod("AddLibrariesToPresentationUniqueKey", ...)`。Emby 若改名/改签名即失效（有 `missingComponents` 兜底，但功能静默降级）。
-6. **`EmbyVersionAdapter` 分档上限为 4.9.2** — [EmbyVersionAdapter.cs:74-83](file:///d:/下载/AI/StrmAssistant-myp015/StrmAssistant/Core/EmbyVersionAdapter.cs#L74-L83)。4.10.x 被归入 `V4_9_2`，若未来 4.10.x 内部结构再变，分档粒度不足。
+6. ✅ **已修复**：新增 `V4_10 = 41000` 分档。**顺带修复枚举数值序 bug**：原 `V4_9_2 = 4920` 小于 `V4_9_1_90 = 49190`，4.9.2+ 实例 `IsVersionAtLeast(V4_9_1_90)` 误判为 false——`V4_9_2` 已改 49200。
 7. **`EmbyVersionCompatibility.cs` 已废弃但仍保留** — 头注释自述「已被 EmbyVersionAdapter 取代，保留仅为向后兼容」。属可清理技术债（非 bug）。
 
 ### 5.2 环境级适配注意（非代码 bug，但属「适配版本问题」）
