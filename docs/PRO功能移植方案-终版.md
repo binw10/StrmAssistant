@@ -75,7 +75,7 @@
 | 项 | 状态 | 说明 |
 |---|---|---|
 | `OptimizeMediaItemOrder` + `OptimizeItemOrderPreferences`（四选） | ❌ → **方案重设计** | PRO 语义已探明："Optimize natural sort, in library collection order"——patch SQLite 查询构建层 `OrderBy` 列表（签名 `(InternalItemsQuery, string, List<(string,SortOrder)>)`，5 个加密排序字段需解密器还原，四选值集同为加密）。**替代设计（更优）**：✅ **已实施**——`PinyinSortName.CreateSortNamePostfix` 加自然序数字补零（数字段 PadLeft 10），开关 `OptimizeMediaItemOrder`（UI 功能页）。开启后条目刷新/入库时 SortName 重算即自然序；存量条目需触发一次 SortName 重算（刷新元数据） |
-| `ShowCollectionsFromSeasons`（季的合集归属） | ❌ | PRO `UIFunctionOptions.cs:787-789`；消费点 `AA---------.cs:5254` |
+| `ShowCollectionsFromSeasons`（季的合集归属） | ❌ → **语义已探明** | "Show collections for TV show considering its seasons"：季在合集里 → 整部剧视为合集成员（PRO patch 合集条目 ID 列表构建，把 Series 子季的 InternalId 并入，`A----------.cs:32280`）。正确挂点需实探 Emby 4.10 的合集成员枚举方法签名，待下轮 |
 | `EnforceUserPreferences` + `EnforceUserPreferencesScope`（强制季集显示样式） | ❌ | 与本地 `EnforceLibraryOrder` **不等价**；消费点 `AA---------\A----------.cs:13246` |
 | `HidePersonOption.NonChinese` 已是本地三选 | ✅ | 已在 `UIFunctionOptions.cs:31` |
 | JS 注入套件扩展（`GetIndicatorJs`/`GetItemJs`/`GetListJs` 等） | 🔧 | 本地为单入口 [GetStrmAssistantJs.cs](file:///d:/下载/AI/StrmAssistant-myp015/StrmAssistant/Web/Api/GetStrmAssistantJs.cs) + [strmassistant.js](file:///d:/下载/AI/StrmAssistant-myp015/StrmAssistant/Web/Resources/strmassistant.js)；`BlockSearchRecommend`/`ShowLibraryItemCount`/`ReplaceUnplayedWithTotal` 都靠它 |
