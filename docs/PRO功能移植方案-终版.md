@@ -74,7 +74,7 @@
 ### P2 · UI / 前端注入补完
 | 项 | 状态 | 说明 |
 |---|---|---|
-| `OptimizeMediaItemOrder` + `OptimizeItemOrderPreferences`（四选） | ❌ → **方案重设计** | PRO 语义已探明："Optimize natural sort, in library collection order"——patch SQLite 查询构建层 `OrderBy` 列表（签名 `(InternalItemsQuery, string, List<(string,SortOrder)>)`，5 个加密排序字段需解密器还原，四选值集同为加密）。**替代设计（更优）**：在 `PinyinSortName` 的 SortName 写回链路加"自然序数字补零"（如 `第 10 季`→排序键 `...0010`），零 patch 查询层、写回一次生效，待下轮实施 |
+| `OptimizeMediaItemOrder` + `OptimizeItemOrderPreferences`（四选） | ❌ → **方案重设计** | PRO 语义已探明："Optimize natural sort, in library collection order"——patch SQLite 查询构建层 `OrderBy` 列表（签名 `(InternalItemsQuery, string, List<(string,SortOrder)>)`，5 个加密排序字段需解密器还原，四选值集同为加密）。**替代设计（更优）**：✅ **已实施**——`PinyinSortName.CreateSortNamePostfix` 加自然序数字补零（数字段 PadLeft 10），开关 `OptimizeMediaItemOrder`（UI 功能页）。开启后条目刷新/入库时 SortName 重算即自然序；存量条目需触发一次 SortName 重算（刷新元数据） |
 | `ShowCollectionsFromSeasons`（季的合集归属） | ❌ | PRO `UIFunctionOptions.cs:787-789`；消费点 `AA---------.cs:5254` |
 | `EnforceUserPreferences` + `EnforceUserPreferencesScope`（强制季集显示样式） | ❌ | 与本地 `EnforceLibraryOrder` **不等价**；消费点 `AA---------\A----------.cs:13246` |
 | `HidePersonOption.NonChinese` 已是本地三选 | ✅ | 已在 `UIFunctionOptions.cs:31` |

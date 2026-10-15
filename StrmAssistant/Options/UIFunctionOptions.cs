@@ -65,6 +65,11 @@ namespace StrmAssistant.Options
         [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
         public bool NoBoxsetsAutoCreation { get; set; } = false;
 
+        [DisplayNameL("UIFunctionOptions_OptimizeMediaItemOrder_Optimize_Media_Item_Display_Order", typeof(Resources))]
+        [DescriptionL("UIFunctionOptions_OptimizeMediaItemOrder_Optimize_natural_sort__in_library_collection_order__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        public bool OptimizeMediaItemOrder { get; set; } = false;
+
         [DisplayNameL("UIFunctionOptions_ReplaceUnplayedWithTotal_Show_Total_Episodes", typeof(Resources))]
         [DescriptionL("UIFunctionOptions_ReplaceUnplayedWithTotal_Show_total_episode_count_instead_of_unplayed_count_on_series_cards__Default_is_OFF_", typeof(Resources))]
         [Required]

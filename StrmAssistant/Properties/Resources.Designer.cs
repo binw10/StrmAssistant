@@ -1678,6 +1678,25 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to Optimize Media Item Display Order
+        /// </summary>
+        public static string UIFunctionOptions_OptimizeMediaItemOrder_Optimize_Media_Item_Display_Order {
+            get {
+                return ResourceManager.GetString("UIFunctionOptions_OptimizeMediaItemOrder_Optimize_Media_Item_Display_Order", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Optimize natural sort, in library collection order. Sort names have digit sequences zero-padded for natural ordering. Default is OFF..
+        /// </summary>
+        public static string UIFunctionOptions_OptimizeMediaItemOrder_Optimize_natural_sort__in_library_collection_order__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("UIFunctionOptions_OptimizeMediaItemOrder_Optimize_natural_sort__in_library_collection_order__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Intro Detection Fingerprint Length (Minute).
         /// </summary>
         public static string IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Minutes {

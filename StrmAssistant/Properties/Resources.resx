@@ -680,6 +680,12 @@
   <data name="UIFunctionOptions_NoBoxsetsAutoCreation_Prevent_automatic_boxset_library_creation__Default_is_OFF_" xml:space="preserve">
     <value>Hide collection library from user views, if removed, prevent auto creation. Default is OFF.</value>
   </data>
+  <data name="UIFunctionOptions_OptimizeMediaItemOrder_Optimize_Media_Item_Display_Order" xml:space="preserve">
+    <value>Optimize Media Item Display Order</value>
+  </data>
+  <data name="UIFunctionOptions_OptimizeMediaItemOrder_Optimize_natural_sort__in_library_collection_order__Default_is_OFF_" xml:space="preserve">
+    <value>Optimize natural sort, in library collection order. Sort names have digit sequences zero-padded for natural ordering. Default is OFF.</value>
+  </data>
   <data name="UIFunctionOptions_ReplaceUnplayedWithTotal_Show_Total_Episodes" xml:space="preserve">
     <value>Show Total Episodes</value>
   </data>

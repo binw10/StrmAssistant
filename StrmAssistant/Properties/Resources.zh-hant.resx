@@ -593,6 +593,12 @@
   <data name="UIFunctionOptions_NoBoxsetsAutoCreation_Prevent_automatic_boxset_library_creation__Default_is_OFF_" xml:space="preserve">
     <value>使用者介面隱藏合集媒體庫，若刪除可避免掃庫時自動創建，預設為關閉。</value>
   </data>
+  <data name="UIFunctionOptions_OptimizeMediaItemOrder_Optimize_Media_Item_Display_Order" xml:space="preserve">
+    <value>最佳化條目顯示排序</value>
+  </data>
+  <data name="UIFunctionOptions_OptimizeMediaItemOrder_Optimize_natural_sort__in_library_collection_order__Default_is_OFF_" xml:space="preserve">
+    <value>啟用自然排序：排序名中的數字串自動補零，使 2 排在 10 之前。預設為關閉。</value>
+  </data>
   <data name="UIFunctionOptions_ReplaceUnplayedWithTotal_Show_Total_Episodes" xml:space="preserve">
     <value>顯示總集數</value>
   </data>

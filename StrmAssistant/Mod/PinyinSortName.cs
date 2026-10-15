@@ -57,12 +57,42 @@ namespace StrmAssistant.Mod
             {
                 var result = new string(__result);
 
-                if (!IsChinese(result)) return;
+                if (IsChinese(result))
+                {
+                    var nameToProcess = __instance is BoxSet ? RemoveDefaultCollectionName(result) : result;
 
-                var nameToProcess = __instance is BoxSet ? RemoveDefaultCollectionName(result) : result;
+                    result = ConvertToPinyinInitials(nameToProcess);
+                }
 
-                __result = ConvertToPinyinInitials(nameToProcess).AsSpan();
+                // OptimizeMediaItemOrder：SortName 数字段左补零实现自然排序（2 排在 10 前）。
+                // SortName 仅用于排序不用于显示，补零无视觉影响。
+                if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions.OptimizeMediaItemOrder &&
+                    ContainsDigits(result))
+                {
+                    result = Naturalize(result);
+                }
+
+                __result = result.AsSpan();
             }
+        }
+
+        private static bool ContainsDigits(string value)
+        {
+            foreach (var ch in value)
+            {
+                if (ch >= '0' && ch <= '9') return true;
+            }
+
+            return false;
+        }
+
+        private static readonly System.Text.RegularExpressions.Regex DigitSequence =
+            new System.Text.RegularExpressions.Regex(@"\d+",
+                System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        private static string Naturalize(string sortName)
+        {
+            return DigitSequence.Replace(sortName, m => m.Value.PadLeft(10, '0'));
         }
 
         [HarmonyPostfix]
