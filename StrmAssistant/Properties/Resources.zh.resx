@@ -956,8 +956,8 @@
   <data name="MetadataEnhanceOptions_DoubanRatingOverride_Override_Rating_With_Douban" xml:space="preserve">
     <value>使用豆瓣评分覆盖</value>
   </data>
-  <data name="MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_and_VoteCount_with_Douban_rating__Default_is_OFF_" xml:space="preserve">
-    <value>用豆瓣评分覆盖 CommunityRating。默认关闭。</value>
+  <data name="MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_with_Douban_rating__Default_is_OFF_" xml:space="preserve">
+    <value>用豆瓣评分覆盖 Emby 的社区评分（CommunityRating）：开启后 Emby 显示的评分就是豆瓣分。默认关闭。</value>
   </data>
   <data name="MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_Assist_Scope" xml:space="preserve">
     <value>豆瓣辅助生效范围</value>

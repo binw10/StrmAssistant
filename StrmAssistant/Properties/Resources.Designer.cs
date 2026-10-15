@@ -865,11 +865,11 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Overwrite CommunityRating and VoteCount with Douban rating. Default is OFF..
+        ///   Looks up a localized string similar to Overwrite the community rating (CommunityRating) with the Douban rating..
         /// </summary>
-        public static string MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_and_VoteCount_with_Douban_rating__Default_is_OFF_ {
+        public static string MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_with_Douban_rating__Default_is_OFF_ {
             get {
-                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_and_VoteCount_with_Douban_rating__Default_is_OFF_", resourceCulture);
+                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_with_Douban_rating__Default_is_OFF_", resourceCulture);
             }
         }
 

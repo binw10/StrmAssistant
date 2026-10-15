@@ -221,10 +221,24 @@
                 return info && (info.ItemId !== undefined ? info.ItemId : info.itemId);
             }
 
+            function makeDoubanMark() {
+                // 自绘「豆瓣」标识：绿底圆角方块 + 白「豆」字。
+                // 纯 DOM/CSS，不依赖任何外部图片或网络资源。
+                const mark = document.createElement('span');
+                mark.className = 'douban-mark';
+                mark.setAttribute('style',
+                    'display:inline-block;width:12px;height:12px;line-height:12px;border-radius:3px;' +
+                    'background:#2E963B;color:#fff;font-size:9px;font-weight:700;text-align:center;' +
+                    'margin-right:4px;vertical-align:1px;font-family:"PingFang SC","Microsoft YaHei",sans-serif;');
+                mark.textContent = '\u8C46';
+                return mark;
+            }
+
             function makePill(info, floating) {
                 const pill = document.createElement('div');
                 pill.className = 'douban-badge';
-                pill.textContent = '\u8C46\u74E3 ' + Number(ratingOf(info)).toFixed(1);
+                pill.appendChild(makeDoubanMark());
+                pill.appendChild(document.createTextNode(Number(ratingOf(info)).toFixed(1)));
                 let style = 'z-index:5;background:rgba(0,0,0,.72);color:#ffac2d;font-size:12px;' +
                     'line-height:16px;padding:0 6px;border-radius:8px;pointer-events:none;white-space:nowrap;';
                 style += floating ? 'position:absolute;top:4px;right:4px;' : 'display:inline-block;vertical-align:middle;';

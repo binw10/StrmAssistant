@@ -113,7 +113,7 @@ namespace StrmAssistant.Options
         public string DoubanCookie { get; set; } = string.Empty;
 
         [DisplayNameL("MetadataEnhanceOptions_DoubanRatingOverride_Override_Rating_With_Douban", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_and_VoteCount_with_Douban_rating__Default_is_OFF_", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_with_Douban_rating__Default_is_OFF_", typeof(Resources))]
         [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
         [Required]
         public bool DoubanRatingOverride { get; set; } = false;

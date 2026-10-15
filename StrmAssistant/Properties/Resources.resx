@@ -1043,8 +1043,8 @@
   <data name="MetadataEnhanceOptions_DoubanRatingOverride_Override_Rating_With_Douban" xml:space="preserve">
     <value>Override Rating With Douban</value>
   </data>
-  <data name="MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_and_VoteCount_with_Douban_rating__Default_is_OFF_" xml:space="preserve">
-    <value>Overwrite CommunityRating with Douban rating. Default is OFF.</value>
+  <data name="MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_with_Douban_rating__Default_is_OFF_" xml:space="preserve">
+    <value>Overwrite the community rating (CommunityRating) with the Douban rating, so the rating shown in Emby becomes the Douban score. Default is OFF.</value>
   </data>
   <data name="MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_Assist_Scope" xml:space="preserve">
     <value>Douban Assist Scope</value>
