@@ -1394,15 +1394,19 @@ namespace StrmAssistant.Common
 
         public List<Episode> FetchEpisodeRefreshTaskItems()
         {
-            var lookBackDays = Plugin.Instance.MetadataEnhanceStore.GetOptions().EpisodeRefreshLookbackDays;
+            var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();
+            var lookBackDays = options.EpisodeRefreshLookbackDays;
             _logger.Info("EpisodeRefresh - Lookback days: " + lookBackDays);
             var lookBackTime = DateTimeOffset.UtcNow.AddDays(-lookBackDays);
 
-            var episodeRefreshScope = Plugin.Instance.MetadataEnhanceStore.GetOptions().EpisodeRefreshScope;
+            var episodeRefreshScope = options.EpisodeRefreshScope;
             _logger.Info("EpisodeRefresh - Scope: " + episodeRefreshScope);
             var episodeRefreshOptions = Enum.GetValues<EpisodeRefreshOption>()
                 .Where(o => episodeRefreshScope?.Contains(o.ToString(), StringComparison.OrdinalIgnoreCase) is true)
                 .ToHashSet();
+
+            var libraryScope = options.EpisodeRefreshLibraryScope;
+            _logger.Info("EpisodeRefresh - Library scope: " + (string.IsNullOrWhiteSpace(libraryScope) ? "<all>" : libraryScope));
 
             var itemsToRefresh = _libraryManager
                 .GetItemList(new InternalItemsQuery
@@ -1410,13 +1414,39 @@ namespace StrmAssistant.Common
                     IncludeItemTypes = new[] { nameof(Episode) }, HasIndexNumber = true, IsLocked = false
                 })
                 .OfType<Episode>()
-                .Where(e => EpisodeNeedsRefresh(e, lookBackTime, episodeRefreshOptions, true))
+                .Where(e => EpisodeNeedsRefresh(e, lookBackTime, episodeRefreshOptions, true) &&
+                            IsItemLibraryInScope(e, libraryScope))
                 .OrderByDescending(GetPremiereDateOrDefault)
                 .ToList();
 
             _logger.Info("EpisodeRefresh - Number of items: " + itemsToRefresh.Count);
 
             return itemsToRefresh;
+        }
+
+        /// <summary>
+        /// 判断条目是否落在给定媒体库范围内。范围为空 = 全部；否则为逗号分隔的库 ID 列表。
+        /// </summary>
+        private bool IsItemLibraryInScope(BaseItem item, string libraryScope)
+        {
+            if (string.IsNullOrWhiteSpace(libraryScope) || item == null) return true;
+
+            var scopeIds = libraryScope
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Where(s => s.Length > 0)
+                .ToHashSet(StringComparer.Ordinal);
+
+            if (scopeIds.Count == 0) return true;
+
+            try
+            {
+                return _libraryManager.GetCollectionFolders(item).Any(f => scopeIds.Contains(f.Id.ToString()));
+            }
+            catch
+            {
+                return true;
+            }
         }
 
         public List<Episode> FetchEpisodeRefreshQueueItems(List<Episode> items)

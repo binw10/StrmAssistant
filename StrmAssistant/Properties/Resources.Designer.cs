@@ -2410,6 +2410,25 @@ namespace StrmAssistant.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Episode Refresh Library Scope.
+        /// </summary>
+        public static string MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_Refresh_Library_Scope {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_Refresh_Library_Scope", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Episode refresh library scope. Blank includes all TV show libraries..
+        /// </summary>
+        public static string MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_refresh_library_scope__Blank_includes_all_TV_shows_libraries_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_refresh_library_scope__Blank_includes_" +
+                        "all_TV_shows_libraries_", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Enable Local Episode Group.
         /// </summary>
         public static string MetadataEnhanceOptions_LocalEpisodeGroup_Local_Episode_Group {

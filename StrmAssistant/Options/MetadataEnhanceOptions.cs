@@ -226,6 +226,10 @@ namespace StrmAssistant.Options
         [Required, MinValue(1)]
         public int EpisodeRefreshLookbackDays { get; set; } = 365;
 
+        [DisplayNameL("MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_Refresh_Library_Scope", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_refresh_library_scope__Blank_includes_all_TV_shows_libraries_", typeof(Resources))]
+        public string EpisodeRefreshLibraryScope { get; set; } = string.Empty;
+
         [DisplayNameL("MetadataEnhanceOptions_EnableAltMovieDbUrl", typeof(Resources))]
         [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
         [Required]
@@ -271,6 +275,39 @@ namespace StrmAssistant.Options
                 {
                     return null;
                 }
+            }
+        }
+
+        /// <summary>
+        /// MovieDb 程序集版本（<see cref="Version"/> 形态）。null 表示未加载或无法解析。
+        /// </summary>
+        [Browsable(false)]
+        public Version MovieDbVersion =>
+            Version.TryParse(MovieDbPluginVersion, out var parsed) ? parsed : null;
+
+        /// <summary>
+        /// MovieDb 已知适配区间下限（PRO 曾分别适配 1.8.6/.7/.8、1.9.1.0、1.9.2.0、1.9.9.0）。
+        /// 低于该下限时，中文刮削/图像参数补丁可能因内部 API 变动而失效。
+        /// </summary>
+        [Browsable(false)]
+        public bool IsMovieDbVersionCompatible =>
+            MovieDbVersion == null || MovieDbVersion >= new Version("1.8.6");
+
+        /// <summary>
+        /// MovieDb 版本档位（用于日志与兼容性告警，非门禁——不因版本高而禁用补丁）。
+        /// </summary>
+        [Browsable(false)]
+        public string MovieDbVersionTier
+        {
+            get
+            {
+                var v = MovieDbVersion;
+                if (v == null) return "Unknown";
+                if (v >= new Version("1.9.9.0")) return "1.9.9.0+";
+                if (v >= new Version("1.9.2.0")) return "1.9.2.0-1.9.8.x";
+                if (v >= new Version("1.9.0.0")) return "1.9.x";
+                if (v >= new Version("1.8.6")) return "1.8.6-1.8.x";
+                return "<1.8.6";
             }
         }
 

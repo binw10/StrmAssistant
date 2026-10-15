@@ -1064,6 +1064,12 @@
   <data name="MetadataEnhanceOptions_EpisodeRefreshLookbackDays_Episode_metadata_refresh_lookback_days__Default_is_365_" xml:space="preserve">
     <value>規劃任務劇集元資料刷新的回溯天數，預設為365天。</value>
   </data>
+  <data name="MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_Refresh_Library_Scope" xml:space="preserve">
+    <value>劇集重新整理媒體庫範圍</value>
+  </data>
+  <data name="MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_refresh_library_scope__Blank_includes_all_TV_shows_libraries_" xml:space="preserve">
+    <value>劇集重新整理的媒體庫範圍，留空表示包含全部劇集庫。</value>
+  </data>
   <data name="MergeScopeOption_FolderScope_FolderScope" xml:space="preserve">
     <value>同目錄合併</value>
   </data>

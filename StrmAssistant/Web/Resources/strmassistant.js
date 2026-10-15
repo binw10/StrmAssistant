@@ -336,14 +336,23 @@
                 });
             }
 
+            // 与后端 MultiVersionService.QualityScore/GetHdrLabel 保持一致的档位顺序（前=最优）。
+            // 注意：顺序必须含 "HDR Vivid"（对应后端 350 分），且未识别的取值应归入最低档，
+            // 不能因为 indexOf 返回 -1 被 Math.max(0, ...) 误判为最高档。
+            function rankOf(list, value) {
+                if (!value) return list.length;
+                const idx = list.indexOf(value);
+                return idx < 0 ? list.length : idx;
+            }
+
             function scoreOf(info) {
                 if (!info) return -1;
                 const labels = ['8K', '4K', '1440p', '1080p', '720p', 'SD'];
-                const hdrs = ['DV', 'HDR10+', 'HDR'];
+                const hdrs = ['DV', 'HDR10+', 'HDR Vivid', 'HDR'];
                 const label = info.Label || info.label;
                 const hdr = info.Hdr || info.hdr;
-                const lr = Math.max(0, labels.indexOf(label));
-                const hr = hdr ? Math.max(0, hdrs.indexOf(hdr)) : hdrs.length;
+                const lr = rankOf(labels, label);
+                const hr = rankOf(hdrs, hdr);
                 const bitrate = (info.Bitrate || info.bitrate || 0) / 1000000;
                 return (labels.length - lr) * 10000 + (hdrs.length + 1 - hr) * 100 + Math.min(bitrate, 99);
             }

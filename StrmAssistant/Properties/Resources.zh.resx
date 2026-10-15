@@ -869,18 +869,6 @@
   <data name="IntroSkipOptions_UnifiedIntroDbProviders_Tried_in_order_until_one_succeeds__Default_is_IntroDb_Tidb_" xml:space="preserve">
     <value>按顺序尝试直到成功，可选 IntroDb 或 Tidb，逗号分隔。默认 IntroDb,Tidb。</value>
   </data>
-  <data name="IntroSkipOptions_TidbApiKey_TIDB_API_Key" xml:space="preserve">
-    <value>TIDB API 金鑰</value>
-  </data>
-  <data name="IntroSkipOptions_TidbApiKey_API_key_increases_daily_usage_limits__Default_is_empty_" xml:space="preserve">
-    <value>用於提升每日請求限額的 TIDB API 金鑰。預設為空。</value>
-  </data>
-  <data name="IntroSkipOptions_UnifiedIntroDbProviders_Unified_IntroDb_Providers" xml:space="preserve">
-    <value>統一片頭資料源</value>
-  </data>
-  <data name="IntroSkipOptions_UnifiedIntroDbProviders_Tried_in_order_until_one_succeeds__Default_is_IntroDb_Tidb_" xml:space="preserve">
-    <value>按順序嘗試直到成功，可選 IntroDb 或 Tidb，逗號分隔。預設 IntroDb,Tidb。</value>
-  </data>
   <data name="ScrapeIntroDbTask_Name_Scrape_Intro_Credits_from_IntroDb" xml:space="preserve">
     <value>从 IntroDb 刮削片头片尾</value>
   </data>
@@ -1075,6 +1063,12 @@
   </data>
   <data name="MetadataEnhanceOptions_EpisodeRefreshLookbackDays_Episode_metadata_refresh_lookback_days__Default_is_365_" xml:space="preserve">
     <value>计划任务剧集元数据刷新的回溯天数，默认为365天。</value>
+  </data>
+  <data name="MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_Refresh_Library_Scope" xml:space="preserve">
+    <value>剧集刷新媒体库范围</value>
+  </data>
+  <data name="MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_refresh_library_scope__Blank_includes_all_TV_shows_libraries_" xml:space="preserve">
+    <value>剧集刷新的媒体库范围，留空表示包含全部剧集库。</value>
   </data>
   <data name="MergeScopeOption_FolderScope_FolderScope" xml:space="preserve">
     <value>同目录合并</value>
