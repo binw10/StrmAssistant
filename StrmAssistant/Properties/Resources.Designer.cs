@@ -414,6 +414,24 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Enable ISO Extraction.
+        /// </summary>
+        public static string MediaInfoExtractOptions_EnableIsoExtraction_Enable_ISO_Extraction {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_EnableIsoExtraction_Enable_ISO_Extraction", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Include ISO images in media info extraction..
+        /// </summary>
+        public static string MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__requires_a_custom_ffprobe_with_DVD_ISO_demuxer_support__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__requires_a_custom_ffprobe_with_DVD_ISO_demuxer_support__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Comma-separated container names or extensions to skip media info extraction. Default is EMPTY..
         /// </summary>
         public static string MediaInfoExtractOptions_MediaInfoExcludeMediaContainers_Comma_separated_container_names_or_extensions_to_skip_media_info_extraction__Default_is_EMPTY_ {

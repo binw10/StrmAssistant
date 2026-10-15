@@ -51,6 +51,10 @@ namespace StrmAssistant.Options
         [Browsable(false)]
         public string ImageCaptureExcludeMediaContainers { get; set; } = string.Empty;
 
+        [DisplayNameL("MediaInfoExtractOptions_EnableIsoExtraction_Enable_ISO_Extraction", typeof(Resources))]
+        [DescriptionL("MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__requires_a_custom_ffprobe_with_DVD_ISO_demuxer_support__Default_is_OFF_", typeof(Resources))]
+        public bool EnableIsoExtraction { get; set; } = false;
+
         [DisplayNameL("MediaInfoExtractOptions_MediaInfoExcludeKeywords_Media_Info_Exclude_Keywords", typeof(Resources))]
         [DescriptionL("MediaInfoExtractOptions_MediaInfoExcludeKeywords_Comma_separated_keywords_matched_against_the_file_path_to_skip_media_info_extraction__Default_is_EMPTY_", typeof(Resources))]
         public string MediaInfoExcludeKeywords { get; set; } = string.Empty;

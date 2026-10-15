@@ -59,11 +59,20 @@ namespace StrmAssistant.Common
                             : (MediaContainers?)null)
                     .Where(container => container.HasValue)
                     .Select(container => container.Value)
-                    .Concat(new[] { MediaContainers.Iso })
+                    .Concat(IsoContainersIfExcluded)
                     .Distinct()
                     .ToArray();
             }
         }
+
+        /// <summary>
+        /// ISO 默认被排除（Emby 原生 ffprobe 通常无法直接读取）；当用户开启「ISO 提取」时不再强制排除，
+        /// 交由自定义 ffprobe（含 dvd-iso demuxer）处理。
+        /// </summary>
+        private static IEnumerable<MediaContainers> IsoContainersIfExcluded =>
+            Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableIsoExtraction
+                ? Enumerable.Empty<MediaContainers>()
+                : new[] { MediaContainers.Iso };
 
         public static string[] ExcludeMediaExtensions
         {
@@ -81,7 +90,9 @@ namespace StrmAssistant.Common
 
                         return Array.Empty<string>();
                     })
-                    .Concat(MediaContainers.Iso.GetAliases())
+                    .Concat(Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableIsoExtraction
+                        ? Array.Empty<string>()
+                        : MediaContainers.Iso.GetAliases())
                     .Where(alias => !string.IsNullOrWhiteSpace(alias))
                     .Distinct()
                     .ToArray();

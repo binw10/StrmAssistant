@@ -728,6 +728,12 @@
   <data name="MediaInfoExtractOptions_MediaInfoExcludeMediaContainers_Comma_separated_container_names_or_extensions_to_skip_media_info_extraction__Default_is_EMPTY_" xml:space="preserve">
     <value>逗號分隔的容器名稱或副檔名，命中則跳過媒體資訊提取。預設為空。</value>
   </data>
+  <data name="MediaInfoExtractOptions_EnableIsoExtraction_Enable_ISO_Extraction" xml:space="preserve">
+    <value>啟用 ISO 擷取</value>
+  </data>
+  <data name="MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__requires_a_custom_ffprobe_with_DVD_ISO_demuxer_support__Default_is_OFF_" xml:space="preserve">
+    <value>將 ISO 映像納入媒體資訊擷取。需要具備 DVD-ISO 解多工能力的自訂 ffprobe。預設為關閉。</value>
+  </data>
   <data name="MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Video_Thumbnail_Exclude_Keywords" xml:space="preserve">
     <value>影片縮圖排除關鍵字</value>
   </data>

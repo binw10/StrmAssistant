@@ -815,6 +815,12 @@
   <data name="MediaInfoExtractOptions_MediaInfoExcludeMediaContainers_Comma_separated_container_names_or_extensions_to_skip_media_info_extraction__Default_is_EMPTY_" xml:space="preserve">
     <value>Comma-separated container names or extensions to skip media info extraction. Default is EMPTY.</value>
   </data>
+  <data name="MediaInfoExtractOptions_EnableIsoExtraction_Enable_ISO_Extraction" xml:space="preserve">
+    <value>Enable ISO Extraction</value>
+  </data>
+  <data name="MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__requires_a_custom_ffprobe_with_DVD_ISO_demuxer_support__Default_is_OFF_" xml:space="preserve">
+    <value>Include ISO images in media info extraction. Requires a custom ffprobe with DVD-ISO demuxer support. Default is OFF.</value>
+  </data>
   <data name="MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Video_Thumbnail_Exclude_Keywords" xml:space="preserve">
     <value>Video Thumbnail Exclude Keywords</value>
   </data>
