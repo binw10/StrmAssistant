@@ -119,6 +119,19 @@ namespace StrmAssistant.Options.Store
                     Plugin.LibraryApi.UpdateLibraryPathsInScope(options.LibraryScope);
                 }
 
+                if (changedProperties.Contains(nameof(MediaInfoExtractOptions.EnableIsoExtraction)))
+                {
+                    if (options.EnableIsoExtraction && Common.IsoMounter.IsSupported)
+                    {
+                        PatchManager.IsoExtraction.Patch();
+                    }
+                    else
+                    {
+                        PatchManager.IsoExtraction.Unpatch();
+                        Common.IsoMounter.DismountAll();
+                    }
+                }
+
                 if (changedProperties.Contains(nameof(MediaInfoExtractOptions.CustomProbePath)) ||
                     changedProperties.Contains(nameof(MediaInfoExtractOptions.CustomEncoderPath)))
                 {

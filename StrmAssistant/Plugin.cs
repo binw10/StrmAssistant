@@ -719,6 +719,7 @@ namespace StrmAssistant
             }
 
             MemoryCleaner.DisposeInstance();
+            Common.IsoMounter.DismountAll();
 
             base.OnUninstalling();
         }

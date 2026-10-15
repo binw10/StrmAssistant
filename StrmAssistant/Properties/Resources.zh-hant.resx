@@ -732,7 +732,7 @@
     <value>啟用 ISO 擷取</value>
   </data>
   <data name="MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__requires_a_custom_ffprobe_with_DVD_ISO_demuxer_support__Default_is_OFF_" xml:space="preserve">
-    <value>將 ISO 映像納入媒體資訊擷取。需要具備 DVD-ISO 解多工能力的自訂 ffprobe。預設為關閉。</value>
+    <value>將 ISO 映像以系統原生方式掛載（Windows 內建 ISO 掛載）後再納入媒體資訊擷取，無需自訂 ffprobe。預設為關閉。</value>
   </data>
   <data name="MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Video_Thumbnail_Exclude_Keywords" xml:space="preserve">
     <value>影片縮圖排除關鍵字</value>
@@ -1149,7 +1149,10 @@
     <value>僅使用覆蓋快取</value>
   </data>
   <data name="MetadataCacheRootFolderNotExist" xml:space="preserve">
-    <value>中繼資料快取根目錄不存在或不可寫入。</value>
+    <value>中繼資料快取根目錄無法使用（所在磁碟或上層目錄不存在，或無寫入權限）。</value>
+  </data>
+  <data name="MetadataCacheRootFolderRequired" xml:space="preserve">
+    <value>啟用本機中繼資料快取前，請先指定快取根目錄。</value>
   </data>
   <data name="MetadataCacheRootFolderNotAllowed" xml:space="preserve">
     <value>中繼資料快取根目錄不被允許（磁碟根或系統目錄）。</value>

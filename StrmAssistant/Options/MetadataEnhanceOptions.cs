@@ -494,12 +494,32 @@ namespace StrmAssistant.Options
                 }
             }
 
-            if (!string.Equals(MetadataCacheMode, MetadataCacheOption.None.ToString(), StringComparison.OrdinalIgnoreCase) &&
-                string.IsNullOrWhiteSpace(MetadataCacheRootFolder))
+            if (!string.Equals(MetadataCacheMode, MetadataCacheOption.None.ToString(), StringComparison.OrdinalIgnoreCase))
             {
-                metadataOptionsErrors = metadataOptionsErrors == null
-                    ? Resources.MetadataCacheRootFolderNotExist
-                    : $"{metadataOptionsErrors}; {Resources.MetadataCacheRootFolderNotExist}";
+                string cacheError = null;
+
+                if (string.IsNullOrWhiteSpace(MetadataCacheRootFolder))
+                {
+                    // 场景：选了缓存模式但还没指定目录 —— 给出「必填」提示，而非误导性的「不存在或不可写」
+                    cacheError = Resources.MetadataCacheRootFolderRequired;
+                }
+                else
+                {
+                    var (ok, code) = LocalMetadataCache.Validate(MetadataCacheRootFolder);
+                    if (!ok)
+                    {
+                        cacheError = code == "ROOT_NOT_ALLOWED"
+                            ? Resources.MetadataCacheRootFolderNotAllowed
+                            : Resources.MetadataCacheRootFolderNotExist;
+                    }
+                }
+
+                if (cacheError != null)
+                {
+                    metadataOptionsErrors = metadataOptionsErrors == null
+                        ? cacheError
+                        : $"{metadataOptionsErrors}; {cacheError}";
+                }
             }
 
             if (!string.IsNullOrEmpty(metadataOptionsErrors))

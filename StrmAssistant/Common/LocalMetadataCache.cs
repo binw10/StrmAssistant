@@ -52,25 +52,88 @@ namespace StrmAssistant.Common
         }
 
         /// <summary>
+        /// 只校验（无副作用，不创建目录）。返回 ok 与错误码：
+        /// EMPTY / INVALID / ROOT_NOT_ALLOWED / NOT_WRITABLE。
+        /// 目录不存在但父目录存在时视为 ok（初始化阶段会自动创建）。
+        /// </summary>
+        public static (bool ok, string code) Validate(string root)
+        {
+            if (string.IsNullOrWhiteSpace(root)) return (false, "EMPTY");
+
+            string full;
+            try
+            {
+                full = Path.GetFullPath(root.Trim());
+            }
+            catch
+            {
+                return (false, "INVALID");
+            }
+
+            var trimmed = full.TrimEnd('\\', '/');
+            if (string.IsNullOrEmpty(trimmed)) return (false, "INVALID");
+
+            // 盘符根
+            if (string.Equals(trimmed, Path.GetPathRoot(full)?.TrimEnd('\\', '/'),
+                    StringComparison.OrdinalIgnoreCase))
+                return (false, "ROOT_NOT_ALLOWED");
+
+            // Windows 系统目录
+            var winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            if (!string.IsNullOrEmpty(winDir) && trimmed.StartsWith(winDir, StringComparison.OrdinalIgnoreCase))
+                return (false, "ROOT_NOT_ALLOWED");
+
+            // Emby programdata 本身（与 PRO 语义一致：不允许把数据目录当缓存根）
+            try
+            {
+                var dataPath = Plugin.Instance?.ApplicationPaths?.ProgramDataPath;
+                if (!string.IsNullOrEmpty(dataPath))
+                {
+                    var dataFull = Path.GetFullPath(dataPath).TrimEnd('\\', '/');
+                    if (string.Equals(trimmed, dataFull, StringComparison.OrdinalIgnoreCase))
+                        return (false, "ROOT_NOT_ALLOWED");
+                }
+            }
+            catch
+            {
+                // 忽略
+            }
+
+            if (Directory.Exists(full))
+            {
+                // 已存在：做一次轻量可写探测，失败则如实报告
+                try
+                {
+                    var probe = Path.Combine(full, ".strmassistant_write_test");
+                    File.WriteAllText(probe, string.Empty);
+                    File.Delete(probe);
+                }
+                catch
+                {
+                    return (false, "NOT_WRITABLE");
+                }
+
+                return (true, null);
+            }
+
+            // 不存在：父目录必须存在（否则无法创建），初始化阶段会创建
+            var parent = Path.GetDirectoryName(full);
+            if (string.IsNullOrEmpty(parent) || !Directory.Exists(parent)) return (false, "INVALID");
+
+            return (true, null);
+        }
+
+        /// <summary>
         /// 校验并初始化缓存根目录，创建所需子目录。返回是否可用及原因。
         /// </summary>
         public static (bool ok, string error) ValidateAndInitialize(string root)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(root)) return (false, "EMPTY");
+                var (ok, code) = Validate(root);
+                if (!ok) return (false, code);
 
                 var full = Path.GetFullPath(root.Trim());
-
-                // 拒绝明显危险/无效的根：盘符根、系统目录
-                if (string.Equals(full.TrimEnd('\\', '/'), Path.GetPathRoot(full)?.TrimEnd('\\', '/'),
-                        StringComparison.OrdinalIgnoreCase))
-                    return (false, "ROOT_NOT_ALLOWED");
-
-                var winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
-                if (!string.IsNullOrEmpty(winDir) &&
-                    full.StartsWith(winDir, StringComparison.OrdinalIgnoreCase))
-                    return (false, "ROOT_NOT_ALLOWED");
 
                 if (!Directory.Exists(full))
                     Directory.CreateDirectory(full);

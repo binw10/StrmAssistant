@@ -819,7 +819,7 @@
     <value>Enable ISO Extraction</value>
   </data>
   <data name="MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__requires_a_custom_ffprobe_with_DVD_ISO_demuxer_support__Default_is_OFF_" xml:space="preserve">
-    <value>Include ISO images in media info extraction. Requires a custom ffprobe with DVD-ISO demuxer support. Default is OFF.</value>
+    <value>Include ISO images in media info extraction by mounting them with the OS (Windows native ISO mount), so the built-in ffprobe can read them. Default is OFF.</value>
   </data>
   <data name="MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Video_Thumbnail_Exclude_Keywords" xml:space="preserve">
     <value>Video Thumbnail Exclude Keywords</value>
@@ -1236,7 +1236,10 @@
     <value>Use Override Cache Only</value>
   </data>
   <data name="MetadataCacheRootFolderNotExist" xml:space="preserve">
-    <value>Metadata cache root folder does not exist or is not writable.</value>
+    <value>Metadata cache root folder is not usable (drive/parent folder missing or not writable).</value>
+  </data>
+  <data name="MetadataCacheRootFolderRequired" xml:space="preserve">
+    <value>Please specify a metadata cache root folder before enabling a cache mode.</value>
   </data>
   <data name="MetadataCacheRootFolderNotAllowed" xml:space="preserve">
     <value>Metadata cache root folder is not allowed (drive root or system folder).</value>

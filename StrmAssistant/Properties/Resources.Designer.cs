@@ -2628,11 +2628,20 @@ namespace StrmAssistant.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Metadata cache root folder does not exist or is not writable..
+        ///   Looks up a localized string similar to Metadata cache root folder is not usable..
         /// </summary>
         public static string MetadataCacheRootFolderNotExist {
             get {
                 return ResourceManager.GetString("MetadataCacheRootFolderNotExist", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Please specify a metadata cache root folder before enabling a cache mode..
+        /// </summary>
+        public static string MetadataCacheRootFolderRequired {
+            get {
+                return ResourceManager.GetString("MetadataCacheRootFolderRequired", resourceCulture);
             }
         }
         

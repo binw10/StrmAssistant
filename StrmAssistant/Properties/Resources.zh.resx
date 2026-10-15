@@ -732,7 +732,7 @@
     <value>启用 ISO 提取</value>
   </data>
   <data name="MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__requires_a_custom_ffprobe_with_DVD_ISO_demuxer_support__Default_is_OFF_" xml:space="preserve">
-    <value>将 ISO 镜像纳入媒体信息提取。需要带 DVD-ISO 解复用能力的自定义 ffprobe。默认关闭。</value>
+    <value>把 ISO 镜像用系统原生方式挂载（Windows 自带 ISO 挂载）后再纳入媒体信息提取，无需自定义 ffprobe。默认关闭。</value>
   </data>
   <data name="MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Video_Thumbnail_Exclude_Keywords" xml:space="preserve">
     <value>视频缩略图排除关键字</value>
@@ -1149,7 +1149,10 @@
     <value>仅使用覆盖缓存</value>
   </data>
   <data name="MetadataCacheRootFolderNotExist" xml:space="preserve">
-    <value>元数据缓存根目录不存在或不可写。</value>
+    <value>元数据缓存根目录不可用（所在盘或上级目录不存在，或无写入权限）。</value>
+  </data>
+  <data name="MetadataCacheRootFolderRequired" xml:space="preserve">
+    <value>启用本地元数据缓存前，请先指定缓存根目录。</value>
   </data>
   <data name="MetadataCacheRootFolderNotAllowed" xml:space="preserve">
     <value>元数据缓存根目录不被允许（盘符根或系统目录）。</value>
