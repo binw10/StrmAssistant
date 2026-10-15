@@ -281,6 +281,40 @@
 **已知覆盖限制**：`GetUserSettings` 对应 Emby 的 `client=emby` 路径；非 `emby` 客户端的每项 `displaypreferences_{client}_{id}` 路径（`Emby.Api.DisplayPreferencesService`）未纳入，待验证后按需扩展。
 **风险取舍**：PRO 的写侧挂钩会持久化改写用户偏好，本实现刻意只做读侧注入（可逆、不污染用户数据）。
 
+### ✅ 已完成 · 刷新偏好多选化（PRO `RefreshPersonPreferences`）
+- `RefreshPersonOption` 扩展为 5 项（Default / FullRefresh / NoAdult / **ExcludeIfChinese** / **DownloadImagesInAdvance**）+ DescriptionL；
+  `RefreshPersonMode` 由隐藏字段改为**可见多选**（`RefreshPersonOptionList` + `EditMultilSelect`，VisibleCondition=EnhanceMovieDbPerson）。
+- `RefreshPersonTask` 接入两项新行为：ExcludeIfChinese（已有中文名+简介即跳过）、DownloadImagesInAdvance（缺头像者不被 30 天策略跳过）。
+
+---
+
+## 九、剩余工作清单（按可落地性排序，含阻塞原因）
+
+> 说明：以下各项**体量/风险明显高于前面批次**，且部分依赖外部产物或实测反馈。已在方案中给出第一步落点，建议**各自独立立项**，不混在一批做（避免半成品沉淀）。
+
+### A. 中等（有明确落点，可做但需实测）
+1. **LocalDiscoveryUrl（本地发现地址 / 反代 / BLOCKED）**
+   - 落点已定位：`Emby.Server.Implementations.Udp.UdpServer.RespondToMessage(IPEndPoint, Encoding)`（内部 `_appHost.GetLocalApiUrl(ip)` 生成宣告地址）。
+   - 风险：`GetLocalApiUrl` 是**全局**方法，直接改会影响所有本地 URL 生成；`BLOCKED` 需在 UdpServer 层跳过响应；async 方法上的 transpler 成本高。
+   - 建议：限缩到 UdpServer 层（prefix 处理 BLOCKED + transpiler 替换 URL 常量），并在实机验证宣告包。
+2. **SeriesDisplay 的「非 emby」客户端路径**
+   - 已覆盖 `client=emby`（UserSettings）；未覆盖 `displaypreferences_{client}_{id}`（`Emby.Api.UserLibrary.DisplayPreferencesService.Get/Post`）。
+   - 落点：`Post(UpdateDisplayPreferences)` prefix 可做写侧强制；`Get` 返回 `object`（含 `ToOptimizedResult` 包装）需解包，成本较高。
+   - 建议：先确认你的客户端实际走哪条路径（实测 display prefs 存储形态），再决定是否扩展。
+
+### B. 依赖外部产物（现在无法做）
+3. **MovieDb 1.9.9.0 适配**：需要 **MovieDb 1.9.9.0 的 dll** 才能比对内部 API 签名（`StrmAssistant.Releases/plugins` 仅有 1.9.5.0）。当前已有 `MovieDbVersionTier` + 缺失组件告警兜底，**升级 MovieDb 后跑一次日志即可判定**是否需要适配。
+
+### C. 大型（各自独立立项，建议逐个排期）
+4. **仪表盘页（Dashboard）**：PRO 为独立页面（内存/活动会话/运行任务/待处理刷新/索引优化回收）。本地已有 `RuntimeStatusList` 状态区，需新建 `DashboardOptions` 视图 + 命令。（**新 UI 页面**）
+5. **ISO/BDMV 提取**：需先移除 `LibraryApi.cs:62/84` 的 `Concat(Iso)` 硬编码排除，再自建 runner + 静态 ffprobe 分段探测 + `.iso.strm`。（**新提取管线**）
+6. **分布式提取 `SyncMediaInfo` API**：若走 rffmpeg 则已可用（`CustomProbePath`）；若要做 PRO 的「集中共享」，需新增 `POST /Items/SyncMediaInfo` + `MediaInfoBundle` 序列化/恢复。（**新 Web 端点**）
+7. **跨库多版本进度（`LibraryScopePlayProgress`）**：需改 `PresentationUniqueKey` 计算链路，影响播放进度/收藏键。（**数据面高风险，放最后**）
+
+### D. 明确不做
+8. **DoubanAccessToken**：本地豆瓣走 `movie.douban.com` HTML + `subject_suggest` + wikidata + mdblist，**不使用 frodo v22 API**，该令牌无落点。
+9. **ClearEmbeddedMetadata**：PRO 混淆代码只见恢复管线旁路引用，语义不可确认，宁缺毋滥。
+
 ### ✅ 已完成 · ShowCollectionsFromSeasons（钩子已定位并实现）
 **反编译定位（本轮关键突破）**：从 PRO 反编译出发——
 - PRO 的 patch 目标是一个 **`Emby.Api` 内、非 public、签名为 `(GetItems 请求, ..., User)` 的方法**（PRO 用 `AccessTools.GetDeclaredMethods + name + !IsPublic + 最少参数` 解析）。
