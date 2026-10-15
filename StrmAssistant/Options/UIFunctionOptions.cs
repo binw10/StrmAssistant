@@ -27,7 +27,9 @@ namespace StrmAssistant.Options
             [DescriptionL("HidePersonOption_NoImage_NoImage", typeof(Resources))]
             NoImage,
             [DescriptionL("HidePersonOption_ActorOnly_ActorOnly", typeof(Resources))]
-            ActorOnly
+            ActorOnly,
+            [DescriptionL("HidePersonOption_NonChinese_NonChinese", typeof(Resources))]
+            NonChinese
         }
 
         [Browsable(false)]

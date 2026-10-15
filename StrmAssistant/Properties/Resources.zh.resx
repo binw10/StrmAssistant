@@ -653,6 +653,9 @@
   <data name="HidePersonOption_ActorOnly_ActorOnly" xml:space="preserve">
     <value>仅显示演员</value>
   </data>
+  <data name="HidePersonOption_NonChinese_NonChinese" xml:space="preserve">
+    <value>仅中文名</value>
+  </data>
   <data name="ExclusiveControl_NoIntroProtect_NoIntroProtect" xml:space="preserve">
     <value>无片头标记保护</value>
   </data>

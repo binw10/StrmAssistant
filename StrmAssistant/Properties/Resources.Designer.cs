@@ -1462,6 +1462,16 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to Non-Chinese.
+        /// </summary>
+        public static string HidePersonOption_NonChinese_NonChinese {
+            get {
+                return ResourceManager.GetString("HidePersonOption_NonChinese_NonChinese", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Intro Detection Fingerprint Length (Minute).
         /// </summary>
         public static string IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Minutes {

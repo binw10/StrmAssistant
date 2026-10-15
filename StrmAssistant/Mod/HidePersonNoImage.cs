@@ -8,6 +8,7 @@ using MediaBrowser.Model.Entities;
 using System;
 using System.Linq;
 using System.Reflection;
+using StrmAssistant.Common;
 using static StrmAssistant.Mod.PatchManager;
 using static StrmAssistant.Options.UIFunctionOptions;
 
@@ -54,12 +55,15 @@ namespace StrmAssistant.Mod
                 preference?.Contains(HidePersonOption.NoImage.ToString(), StringComparison.OrdinalIgnoreCase) == true;
             var actorOnly =
                 preference?.Contains(HidePersonOption.ActorOnly.ToString(), StringComparison.OrdinalIgnoreCase) == true;
+            var nonChinese =
+                preference?.Contains(HidePersonOption.NonChinese.ToString(), StringComparison.OrdinalIgnoreCase) == true;
 
-            if (!noImage && !actorOnly) return;
+            if (!noImage && !actorOnly && !nonChinese) return;
 
             dto.People = dto.People.Where(p =>
                     (!noImage || p.HasPrimaryImage) &&
-                    (!actorOnly || p.Type == PersonType.Actor || p.Type == PersonType.GuestStar))
+                    (!actorOnly || p.Type == PersonType.Actor || p.Type == PersonType.GuestStar) &&
+                    (!nonChinese || LanguageUtility.IsChinese(p.Name ?? string.Empty)))
                 .ToArray();
         }
     }
