@@ -1049,8 +1049,20 @@
   <data name="MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_Assist_Scope" xml:space="preserve">
     <value>Douban Assist Scope</value>
   </data>
-  <data name="MetadataEnhanceOptions_DoubanAssistScrapeScope_Comma_separated_library_IDs_where_Douban_assist_applies__blank_applies_to_all_libraries__Default_is_EMPTY_" xml:space="preserve">
-    <value>Comma-separated library IDs where Douban assist applies (blank applies to all libraries). Default is EMPTY.</value>
+  <data name="MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_assist_scope__Default_is_ALL_" xml:space="preserve">
+    <value>Which fields Douban assist may write: Rating, CastCharacter, NameOverview, Poster. Default is ALL.</value>
+  </data>
+  <data name="DoubanAssistScrapeOption_Rating_Rating" xml:space="preserve">
+    <value>Rating</value>
+  </data>
+  <data name="DoubanAssistScrapeOption_Cast_Cast" xml:space="preserve">
+    <value>Cast</value>
+  </data>
+  <data name="DoubanAssistScrapeOption_NameOverview_NameOverview" xml:space="preserve">
+    <value>Name &amp; Overview</value>
+  </data>
+  <data name="DoubanAssistScrapeOption_Poster_Poster" xml:space="preserve">
+    <value>Poster</value>
   </data>
   <data name="MetadataEnhanceOptions_MdbListApiKey_MdbList_Api_Key" xml:space="preserve">
     <value>MdbList Api Key</value>

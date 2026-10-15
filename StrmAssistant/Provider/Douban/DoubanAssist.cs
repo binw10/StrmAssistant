@@ -17,6 +17,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using DoubanScrapeOption = StrmAssistant.Options.MetadataEnhanceOptions.DoubanAssistScrapeOption;
 
 namespace StrmAssistant.Provider.Douban
 {
@@ -377,6 +378,30 @@ namespace StrmAssistant.Provider.Douban
         /// <summary>
         /// 季刷新完成后调用：按「剧名 第N季」匹配豆瓣季条目（阿拉伯/中文数字各试一次）。
         /// </summary>
+        /// <summary>
+        /// 「豆瓣辅助生效范围」= 允许豆瓣改写的字段（与 PRO 的 DoubanAssistScrapeOption 一致）。
+        /// 空值或旧版库 ID 值（不含任何已知字段名）一律视为「全部」。
+        /// </summary>
+        private static bool IsScrapeFieldEnabled(StrmAssistant.Options.MetadataEnhanceOptions options,
+            DoubanScrapeOption option)
+        {
+            var scope = options.DoubanAssistScrapeScope;
+            if (string.IsNullOrWhiteSpace(scope)) return true;
+
+            var tokens = scope.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim()).Where(s => s.Length > 0).ToArray();
+
+            if (tokens.Length == 0) return true;
+
+            var known = Enum.GetNames(typeof(DoubanScrapeOption));
+            var hasKnown = tokens.Any(t => known.Any(k => string.Equals(k, t, StringComparison.OrdinalIgnoreCase)));
+
+            // 兼容旧值：以前该字段存的是媒体库 ID 列表，不认识任何字段名 → 视为全部
+            if (!hasKnown) return true;
+
+            return tokens.Any(t => string.Equals(t, option.ToString(), StringComparison.OrdinalIgnoreCase));
+        }
+
         public Task ApplyAsync(Season season, CancellationToken cancellationToken)
         {
             return ApplyAsync(season, "tv", season?.IndexNumber, cancellationToken);
@@ -394,17 +419,6 @@ namespace StrmAssistant.Provider.Douban
             var language = item.PreferredMetadataLanguage;
             if (string.IsNullOrEmpty(language) || !language.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
                 return false;
-
-            // 与 ApplyAsync 一致：按库生效范围过滤
-            var scope = options.DoubanAssistScrapeScope;
-            if (!string.IsNullOrWhiteSpace(scope))
-            {
-                var scopeIds = scope.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(s => s.Trim()).Where(s => s.Length > 0).ToHashSet(StringComparer.Ordinal);
-                var inScope = BaseItem.LibraryManager.GetCollectionFolders(item)
-                    .Any(f => scopeIds.Contains(f.Id.ToString()));
-                if (!inScope) return false;
-            }
 
             var suggestType = item is Movie ? "movie" : "tv";
             var cachedId = item.GetProviderId(DoubanProviderId);
@@ -443,17 +457,6 @@ namespace StrmAssistant.Provider.Douban
 
             if (!options.EnableDoubanAssist || item == null || item.IsLocked) return;
 
-            // 按库生效：DoubanAssistScrapeScope 为库 ID 逗号串，留空 = 全部
-            var scope = options.DoubanAssistScrapeScope;
-            if (!string.IsNullOrWhiteSpace(scope))
-            {
-                var scopeIds = scope.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(s => s.Trim()).Where(s => s.Length > 0).ToHashSet(StringComparer.Ordinal);
-                var inScope = BaseItem.LibraryManager.GetCollectionFolders(item)
-                    .Any(f => scopeIds.Contains(f.Id.ToString()));
-                if (!inScope) return;
-            }
-
             var language = item.PreferredMetadataLanguage;
             if (string.IsNullOrEmpty(language) || !language.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
                 return;
@@ -467,48 +470,57 @@ namespace StrmAssistant.Provider.Douban
 
                 var changed = false;
 
+                // 「豆瓣辅助生效范围」字段门控（空值/旧值 = 全部）
+                var allowNameOverview = IsScrapeFieldEnabled(options, DoubanScrapeOption.NameOverview);
+                var allowRating = IsScrapeFieldEnabled(options, DoubanScrapeOption.Rating);
+                var allowCast = IsScrapeFieldEnabled(options, DoubanScrapeOption.CastCharacter);
+                var allowPoster = IsScrapeFieldEnabled(options, DoubanScrapeOption.Poster);
+
                 if (!string.Equals(item.GetProviderId(DoubanProviderId), subject.SubjectId, StringComparison.Ordinal))
                 {
                     item.ProviderIds[DoubanProviderId] = subject.SubjectId;
                     changed = true;
                 }
 
-                if (string.IsNullOrWhiteSpace(item.Overview) && !string.IsNullOrWhiteSpace(subject.Summary))
+                if (allowNameOverview)
                 {
-                    item.Overview = subject.Summary;
-                    changed = true;
-                }
-
-                foreach (var genre in subject.Genres)
-                {
-                    if (!string.IsNullOrWhiteSpace(genre) && !item.Genres.Contains(genre, StringComparer.OrdinalIgnoreCase))
+                    if (string.IsNullOrWhiteSpace(item.Overview) && !string.IsNullOrWhiteSpace(subject.Summary))
                     {
-                        item.AddGenre(genre.Trim());
+                        item.Overview = subject.Summary;
                         changed = true;
                     }
-                }
 
-                if (subject.Countries.Count > 0)
-                {
-                    var locations = item.ProductionLocations?
-                        .Where(l => !string.IsNullOrWhiteSpace(l)).ToList() ?? new List<string>();
-
-                    foreach (var country in subject.Countries)
+                    foreach (var genre in subject.Genres)
                     {
-                        var trimmed = country.Trim();
-
-                        if (!string.IsNullOrWhiteSpace(trimmed) &&
-                            !locations.Contains(trimmed, StringComparer.OrdinalIgnoreCase))
+                        if (!string.IsNullOrWhiteSpace(genre) && !item.Genres.Contains(genre, StringComparer.OrdinalIgnoreCase))
                         {
-                            locations.Add(trimmed);
+                            item.AddGenre(genre.Trim());
                             changed = true;
                         }
                     }
 
-                    item.ProductionLocations = locations.ToArray();
+                    if (subject.Countries.Count > 0)
+                    {
+                        var locations = item.ProductionLocations?
+                            .Where(l => !string.IsNullOrWhiteSpace(l)).ToList() ?? new List<string>();
+
+                        foreach (var country in subject.Countries)
+                        {
+                            var trimmed = country.Trim();
+
+                            if (!string.IsNullOrWhiteSpace(trimmed) &&
+                                !locations.Contains(trimmed, StringComparer.OrdinalIgnoreCase))
+                            {
+                                locations.Add(trimmed);
+                                changed = true;
+                            }
+                        }
+
+                        item.ProductionLocations = locations.ToArray();
+                    }
                 }
 
-                if (options.DoubanRatingOverride && subject.Rating.HasValue)
+                if (options.DoubanRatingOverride && allowRating && subject.Rating.HasValue)
                 {
                     // RatingUpdateLookbackDays：评分更新只作用于首播日期在回看期内的条目
                     var lookbackDays = options.RatingUpdateLookbackDays;
@@ -525,19 +537,19 @@ namespace StrmAssistant.Provider.Douban
                 var ratingInLookback = options.RatingUpdateLookbackDays <= 0 || !item.PremiereDate.HasValue ||
                                        item.PremiereDate.Value >= DateTime.UtcNow.AddDays(-options.RatingUpdateLookbackDays);
 
-                if (ratingInLookback && !string.IsNullOrWhiteSpace(options.MdbListApiKey))
+                if (ratingInLookback && allowRating && !string.IsNullOrWhiteSpace(options.MdbListApiKey))
                 {
                     changed = await UpdateMdbListRatingsAsync(item, options.MdbListApiKey, cancellationToken)
                         .ConfigureAwait(false) || changed;
                 }
 
-                if (options.DoubanCastChinese)
+                if (options.DoubanCastChinese && allowCast)
                 {
                     changed = await ApplyCastChineseNamesAsync(item, subject.SubjectId, cancellationToken)
                         .ConfigureAwait(false) || changed;
                 }
 
-                if (options.DoubanPosterFallback && !item.HasImage(ImageType.Primary) && suggestType == "movie")
+                if (options.DoubanPosterFallback && allowPoster && !item.HasImage(ImageType.Primary) && suggestType == "movie")
                 {
                     changed = await TrySetDoubanPosterAsync(item, subject.SubjectId, cancellationToken)
                         .ConfigureAwait(false) || changed;

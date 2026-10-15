@@ -962,8 +962,20 @@
   <data name="MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_Assist_Scope" xml:space="preserve">
     <value>豆瓣辅助生效范围</value>
   </data>
-  <data name="MetadataEnhanceOptions_DoubanAssistScrapeScope_Comma_separated_library_IDs_where_Douban_assist_applies__blank_applies_to_all_libraries__Default_is_EMPTY_" xml:space="preserve">
-    <value>逗号分隔的媒体库 ID，豆瓣辅助仅对这些库生效（留空对所有库生效）。默认为空。</value>
+  <data name="MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_assist_scope__Default_is_ALL_" xml:space="preserve">
+    <value>豆瓣辅助可改写的字段：评分、演员中文名、名称与简介、海报。默认为全部。</value>
+  </data>
+  <data name="DoubanAssistScrapeOption_Rating_Rating" xml:space="preserve">
+    <value>评分</value>
+  </data>
+  <data name="DoubanAssistScrapeOption_Cast_Cast" xml:space="preserve">
+    <value>演员中文名</value>
+  </data>
+  <data name="DoubanAssistScrapeOption_NameOverview_NameOverview" xml:space="preserve">
+    <value>名称与简介</value>
+  </data>
+  <data name="DoubanAssistScrapeOption_Poster_Poster" xml:space="preserve">
+    <value>海报</value>
   </data>
   <data name="MetadataEnhanceOptions_MdbListApiKey_MdbList_Api_Key" xml:space="preserve">
     <value>MdbList API 密钥</value>

@@ -118,15 +118,31 @@ namespace StrmAssistant.Options
         [Required]
         public bool DoubanRatingOverride { get; set; } = false;
 
+        /// <summary>
+        /// 豆瓣辅助可改写的字段（与 PRO 的 DoubanAssistScrapeOption 一致）。
+        /// </summary>
+        public enum DoubanAssistScrapeOption
+        {
+            [DescriptionL("DoubanAssistScrapeOption_Rating_Rating", typeof(Resources))]
+            Rating,
+            [DescriptionL("DoubanAssistScrapeOption_Cast_Cast", typeof(Resources))]
+            CastCharacter,
+            [DescriptionL("DoubanAssistScrapeOption_NameOverview_NameOverview", typeof(Resources))]
+            NameOverview,
+            [DescriptionL("DoubanAssistScrapeOption_Poster_Poster", typeof(Resources))]
+            Poster
+        }
+
         [Browsable(false)]
-        public List<EditorSelectOption> DoubanAssistLibraryList { get; set; } = new List<EditorSelectOption>();
+        public List<EditorSelectOption> DoubanAssistScrapeOptionList { get; set; } = new List<EditorSelectOption>();
 
         [DisplayNameL("MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_Assist_Scope", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_DoubanAssistScrapeScope_Comma_separated_library_IDs_where_Douban_assist_applies__blank_applies_to_all_libraries__Default_is_EMPTY_", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_assist_scope__Default_is_ALL_", typeof(Resources))]
         [EditMultilSelect]
-        [SelectItemsSource(nameof(DoubanAssistLibraryList))]
+        [SelectItemsSource(nameof(DoubanAssistScrapeOptionList))]
         [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
-        public string DoubanAssistScrapeScope { get; set; } = string.Empty;
+        public string DoubanAssistScrapeScope { get; set; } =
+            string.Join(",", Enum.GetNames(typeof(DoubanAssistScrapeOption)));
 
         [DisplayNameL("MetadataEnhanceOptions_MdbListApiKey_MdbList_Api_Key", typeof(Resources))]
         [DescriptionL("MetadataEnhanceOptions_MdbListApiKey_Optional_MdbList_API_key_used_to_refresh_critic_ratings_Rotten_Tomatoes_Metacritic_alongside_Douban_rating_updates__Default_is_empty_", typeof(Resources))]
@@ -404,11 +420,9 @@ namespace StrmAssistant.Options
         {
             LanguageList.Clear();
 
-            // 媒体库范围选项（影片库 / 剧集库 / 混合内容库，即 CollectionType 为 movies、tvshows 或空）。
-            // 消费端（LibraryApi.IsItemLibraryInScope、DoubanAssist）均用 GetCollectionFolders(item).Id 匹配，
-            // 故 Value 取 VirtualFolderInfo.ItemId。
+            // 剧集刷新媒体库范围选项（影片库 / 剧集库 / 混合内容库，即 CollectionType 为 movies、tvshows 或空）。
+            // 消费端 LibraryApi.IsItemLibraryInScope 用 GetCollectionFolders(item).Id 匹配，故 Value 取 VirtualFolderInfo.ItemId。
             EpisodeRefreshLibraryList.Clear();
-            DoubanAssistLibraryList.Clear();
 
             try
             {
@@ -433,30 +447,31 @@ namespace StrmAssistant.Options
                             Name = library.Name,
                             IsEnabled = true,
                         });
-
-                        DoubanAssistLibraryList.Add(new EditorSelectOption
-                        {
-                            Value = library.ItemId,
-                            Name = library.Name,
-                            IsEnabled = true,
-                        });
                     }
                 }
             }
             catch (Exception e)
             {
-                Plugin.Instance.Logger.Warn("Library scope list init failed: " + e.Message);
+                Plugin.Instance.Logger.Warn("EpisodeRefreshLibraryList init failed: " + e.Message);
+            }
+
+            // 豆瓣辅助生效范围 = 字段多选（与 PRO 的 DoubanAssistScrapeOption 一致）
+            DoubanAssistScrapeOptionList.Clear();
+
+            foreach (Enum item in Enum.GetValues(typeof(DoubanAssistScrapeOption)))
+            {
+                DoubanAssistScrapeOptionList.Add(new EditorSelectOption
+                {
+                    Value = item.ToString(),
+                    Name = Utility.GetEnumDescription(item),
+                    IsEnabled = true,
+                });
             }
 
             Plugin.Instance.Logger.Info("EpisodeRefreshLibraryList: " + EpisodeRefreshLibraryList.Count +
                                         " library(ies) - " +
                                         (EpisodeRefreshLibraryList.Count > 0
                                             ? string.Join(", ", EpisodeRefreshLibraryList.Select(o => o.Name))
-                                            : "none"));
-            Plugin.Instance.Logger.Info("DoubanAssistLibraryList: " + DoubanAssistLibraryList.Count +
-                                        " library(ies) - " +
-                                        (DoubanAssistLibraryList.Count > 0
-                                            ? string.Join(", ", DoubanAssistLibraryList.Select(o => o.Name))
                                             : "none"));
 
             foreach (var language in LanguageUtility.MovieDbFallbackLanguages)

@@ -1389,11 +1389,47 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Comma-separated library IDs where Douban assist applies (blank applies to all libraries). Default is EMPTY..
+        ///   Looks up a localized string similar to Which fields Douban assist may write. Default is ALL.
         /// </summary>
-        public static string MetadataEnhanceOptions_DoubanAssistScrapeScope_Comma_separated_library_IDs_where_Douban_assist_applies__blank_applies_to_all_libraries__Default_is_EMPTY_ {
+        public static string MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_assist_scope__Default_is_ALL_ {
             get {
-                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanAssistScrapeScope_Comma_separated_library_IDs_where_Douban_assist_applies__blank_applies_to_all_libraries__Default_is_EMPTY_", resourceCulture);
+                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_assist_scope__Default_is_ALL_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Rating.
+        /// </summary>
+        public static string DoubanAssistScrapeOption_Rating_Rating {
+            get {
+                return ResourceManager.GetString("DoubanAssistScrapeOption_Rating_Rating", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Cast.
+        /// </summary>
+        public static string DoubanAssistScrapeOption_Cast_Cast {
+            get {
+                return ResourceManager.GetString("DoubanAssistScrapeOption_Cast_Cast", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Name &amp; Overview.
+        /// </summary>
+        public static string DoubanAssistScrapeOption_NameOverview_NameOverview {
+            get {
+                return ResourceManager.GetString("DoubanAssistScrapeOption_NameOverview_NameOverview", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Poster.
+        /// </summary>
+        public static string DoubanAssistScrapeOption_Poster_Poster {
+            get {
+                return ResourceManager.GetString("DoubanAssistScrapeOption_Poster_Poster", resourceCulture);
             }
         }
 
