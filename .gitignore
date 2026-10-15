@@ -12,3 +12,6 @@ build/
 
 # local runtime/agent artifacts
 memory/
+.decomp/
+.tools/
+.tmp_probe/
