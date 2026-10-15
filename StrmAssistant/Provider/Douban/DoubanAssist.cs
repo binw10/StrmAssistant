@@ -281,6 +281,60 @@ namespace StrmAssistant.Provider.Douban
             return ApplyAsync(season, "tv", season?.IndexNumber, cancellationToken);
         }
 
+        /// <summary>
+        /// 构建缓存：仅预取豆瓣数据落盘（subject + 评分快照），不写回条目。
+        /// 已有豆瓣 ID 且缓存未过期的条目直接跳过，不产生网络请求。
+        /// </summary>
+        public async Task<bool> BuildCacheAsync(BaseItem item, CancellationToken cancellationToken)
+        {
+            var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();
+            if (!options.EnableDoubanAssist || item == null || item.IsLocked) return false;
+
+            var language = item.PreferredMetadataLanguage;
+            if (string.IsNullOrEmpty(language) || !language.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            // 与 ApplyAsync 一致：按库生效范围过滤
+            var scope = options.DoubanAssistScrapeScope;
+            if (!string.IsNullOrWhiteSpace(scope))
+            {
+                var scopeIds = scope.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim()).Where(s => s.Length > 0).ToHashSet(StringComparer.Ordinal);
+                var inScope = BaseItem.LibraryManager.GetCollectionFolders(item)
+                    .Any(f => scopeIds.Contains(f.Id.ToString()));
+                if (!inScope) return false;
+            }
+
+            var suggestType = item is Movie ? "movie" : "tv";
+            var cachedId = item.GetProviderId(DoubanProviderId);
+
+            lock (_cacheLock)
+            {
+                if (_cache == null) LoadCache();
+                if (!string.IsNullOrEmpty(cachedId) &&
+                    _cache.TryGetValue("subject:" + cachedId, out var entry) &&
+                    entry.Expiry > DateTime.UtcNow)
+                {
+                    return false;
+                }
+            }
+
+            try
+            {
+                var subject = await FindSubjectAsync(item, suggestType, null, cancellationToken).ConfigureAwait(false);
+                return subject != null;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn("DoubanCacheBuild - Failed for {0}: {1}", item.Name, ex.Message);
+                return false;
+            }
+        }
+
         private async Task ApplyAsync(BaseItem item, string suggestType, int? seasonNumber,
             CancellationToken cancellationToken)
         {

@@ -1031,6 +1031,12 @@
   <data name="MergeMultiVersionTask_Name_Merge_Multi_Versions" xml:space="preserve">
     <value>合併多版本</value>
   </data>
+  <data name="BuildDoubanCacheTask_Name_Build_Douban_Cache" xml:space="preserve">
+    <value>構建豆瓣快取</value>
+  </data>
+  <data name="BuildDoubanCacheTask_Description_Pre_fetches_Douban_subject_data_for_movies_and_series_into_the_local_cache__Cached_items_are_skipped" xml:space="preserve">
+    <value>為電影和劇集預取豆瓣資料寫入本地快取。已快取的條目自動跳過。</value>
+  </data>
   <data name="RefreshEpisodeTask_Name_Refresh_Episode" xml:space="preserve">
     <value>重新整理劇集中繼資料</value>
   </data>

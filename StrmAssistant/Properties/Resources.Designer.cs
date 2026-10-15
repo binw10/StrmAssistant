@@ -1529,6 +1529,25 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to Build Douban Cache.
+        /// </summary>
+        public static string BuildDoubanCacheTask_Name_Build_Douban_Cache {
+            get {
+                return ResourceManager.GetString("BuildDoubanCacheTask_Name_Build_Douban_Cache", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Pre-fetches Douban subject data for movies and series into the local cache. Cached items are skipped..
+        /// </summary>
+        public static string BuildDoubanCacheTask_Description_Pre_fetches_Douban_subject_data_for_movies_and_series_into_the_local_cache__Cached_items_are_skipped {
+            get {
+                return ResourceManager.GetString("BuildDoubanCacheTask_Description_Pre_fetches_Douban_subject_data_for_movies_and_series_into_the_local_cache__Cached_items_are_skipped", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Intro Detection Fingerprint Length (Minute).
         /// </summary>
         public static string IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Minutes {
