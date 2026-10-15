@@ -942,10 +942,16 @@
     <value>Running tasks: {0} ({1})</value>
   </data>
   <data name="RuntimeStatus_Sessions" xml:space="preserve">
-    <value>Active sessions: {0} ({1})</value>
+    <value>Active sessions: {0} (playing {1}): {2}</value>
   </data>
   <data name="RuntimeStatus_SearchIndex" xml:space="preserve">
     <value>Search index: {0}</value>
+  </data>
+  <data name="RuntimeStatus_ProcessingTasks" xml:space="preserve">
+    <value>Processing: {0}</value>
+  </data>
+  <data name="RuntimeStatus_PendingQueue" xml:space="preserve">
+    <value>Pending queue: {0} (MediaInfo {1}, Fingerprint {2}, Intro {3}, EpisodeRefresh {4})</value>
   </data>
   <data name="RuntimeStatus_ConflictPlugin" xml:space="preserve">
     <value>Conflict plugin detected: {0}</value>

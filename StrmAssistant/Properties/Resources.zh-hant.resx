@@ -855,10 +855,16 @@
     <value>執行中任務：{0}（{1}）</value>
   </data>
   <data name="RuntimeStatus_Sessions" xml:space="preserve">
-    <value>活動會話：{0}（{1}）</value>
+    <value>活動會話：{0}（播放中 {1}）：{2}</value>
   </data>
   <data name="RuntimeStatus_SearchIndex" xml:space="preserve">
     <value>搜尋索引：{0}</value>
+  </data>
+  <data name="RuntimeStatus_ProcessingTasks" xml:space="preserve">
+    <value>處理中：{0}</value>
+  </data>
+  <data name="RuntimeStatus_PendingQueue" xml:space="preserve">
+    <value>待處理隊列：{0}（媒體資訊 {1}、指紋 {2}、片頭 {3}、劇集重新整理 {4}）</value>
   </data>
   <data name="RuntimeStatus_ConflictPlugin" xml:space="preserve">
     <value>偵測到衝突外掛：{0}</value>

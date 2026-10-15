@@ -622,7 +622,7 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Active sessions: {0} ({1}).
+        ///   Looks up a localized string similar to Active sessions: {0} (playing {1}): {2}.
         /// </summary>
         public static string RuntimeStatus_Sessions {
             get {
@@ -636,6 +636,24 @@ namespace StrmAssistant.Properties {
         public static string RuntimeStatus_SearchIndex {
             get {
                 return ResourceManager.GetString("RuntimeStatus_SearchIndex", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Processing: {0}.
+        /// </summary>
+        public static string RuntimeStatus_ProcessingTasks {
+            get {
+                return ResourceManager.GetString("RuntimeStatus_ProcessingTasks", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Pending queue: {0}.
+        /// </summary>
+        public static string RuntimeStatus_PendingQueue {
+            get {
+                return ResourceManager.GetString("RuntimeStatus_PendingQueue", resourceCulture);
             }
         }
         

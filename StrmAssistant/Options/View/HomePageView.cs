@@ -6,12 +6,14 @@ using MediaBrowser.Controller.Tasks;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Plugins.UI.Views;
 using MediaBrowser.Model.Tasks;
+using StrmAssistant.Common;
 using StrmAssistant.Core;
 using StrmAssistant.Mod;
 using StrmAssistant.Options.Store;
 using StrmAssistant.Options.UIBaseClasses.Views;
 using StrmAssistant.Properties;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -77,12 +79,14 @@ namespace StrmAssistant.Options.View
                 var sessions = _sessionManager.Sessions?
                     .Where(s => !string.IsNullOrEmpty(s.Client))
                     .ToList();
+                var playingCount = sessions?.Count(s => s.FullNowPlayingItem != null) ?? 0;
 
                 options.RuntimeStatusList.Add(new GenericListItem
                 {
                     PrimaryText = string.Format(Resources.RuntimeStatus_Sessions,
                         sessions?.Count ?? 0,
-                        sessions?.Count > 0
+                        playingCount,
+                        sessions is { Count: > 0 }
                             ? string.Join(", ", sessions.Take(3).Select(s => $"{s.Client}/{s.UserName}"))
                             : "-"),
                     Icon = IconNames.devices
@@ -93,6 +97,37 @@ namespace StrmAssistant.Options.View
                     PrimaryText = string.Format(Resources.RuntimeStatus_SearchIndex,
                         EnhanceChineseSearch.GetSearchIndexStatus()),
                     Icon = IconNames.search
+                });
+
+                var processing = new List<string>();
+                if (QueueManager.IsMediaInfoProcessTaskRunning)
+                {
+                    processing.Add(Resources.CatchupTask_MediaInfo_MediaInfo);
+                }
+
+                if (QueueManager.IsEpisodeRefreshProcessTaskRunning)
+                {
+                    processing.Add(Resources.CatchupTask_EpisodeRefresh_EpisodeRefresh);
+                }
+
+                options.RuntimeStatusList.Add(new GenericListItem
+                {
+                    PrimaryText = string.Format(Resources.RuntimeStatus_ProcessingTasks,
+                        processing.Count > 0 ? string.Join(", ", processing) : "-"),
+                    Icon = IconNames.pending_actions
+                });
+
+                var mediaInfoQueue = QueueManager.MediaInfoExtractItemQueue.Count;
+                var fingerprintQueue = QueueManager.FingerprintItemQueue.Count;
+                var introQueue = QueueManager.IntroSkipItemQueue.Count;
+                var episodeRefreshQueue = QueueManager.EpisodeRefreshItemQueue.Count;
+
+                options.RuntimeStatusList.Add(new GenericListItem
+                {
+                    PrimaryText = string.Format(Resources.RuntimeStatus_PendingQueue,
+                        mediaInfoQueue + fingerprintQueue + introQueue + episodeRefreshQueue,
+                        mediaInfoQueue, fingerprintQueue, introQueue, episodeRefreshQueue),
+                    Icon = IconNames.queue
                 });
 
                 var conflicts = ConflictDetector.GetConflictingAssemblies();
