@@ -510,14 +510,22 @@ namespace StrmAssistant.Provider.Douban
 
                 if (options.DoubanRatingOverride && subject.Rating.HasValue)
                 {
-                    if (Math.Abs((item.CommunityRating ?? 0) - subject.Rating.Value) > 0.05)
+                    // RatingUpdateLookbackDays：评分更新只作用于首播日期在回看期内的条目
+                    var lookbackDays = options.RatingUpdateLookbackDays;
+                    var ratingAllowed = lookbackDays <= 0 || !item.PremiereDate.HasValue ||
+                                        item.PremiereDate.Value >= DateTime.UtcNow.AddDays(-lookbackDays);
+
+                    if (ratingAllowed && Math.Abs((item.CommunityRating ?? 0) - subject.Rating.Value) > 0.05)
                     {
                         item.CommunityRating = (float)subject.Rating.Value;
                         changed = true;
                     }
                 }
 
-                if (!string.IsNullOrWhiteSpace(options.MdbListApiKey))
+                var ratingInLookback = options.RatingUpdateLookbackDays <= 0 || !item.PremiereDate.HasValue ||
+                                       item.PremiereDate.Value >= DateTime.UtcNow.AddDays(-options.RatingUpdateLookbackDays);
+
+                if (ratingInLookback && !string.IsNullOrWhiteSpace(options.MdbListApiKey))
                 {
                     changed = await UpdateMdbListRatingsAsync(item, options.MdbListApiKey, cancellationToken)
                         .ConfigureAwait(false) || changed;

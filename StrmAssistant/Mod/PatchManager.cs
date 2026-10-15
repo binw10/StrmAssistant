@@ -121,6 +121,24 @@ namespace StrmAssistant.Mod
                         $"  {mark} {tracker.PatchType.Name,-28} Status={status,-12} Approach={approach}");
                 }
                 Plugin.Instance.Logger.Info($"==================================================================");
+
+                // 关键插件版本：内部 API 变动时据此判断 patch 兼容性
+                try
+                {
+                    foreach (var pluginName in new[] { "MovieDb", "Tvdb", "NfoMetadata", "OpenSubtitles" })
+                    {
+                        var ver = AppDomain.CurrentDomain.GetAssemblies()
+                            .FirstOrDefault(a => a.GetName().Name == pluginName)?.GetName().Version;
+                        if (ver != null)
+                        {
+                            Plugin.Instance.Logger.Info($"PluginVersion {pluginName}: {ver}");
+                        }
+                    }
+                }
+                catch (Exception verEx)
+                {
+                    Plugin.Instance.Logger.Debug($"插件版本日志输出失败: {verEx.Message}");
+                }
             }
             catch (Exception ex)
             {

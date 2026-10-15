@@ -95,6 +95,18 @@ namespace StrmAssistant.Options
         [Required]
         public bool EnableMultiVersionEnhance { get; set; } = false;
 
+        [DisplayNameL("ExperienceEnhanceOptions_MultiVersionDisplayOption_Version_Display_Option", typeof(Resources))]
+        [DescriptionL("ExperienceEnhanceOptions_MultiVersionDisplayOption_Version_label_source__SystemDefault_MediaInfo_or_FileNameWithoutExtension__Default_is_MediaInfo_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableMultiVersionEnhance), SimpleCondition.IsTrue)]
+        [Required]
+        public string MultiVersionDisplayOption { get; set; } = "MediaInfo";
+
+        [DisplayNameL("ExperienceEnhanceOptions_MultiVersionSortOption_Version_Sort_Option", typeof(Resources))]
+        [DescriptionL("ExperienceEnhanceOptions_MultiVersionSortOption_Version_sort_order__SystemDefault_HighToLowQuality_LowToHighQuality_PathAscending_or_PathDescending__Default_is_SystemDefault_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableMultiVersionEnhance), SimpleCondition.IsTrue)]
+        [Required]
+        public string MultiVersionSortOption { get; set; } = "SystemDefault";
+
         [DisplayNameL("ExperienceEnhanceOptions_OptimizeSubtitle_Optimize_Subtitle", typeof(Resources))]
         [DescriptionL("ExperienceEnhanceOptions_OptimizeSubtitle_Resolve_strm_media_path_to_local_mount_for_open_subtitles_hash_and_filename_search__requires_open_subtitles_plugin__Default_is_OFF_", typeof(Resources))]
         [Required]

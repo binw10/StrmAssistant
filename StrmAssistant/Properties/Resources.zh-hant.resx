@@ -758,6 +758,18 @@
   <data name="ExperienceEnhanceOptions_EnableMultiVersionEnhance_Show_quality_badges_and_sort_by_quality_on_multi_version_detail_pages__Default_is_OFF_" xml:space="preserve">
     <value>多版本詳情頁顯示畫質標識並按畫質排序。預設為關閉。</value>
   </data>
+  <data name="ExperienceEnhanceOptions_MultiVersionDisplayOption_Version_Display_Option" xml:space="preserve">
+    <value>版本顯示方式</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_MultiVersionDisplayOption_Version_label_source__SystemDefault_MediaInfo_or_FileNameWithoutExtension__Default_is_MediaInfo_" xml:space="preserve">
+    <value>版本標籤來源：SystemDefault（預設）/MediaInfo（畫質）/FileNameWithoutExtension（檔名）。預設 MediaInfo。</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_MultiVersionSortOption_Version_Sort_Option" xml:space="preserve">
+    <value>版本排序方式</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_MultiVersionSortOption_Version_sort_order__SystemDefault_HighToLowQuality_LowToHighQuality_PathAscending_or_PathDescending__Default_is_SystemDefault_" xml:space="preserve">
+    <value>版本排序：SystemDefault（預設）/HighToLowQuality（畫質降序）/LowToHighQuality（畫質升序）/PathAscending（路徑升序）/PathDescending（路徑降序）。預設 SystemDefault。</value>
+  </data>
   <data name="ExperienceEnhanceOptions_OptimizeSubtitle_Optimize_Subtitle" xml:space="preserve">
     <value>最佳化字幕下載</value>
   </data>
@@ -898,6 +910,12 @@
   </data>
   <data name="MetadataEnhanceOptions_MdbListApiKey_Optional_MdbList_API_key_used_to_refresh_critic_ratings_Rotten_Tomatoes_Metacritic_alongside_Douban_rating_updates__Default_is_empty_" xml:space="preserve">
     <value>可選的 MdbList API 金鑰，在豆瓣評分更新時順帶重新整理影評人評分（爛番茄、Metacritic）。預設為空。</value>
+  </data>
+  <data name="MetadataEnhanceOptions_RatingUpdateLookbackDays_Rating_Update_Lookback_Days" xml:space="preserve">
+    <value>評分更新回看天數</value>
+  </data>
+  <data name="MetadataEnhanceOptions_RatingUpdateLookbackDays_Douban_rating_update_lookback_days_based_on_premiere_date__0_disables_the_limit__Default_is_365_days_" xml:space="preserve">
+    <value>豆瓣評分更新僅作用於首播日期在回看期內的條目（0 為不限制）。預設 365 天。</value>
   </data>
   <data name="MetadataEnhanceOptions_ClearTagline_Clear_Tagline" xml:space="preserve">
     <value>清標語</value>

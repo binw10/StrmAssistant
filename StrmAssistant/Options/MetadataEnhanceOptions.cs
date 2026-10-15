@@ -121,6 +121,12 @@ namespace StrmAssistant.Options
         [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
         public string MdbListApiKey { get; set; } = string.Empty;
 
+        [DisplayNameL("MetadataEnhanceOptions_RatingUpdateLookbackDays_Rating_Update_Lookback_Days", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_RatingUpdateLookbackDays_Douban_rating_update_lookback_days_based_on_premiere_date__0_disables_the_limit__Default_is_365_days_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
+        [Required, MinValue(0)]
+        public int RatingUpdateLookbackDays { get; set; } = 365;
+
         [DisplayNameL("MetadataEnhanceOptions_ClearTagline_Clear_Tagline", typeof(Resources))]
         [DescriptionL("MetadataEnhanceOptions_ClearTagline_Clear_taglines_populated_by_the_MovieDb_provider_on_refresh__Default_is_OFF_", typeof(Resources))]
         [Required]
@@ -246,6 +252,27 @@ namespace StrmAssistant.Options
         [Browsable(false)]
         public bool IsMovieDbPluginLoaded =>
             AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "MovieDb") && IsModSupported;
+
+        /// <summary>
+        /// MovieDb 插件版本（诊断用：内部 API 变动时据此判断 patch 兼容性）。
+        /// </summary>
+        [Browsable(false)]
+        public string MovieDbPluginVersion
+        {
+            get
+            {
+                try
+                {
+                    return AppDomain.CurrentDomain.GetAssemblies()
+                        .FirstOrDefault(a => a.GetName().Name == "MovieDb")
+                        ?.GetName().Version?.ToString();
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+        }
 
         [Browsable(false)]
         public bool IsTvdbPluginLoaded =>

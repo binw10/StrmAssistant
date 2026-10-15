@@ -1623,6 +1623,61 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to Version Display Option
+        /// </summary>
+        public static string ExperienceEnhanceOptions_MultiVersionDisplayOption_Version_Display_Option {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_MultiVersionDisplayOption_Version_Display_Option", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Version label source: SystemDefault, MediaInfo, or FileNameWithoutExtension. Default is MediaInfo..
+        /// </summary>
+        public static string ExperienceEnhanceOptions_MultiVersionDisplayOption_Version_label_source__SystemDefault_MediaInfo_or_FileNameWithoutExtension__Default_is_MediaInfo_ {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_MultiVersionDisplayOption_Version_label_source__SystemDefault_MediaInfo_or_FileNameWithoutExtension__Default_is_MediaInfo_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Version Sort Option
+        /// </summary>
+        public static string ExperienceEnhanceOptions_MultiVersionSortOption_Version_Sort_Option {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_MultiVersionSortOption_Version_Sort_Option", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Version sort order: SystemDefault, HighToLowQuality, LowToHighQuality, PathAscending, or PathDescending. Default is SystemDefault..
+        /// </summary>
+        public static string ExperienceEnhanceOptions_MultiVersionSortOption_Version_sort_order__SystemDefault_HighToLowQuality_LowToHighQuality_PathAscending_or_PathDescending__Default_is_SystemDefault_ {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_MultiVersionSortOption_Version_sort_order__SystemDefault_HighToLowQuality_LowToHighQuality_PathAscending_or_PathDescending__Default_is_SystemDefault_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Rating Update Lookback Days
+        /// </summary>
+        public static string MetadataEnhanceOptions_RatingUpdateLookbackDays_Rating_Update_Lookback_Days {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_RatingUpdateLookbackDays_Rating_Update_Lookback_Days", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Douban rating update lookback days based on premiere date (0 disables the limit). Default is 365 days..
+        /// </summary>
+        public static string MetadataEnhanceOptions_RatingUpdateLookbackDays_Douban_rating_update_lookback_days_based_on_premiere_date__0_disables_the_limit__Default_is_365_days_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_RatingUpdateLookbackDays_Douban_rating_update_lookback_days_based_on_premiere_date__0_disables_the_limit__Default_is_365_days_", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Intro Detection Fingerprint Length (Minute).
         /// </summary>
         public static string IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Minutes {

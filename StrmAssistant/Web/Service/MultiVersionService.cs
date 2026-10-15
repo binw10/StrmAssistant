@@ -21,6 +21,7 @@ namespace StrmAssistant.Web.Service
             public string Label { get; set; }
             public string Hdr { get; set; }
             public long? Bitrate { get; set; }
+            public string Path { get; set; }
         }
 
         public class MultiVersionItemInfo : MultiVersionSource
@@ -102,14 +103,25 @@ namespace StrmAssistant.Web.Service
             return response;
         }
 
-        private static List<MultiVersionSource> GetSources(BaseItem item)
+        private List<MultiVersionSource> GetSources(BaseItem item)
         {
             var libraryOptions = Plugin.LibraryManager.GetLibraryOptions(item);
+            var uiOptions = Plugin.Instance.ExperienceEnhanceStore.GetOptions();
 
-            return item.GetMediaSources(false, false, libraryOptions)
+            var sources = item.GetMediaSources(false, false, libraryOptions)
                 .Select(source =>
                 {
                     var video = source.MediaStreams?.FirstOrDefault(s => s.Type == MediaStreamType.Video);
+                    var path = source.Path;
+
+                    var label = uiOptions.MultiVersionDisplayOption switch
+                    {
+                        "FileNameWithoutExtension" => string.IsNullOrEmpty(path)
+                            ? null
+                            : System.IO.Path.GetFileNameWithoutExtension(path),
+                        "SystemDefault" => null,
+                        _ => GetQualityLabel(video?.Height) // MediaInfo（默认）
+                    };
 
                     return new MultiVersionSource
                     {
@@ -117,12 +129,44 @@ namespace StrmAssistant.Web.Service
                         Size = source.Size,
                         Width = video?.Width,
                         Height = video?.Height,
-                        Label = GetQualityLabel(video?.Height),
+                        Label = label,
                         Hdr = GetHdrLabel(video?.VideoRange),
-                        Bitrate = source.Bitrate
+                        Bitrate = source.Bitrate,
+                        Path = path
                     };
                 })
                 .ToList();
+
+            sources = uiOptions.MultiVersionSortOption switch
+            {
+                "HighToLowQuality" => sources
+                    .OrderByDescending(s => QualityScore(s.Height, s.Hdr))
+                    .ToList(),
+                "LowToHighQuality" => sources
+                    .OrderBy(s => QualityScore(s.Height, s.Hdr))
+                    .ToList(),
+                "PathAscending" => sources.OrderBy(s => s.Path, StringComparer.OrdinalIgnoreCase).ToList(),
+                "PathDescending" => sources.OrderByDescending(s => s.Path, StringComparer.OrdinalIgnoreCase).ToList(),
+                _ => sources // SystemDefault：保持 Emby 原始顺序
+            };
+
+            return sources;
+        }
+
+        /// <summary>
+        /// 画质评分：分辨率为主，HDR/DV 加成（用于排序比较）。
+        /// </summary>
+        private static int QualityScore(int? height, string hdr)
+        {
+            var score = height ?? 0;
+            if (string.IsNullOrEmpty(hdr)) return score;
+
+            if (hdr == "DV") score += 500;
+            else if (hdr == "HDR10+") score += 400;
+            else if (hdr == "HDR Vivid") score += 350;
+            else if (hdr == "HDR") score += 300;
+
+            return score;
         }
 
         private static string GetQualityLabel(int? height)
@@ -152,6 +196,11 @@ namespace StrmAssistant.Web.Service
                 videoRange.IndexOf("HDR10+", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return "HDR10+";
+            }
+
+            if (videoRange.IndexOf("Vivid", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "HDR Vivid";
             }
 
             if (videoRange.IndexOf("HDR", StringComparison.OrdinalIgnoreCase) >= 0)
