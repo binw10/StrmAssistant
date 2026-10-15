@@ -1070,6 +1070,36 @@
   <data name="MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_refresh_library_scope__Blank_includes_all_TV_shows_libraries_" xml:space="preserve">
     <value>劇集重新整理的媒體庫範圍，留空表示包含全部劇集庫。</value>
   </data>
+  <data name="MetadataEnhanceOptions_MetadataCacheMode_Build_Local_Metadata_Cache" xml:space="preserve">
+    <value>建立本機中繼資料快取</value>
+  </data>
+  <data name="MetadataEnhanceOptions_MetadataCacheMode_Description" xml:space="preserve">
+    <value>可選的本機 TMDB 回應快取：將 MovieDb 中繼資料回應讀寫到磁碟，用於限流或離線時重用。預設關閉。</value>
+  </data>
+  <data name="MetadataEnhanceOptions_MetadataCacheRootFolder_Metadata_Cache_Root_Folder" xml:space="preserve">
+    <value>中繼資料快取根目錄</value>
+  </data>
+  <data name="MetadataEnhanceOptions_MetadataCacheRootFolder_Description" xml:space="preserve">
+    <value>本機 TMDB 快取/覆蓋目錄的根目錄，模式非「關閉」時必填。</value>
+  </data>
+  <data name="MetadataCacheOption_None_None" xml:space="preserve">
+    <value>關閉</value>
+  </data>
+  <data name="MetadataCacheOption_PreferCacheThenOnline_PreferCacheThenOnline" xml:space="preserve">
+    <value>優先使用快取</value>
+  </data>
+  <data name="MetadataCacheOption_PreferOnlineWithCache_PreferOnlineWithCache" xml:space="preserve">
+    <value>線上刮削並快取</value>
+  </data>
+  <data name="MetadataCacheOption_UseOverrideCacheOnly_UseOverrideCacheOnly" xml:space="preserve">
+    <value>僅使用覆蓋快取</value>
+  </data>
+  <data name="MetadataCacheRootFolderNotExist" xml:space="preserve">
+    <value>中繼資料快取根目錄不存在或不可寫入。</value>
+  </data>
+  <data name="MetadataCacheRootFolderNotAllowed" xml:space="preserve">
+    <value>中繼資料快取根目錄不被允許（磁碟根或系統目錄）。</value>
+  </data>
   <data name="MergeScopeOption_FolderScope_FolderScope" xml:space="preserve">
     <value>同目錄合併</value>
   </data>

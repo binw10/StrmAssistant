@@ -2429,6 +2429,96 @@ namespace StrmAssistant.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Build Local Metadata Cache.
+        /// </summary>
+        public static string MetadataEnhanceOptions_MetadataCacheMode_Build_Local_Metadata_Cache {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_MetadataCacheMode_Build_Local_Metadata_Cache", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Optional local TMDB response cache..
+        /// </summary>
+        public static string MetadataEnhanceOptions_MetadataCacheMode_Description {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_MetadataCacheMode_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Metadata Cache Root Folder.
+        /// </summary>
+        public static string MetadataEnhanceOptions_MetadataCacheRootFolder_Metadata_Cache_Root_Folder {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_MetadataCacheRootFolder_Metadata_Cache_Root_Folder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Root folder for the local TMDB cache/override directories..
+        /// </summary>
+        public static string MetadataEnhanceOptions_MetadataCacheRootFolder_Description {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_MetadataCacheRootFolder_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to OFF.
+        /// </summary>
+        public static string MetadataCacheOption_None_None {
+            get {
+                return ResourceManager.GetString("MetadataCacheOption_None_None", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Prefer Cache Then Online.
+        /// </summary>
+        public static string MetadataCacheOption_PreferCacheThenOnline_PreferCacheThenOnline {
+            get {
+                return ResourceManager.GetString("MetadataCacheOption_PreferCacheThenOnline_PreferCacheThenOnline", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Prefer Online With Cache.
+        /// </summary>
+        public static string MetadataCacheOption_PreferOnlineWithCache_PreferOnlineWithCache {
+            get {
+                return ResourceManager.GetString("MetadataCacheOption_PreferOnlineWithCache_PreferOnlineWithCache", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use Override Cache Only.
+        /// </summary>
+        public static string MetadataCacheOption_UseOverrideCacheOnly_UseOverrideCacheOnly {
+            get {
+                return ResourceManager.GetString("MetadataCacheOption_UseOverrideCacheOnly_UseOverrideCacheOnly", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Metadata cache root folder does not exist or is not writable..
+        /// </summary>
+        public static string MetadataCacheRootFolderNotExist {
+            get {
+                return ResourceManager.GetString("MetadataCacheRootFolderNotExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Metadata cache root folder is not allowed (drive root or system folder)..
+        /// </summary>
+        public static string MetadataCacheRootFolderNotAllowed {
+            get {
+                return ResourceManager.GetString("MetadataCacheRootFolderNotAllowed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Enable Local Episode Group.
         /// </summary>
         public static string MetadataEnhanceOptions_LocalEpisodeGroup_Local_Episode_Group {

@@ -308,6 +308,16 @@ namespace StrmAssistant
             var mediaInfoOptions = MediaInfoExtractStore.GetOptions();
             FfmpegPathOverride.Apply(mediaInfoOptions.CustomProbePath, mediaInfoOptions.CustomEncoderPath);
 
+            var metadataCacheOptions = MetadataEnhanceStore.GetOptions();
+            if (metadataCacheOptions.IsMetadataCacheEnabled)
+            {
+                var (cacheOk, cacheError) =
+                    LocalMetadataCache.ValidateAndInitialize(metadataCacheOptions.MetadataCacheRootFolder);
+                Logger.Info(cacheOk
+                    ? $"MetadataCache - initialized at {LocalMetadataCache.Root} (mode={metadataCacheOptions.MetadataCacheMode})"
+                    : $"MetadataCache - root invalid ({cacheError}): {metadataCacheOptions.MetadataCacheRootFolder}");
+            }
+
             if (MainOptionsStore.GetOptions().GeneralOptions.CatchupMode) QueueManager.Initialize();
             if (IntroSkipStore.GetOptions().EnableIntroSkip) PlaySessionMonitor.Initialize();
             if (ExperienceEnhanceStore.GetOptions().EnableAutoMarkWatched) AutoMarkWatched.Initialize();

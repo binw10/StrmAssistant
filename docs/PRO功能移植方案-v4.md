@@ -254,7 +254,27 @@
 ### ⏭ 未开始
 - Phase 2（UI：OptimizeMediaItemOrder 四选补完 / ShowCollectionsFromSeasons / EnforceUserPreferences）
 - Phase 3（MovieDb 1.9.9.0 实测适配 / 仪表盘 / 刷新偏好多选 / LocalDiscoveryUrl / 冲突检测）
-- Phase 4（本地 TMDB 源 / 分布式 API / 音乐持久化 / ISO / 跨库进度）
+- Phase 4 其余（分布式 API / 音乐持久化 / ISO / 跨库进度）
+
+### ✅ 已完成 · Phase 4-1 本地 TMDB 缓存（v1，被动缓存；默认关闭）
+**关键侦察（本轮反编译 MovieDb 10.9.5.0 得出，权威）**：
+- MovieDb 元数据 HTTP 唯一出口 = `MovieDbProviderBase.GetMovieDbResponse(HttpRequestOptions options)`：`internal async Task<HttpResponseInfo>`；`options.Url` 含 `api_key`/`language`/`append_to_response`；内部做 `_lastRequestTicks` 限流后 `HttpClient.SendAsync`。
+- 图像出口 = `GetImageResponse(string url, CancellationToken)`：`BufferContent=false`，不带 language。
+- 这与 PRO Wiki 所述「元数据 api 请求带 language、图像 api 请求不带 language」完全吻合。
+- `HttpResponseInfo`（`MediaBrowser.Common.Net`）可无参构造，`Content`(Stream)/`StatusCode`/`ContentType`/`ContentLength`/`ResponseUrl` 均可写。
+
+**实现（v1）**：
+| 文件 | 内容 |
+|---|---|
+| `Common/LocalMetadataCache.cs` | 新增。根目录校验+目录初始化（PRO 同名布局 `cache/{tmdb-movies2,tmdb-tv,tmdb-collections}` + `override/...`），原始响应按 URL 的 SHA256 存于 `cache/_http`；`TryGet/Set/BuildResponse/ReadAll` |
+| `Mod/LocalTmdbCache.cs` | 新增。Patch `GetMovieDbResponse`：prefix 命中即短路（跳过网络），postfix 写回缓存并换回可读流 |
+| `Options/MetadataEnhanceOptions.cs` | 新增 `MetadataCacheMode`（OFF/优先缓存/在线并缓存/仅用覆盖缓存）+ `MetadataCacheRootFolder` + 隐藏 `MetadataCacheOptionalImageTypes`；派生 `IsMetadataCache{Enabled,ReadEnabled,WriteEnabled}`；保存期校验根目录 |
+| `Mod/PatchManager.cs` / `Options/Store/MetadataEnhanceOptionsStore.cs` / `Plugin.cs` | 注册模块、配置变更时 Patch/Unpatch、启动时初始化目录 |
+| `Properties/Resources*` | 10 个新键 × 三语 + Designer |
+
+**安全边界**：默认模式 `OFF` → 完全不打补丁，零行为变化。图像 API 与语义化 override/patches 属 v2。
+**与 PRO 的差异（已知，v2 收敛）**：v1 只做「原始响应按 URL 落盘」，未做「按 tmdbid 的语义化 json + override/patches 合并」；目录布局已按 PRO 同名预留，便于 v2 演进。
+**待用户验证**：设为「在线刮削并缓存」+ 指定根目录 → 保存后应创建目录结构；刮削一次后 `cache/_http` 出现 `.bin`；切「优先使用缓存」后断网仍可刮削已缓存条目。
 
 ### 构建/部署记录
 - `dotnet build -c Release`：**0 错误**；警告 9 → 1（仅剩既有 `SubtitleApi.cs:205 CS1998`）。

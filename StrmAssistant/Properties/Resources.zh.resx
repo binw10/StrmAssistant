@@ -1070,6 +1070,36 @@
   <data name="MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_refresh_library_scope__Blank_includes_all_TV_shows_libraries_" xml:space="preserve">
     <value>剧集刷新的媒体库范围，留空表示包含全部剧集库。</value>
   </data>
+  <data name="MetadataEnhanceOptions_MetadataCacheMode_Build_Local_Metadata_Cache" xml:space="preserve">
+    <value>构建本地元数据缓存</value>
+  </data>
+  <data name="MetadataEnhanceOptions_MetadataCacheMode_Description" xml:space="preserve">
+    <value>可选的本地 TMDB 响应缓存：把 MovieDb 元数据响应读写到磁盘，用于限流或断网时复用。默认关闭。</value>
+  </data>
+  <data name="MetadataEnhanceOptions_MetadataCacheRootFolder_Metadata_Cache_Root_Folder" xml:space="preserve">
+    <value>元数据缓存根目录</value>
+  </data>
+  <data name="MetadataEnhanceOptions_MetadataCacheRootFolder_Description" xml:space="preserve">
+    <value>本地 TMDB 缓存/覆盖目录的根目录，模式非“关闭”时必填。</value>
+  </data>
+  <data name="MetadataCacheOption_None_None" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="MetadataCacheOption_PreferCacheThenOnline_PreferCacheThenOnline" xml:space="preserve">
+    <value>优先使用缓存</value>
+  </data>
+  <data name="MetadataCacheOption_PreferOnlineWithCache_PreferOnlineWithCache" xml:space="preserve">
+    <value>在线刮削并缓存</value>
+  </data>
+  <data name="MetadataCacheOption_UseOverrideCacheOnly_UseOverrideCacheOnly" xml:space="preserve">
+    <value>仅使用覆盖缓存</value>
+  </data>
+  <data name="MetadataCacheRootFolderNotExist" xml:space="preserve">
+    <value>元数据缓存根目录不存在或不可写。</value>
+  </data>
+  <data name="MetadataCacheRootFolderNotAllowed" xml:space="preserve">
+    <value>元数据缓存根目录不被允许（盘符根或系统目录）。</value>
+  </data>
   <data name="MergeScopeOption_FolderScope_FolderScope" xml:space="preserve">
     <value>同目录合并</value>
   </data>

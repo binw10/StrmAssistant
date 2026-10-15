@@ -234,6 +234,32 @@ namespace StrmAssistant.Options.Store
                         PatchManager.EnhanceNfoMetadata.Unpatch();
                     }
                 }
+
+                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.MetadataCacheMode)) ||
+                    changedProperties.Contains(nameof(MetadataEnhanceOptions.MetadataCacheRootFolder)))
+                {
+                    if (options.IsMetadataCacheEnabled)
+                    {
+                        var (ok, error) = LocalMetadataCache.ValidateAndInitialize(options.MetadataCacheRootFolder);
+                        if (ok)
+                        {
+                            _logger.Info("MetadataCache - root initialized: {0} (mode={1})",
+                                LocalMetadataCache.Root, options.MetadataCacheMode);
+                            PatchManager.LocalTmdbCache.Patch();
+                        }
+                        else
+                        {
+                            _logger.Warn("MetadataCache - root invalid ({0}): {1}", error,
+                                options.MetadataCacheRootFolder);
+                            PatchManager.LocalTmdbCache.Unpatch();
+                        }
+                    }
+                    else
+                    {
+                        LocalMetadataCache.Reset();
+                        PatchManager.LocalTmdbCache.Unpatch();
+                    }
+                }
             }
         }
 
@@ -283,6 +309,15 @@ namespace StrmAssistant.Options.Store
                 _logger.Info("DoubanRatingOverride is set to {0}", options.DoubanRatingOverride);
                 _logger.Info("DoubanCastChinese is set to {0}", options.DoubanCastChinese);
                 _logger.Info("DoubanPosterFallback is set to {0}", options.DoubanPosterFallback);
+                _logger.Info("EpisodeRefreshLibraryScope is set to {0}",
+                    !string.IsNullOrEmpty(options.EpisodeRefreshLibraryScope)
+                        ? options.EpisodeRefreshLibraryScope
+                        : "<all>");
+                _logger.Info("MetadataCacheMode is set to {0}", options.MetadataCacheMode);
+                _logger.Info("MetadataCacheRootFolder is set to {0}",
+                    !string.IsNullOrEmpty(options.MetadataCacheRootFolder)
+                        ? options.MetadataCacheRootFolder
+                        : "EMPTY");
             }
         }
     }

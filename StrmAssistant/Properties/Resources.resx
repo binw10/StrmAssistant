@@ -1157,6 +1157,36 @@
   <data name="MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_refresh_library_scope__Blank_includes_all_TV_shows_libraries_" xml:space="preserve">
     <value>Episode refresh library scope. Blank includes all TV show libraries.</value>
   </data>
+  <data name="MetadataEnhanceOptions_MetadataCacheMode_Build_Local_Metadata_Cache" xml:space="preserve">
+    <value>Build Local Metadata Cache</value>
+  </data>
+  <data name="MetadataEnhanceOptions_MetadataCacheMode_Description" xml:space="preserve">
+    <value>Optional local TMDB response cache: read/write MovieDb metadata responses on disk for rate-limit or offline resilience. Default is OFF.</value>
+  </data>
+  <data name="MetadataEnhanceOptions_MetadataCacheRootFolder_Metadata_Cache_Root_Folder" xml:space="preserve">
+    <value>Metadata Cache Root Folder</value>
+  </data>
+  <data name="MetadataEnhanceOptions_MetadataCacheRootFolder_Description" xml:space="preserve">
+    <value>Root folder for the local TMDB cache/override directories. Required when the mode is not OFF.</value>
+  </data>
+  <data name="MetadataCacheOption_None_None" xml:space="preserve">
+    <value>OFF</value>
+  </data>
+  <data name="MetadataCacheOption_PreferCacheThenOnline_PreferCacheThenOnline" xml:space="preserve">
+    <value>Prefer Cache Then Online</value>
+  </data>
+  <data name="MetadataCacheOption_PreferOnlineWithCache_PreferOnlineWithCache" xml:space="preserve">
+    <value>Prefer Online With Cache</value>
+  </data>
+  <data name="MetadataCacheOption_UseOverrideCacheOnly_UseOverrideCacheOnly" xml:space="preserve">
+    <value>Use Override Cache Only</value>
+  </data>
+  <data name="MetadataCacheRootFolderNotExist" xml:space="preserve">
+    <value>Metadata cache root folder does not exist or is not writable.</value>
+  </data>
+  <data name="MetadataCacheRootFolderNotAllowed" xml:space="preserve">
+    <value>Metadata cache root folder is not allowed (drive root or system folder).</value>
+  </data>
   <data name="MergeScopeOption_FolderScope_FolderScope" xml:space="preserve">
     <value>Folder Scope</value>
   </data>

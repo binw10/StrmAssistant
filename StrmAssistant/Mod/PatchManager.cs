@@ -46,6 +46,7 @@ namespace StrmAssistant.Mod
         public static EnableDeepDelete EnableDeepDelete;
         public static StrmDirectRedirect StrmDirectRedirect;
         public static LiveTvDirectRedirect LiveTvDirectRedirect;
+        public static LocalTmdbCache LocalTmdbCache;
 
         private static readonly ConcurrentDictionary<Tuple<Type, string>, HarmonyMethod> HarmonyMethodCache 
             = new ConcurrentDictionary<Tuple<Type, string>, HarmonyMethod>();
@@ -107,6 +108,7 @@ namespace StrmAssistant.Mod
             EnableDeepDelete = new EnableDeepDelete();
             StrmDirectRedirect = new StrmDirectRedirect();
             LiveTvDirectRedirect = new LiveTvDirectRedirect();
+            LocalTmdbCache = new LocalTmdbCache();
 
             // ★ 总览日志：遍历所有 PatchTracker，打印每个模块的最终状态（Info 级别，无需开启 DebugMode）
             try
