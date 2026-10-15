@@ -104,6 +104,12 @@ namespace StrmAssistant.Options.Store
                 {
                     Plugin.LibraryApi.UpdateLibraryPathsInScope(options.LibraryScope);
                 }
+
+                if (changedProperties.Contains(nameof(MediaInfoExtractOptions.CustomProbePath)) ||
+                    changedProperties.Contains(nameof(MediaInfoExtractOptions.CustomEncoderPath)))
+                {
+                    Common.FfmpegPathOverride.Apply(options.CustomProbePath, options.CustomEncoderPath);
+                }
             }
         }
 

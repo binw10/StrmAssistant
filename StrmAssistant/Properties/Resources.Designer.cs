@@ -369,6 +369,151 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Folder Video Grouping Limit.
+        /// </summary>
+        public static string ExperienceEnhanceOptions_FolderVideoGroupingLimit_Folder_Video_Grouping_Limit {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_FolderVideoGroupingLimit_Folder_Video_Grouping_Limit", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Maximum number of videos in the same folder eligible for multi-version merge. 8 is the Emby default. Default is 8..
+        /// </summary>
+        public static string ExperienceEnhanceOptions_FolderVideoGroupingLimit_Maximum_number_of_videos_in_the_same_folder_eligible_for_multi_version_merge__8_is_the_Emby_default__Default_is_8_ {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_FolderVideoGroupingLimit_Maximum_number_of_videos_in_the_same_folder_eligible_for_multi_version_merge__8_is_the_Emby_default__Default_is_8_", resourceCulture);
+            }
+        }
+
+        /// <summary>        /// <summary>
+        ///   Looks up a localized string similar to Media Info Exclude Keywords
+        /// </summary>
+        public static string MediaInfoExtractOptions_MediaInfoExcludeKeywords_Media_Info_Exclude_Keywords {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_MediaInfoExcludeKeywords_Media_Info_Exclude_Keywords", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Comma-separated keywords matched against the file path to skip media info extraction. Default is EMPTY..
+        /// </summary>
+        public static string MediaInfoExtractOptions_MediaInfoExcludeKeywords_Comma_separated_keywords_matched_against_the_file_path_to_skip_media_info_extraction__Default_is_EMPTY_ {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_MediaInfoExcludeKeywords_Comma_separated_keywords_matched_against_the_file_path_to_skip_media_info_extraction__Default_is_EMPTY_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Media Info Exclude Media Containers
+        /// </summary>
+        public static string MediaInfoExtractOptions_MediaInfoExcludeMediaContainers_Media_Info_Exclude_Media_Containers {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_MediaInfoExcludeMediaContainers_Media_Info_Exclude_Media_Containers", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Comma-separated container names or extensions to skip media info extraction. Default is EMPTY..
+        /// </summary>
+        public static string MediaInfoExtractOptions_MediaInfoExcludeMediaContainers_Comma_separated_container_names_or_extensions_to_skip_media_info_extraction__Default_is_EMPTY_ {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_MediaInfoExcludeMediaContainers_Comma_separated_container_names_or_extensions_to_skip_media_info_extraction__Default_is_EMPTY_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Video Thumbnail Exclude Keywords
+        /// </summary>
+        public static string MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Video_Thumbnail_Exclude_Keywords {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Video_Thumbnail_Exclude_Keywords", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Comma-separated keywords matched against the file path to skip video thumbnail extraction. Default is EMPTY..
+        /// </summary>
+        public static string MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Comma_separated_keywords_matched_against_the_file_path_to_skip_video_thumbnail_extraction__Default_is_EMPTY_ {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Comma_separated_keywords_matched_against_the_file_path_to_skip_video_thumbnail_extraction__Default_is_EMPTY_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Video Thumbnail Exclude Media Containers
+        /// </summary>
+        public static string MediaInfoExtractOptions_VideoThumbnailExcludeMediaContainers_Video_Thumbnail_Exclude_Media_Containers {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_VideoThumbnailExcludeMediaContainers_Video_Thumbnail_Exclude_Media_Containers", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Comma-separated container names or extensions to skip video thumbnail extraction. Default is EMPTY..
+        /// </summary>
+        public static string MediaInfoExtractOptions_VideoThumbnailExcludeMediaContainers_Comma_separated_container_names_or_extensions_to_skip_video_thumbnail_extraction__Default_is_EMPTY_ {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_VideoThumbnailExcludeMediaContainers_Comma_separated_container_names_or_extensions_to_skip_video_thumbnail_extraction__Default_is_EMPTY_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Media Info Extraction Timeout
+        /// </summary>
+        public static string MediaInfoExtractOptions_MediaInfoExtractionTimeoutMs_Media_Info_Extraction_Timeout {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_MediaInfoExtractionTimeoutMs_Media_Info_Extraction_Timeout", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Per-item extraction timeout in milliseconds. 0 disables the timeout. Default is 0..
+        /// </summary>
+        public static string MediaInfoExtractOptions_MediaInfoExtractionTimeoutMs_Per_item_extraction_timeout_in_milliseconds__0_disables_the_timeout__Default_is_0_ {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_MediaInfoExtractionTimeoutMs_Per_item_extraction_timeout_in_milliseconds__0_disables_the_timeout__Default_is_0_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+
+        ///   Looks up a localized string similar to Custom Probe Path.
+        /// </summary>
+        public static string MediaInfoExtractOptions_CustomProbePath_Custom_Probe_Path {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_CustomProbePath_Custom_Probe_Path", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Custom ffprobe binary used for media info extraction (leave empty to use the Emby builtin). Supports rffmpeg wrapper for distributed extraction..
+        /// </summary>
+        public static string MediaInfoExtractOptions_CustomProbePath_Custom_ffprobe_binary_used_for_media_info_extraction__leave_empty_to_use_the_Emby_builtin__supports_rffmpeg_wrapper_for_distributed_extraction_ {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_CustomProbePath_Custom_ffprobe_binary_used_for_media_info_extraction__leave_empty_to_use_the_Emby_builtin__supports_rffmpeg_wrapper_for_distributed_extraction_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Custom Encoder Path.
+        /// </summary>
+        public static string MediaInfoExtractOptions_CustomEncoderPath_Custom_Encoder_Path {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_CustomEncoderPath_Custom_Encoder_Path", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Custom ffmpeg binary used for image capture and thumbnails (leave empty to use the Emby builtin). A build with libplacebo fixes DV P5 green tint..
+        /// </summary>
+        public static string MediaInfoExtractOptions_CustomEncoderPath_Custom_ffmpeg_binary_used_for_image_capture_and_thumbnails__leave_empty_to_use_the_Emby_builtin__a_build_with_libplacebo_fixes_DV_P5_green_tint_ {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_CustomEncoderPath_Custom_ffmpeg_binary_used_for_image_capture_and_thumbnails__leave_empty_to_use_the_Emby_builtin__a_build_with_libplacebo_fixes_DV_P5_green_tint_", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Min Wait After Library Insert.
         /// </summary>
         public static string PluginOptions_CatchupMinWaitMinutes_Min_Wait_After_Library_Insert {
@@ -1042,12 +1187,177 @@ namespace StrmAssistant.Properties {
         }
         
         /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to Parallel Marker Computation
+        /// </summary>
+        public static string IntroSkipOptions_ParallelMarkerComputation_Parallel_Marker_Computation {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_ParallelMarkerComputation_Parallel_Marker_Computation", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Bypass the master concurrency limit for fingerprint extraction and parallelize across all CPU cores. Default is OFF..
+        /// </summary>
+        public static string IntroSkipOptions_ParallelMarkerComputation_Bypass_the_master_concurrency_limit_for_fingerprint_extraction_and_parallelize_across_all_CPU_cores__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_ParallelMarkerComputation_Bypass_the_master_concurrency_limit_for_fingerprint_extraction_and_parallelize_across_all_CPU_cores__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to Proxy Mode
+        /// </summary>
+        public static string NetworkOptions_ProxyMode_Proxy_Mode {
+            get {
+                return ResourceManager.GetString("NetworkOptions_ProxyMode_Proxy_Mode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Global proxies all outbound requests; ScrapeOnly proxies only the scraping whitelist hosts. Default is Global..
+        /// </summary>
+        public static string NetworkOptions_ProxyMode_Global_proxies_all_outbound_requests__ScrapeOnly_proxies_only_the_scraping_whitelist_hosts__Default_is_Global_ {
+            get {
+                return ResourceManager.GetString("NetworkOptions_ProxyMode_Global_proxies_all_outbound_requests__ScrapeOnly_proxies_only_the_scraping_whitelist_hosts__Default_is_Global_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Global
+        /// </summary>
+        public static string ProxyMode_Global_Global {
+            get {
+                return ResourceManager.GetString("ProxyMode_Global_Global", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to ScrapeOnly
+        /// </summary>
+        public static string ProxyMode_ScrapeOnly_ScrapeOnly {
+            get {
+                return ResourceManager.GetString("ProxyMode_ScrapeOnly_ScrapeOnly", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Scrape Proxy Whitelist
+        /// </summary>
+        public static string NetworkOptions_ScrapeProxyWhitelist_Scrape_Proxy_Whitelist {
+            get {
+                return ResourceManager.GetString("NetworkOptions_ScrapeProxyWhitelist_Scrape_Proxy_Whitelist", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Comma-separated host suffixes that go through the proxy in ScrapeOnly mode. Default covers TMDB and TVDB..
+        /// </summary>
+        public static string NetworkOptions_ScrapeProxyWhitelist_Comma_separated_host_suffixes_that_go_through_the_proxy_in_ScrapeOnly_mode__Default_covers_TMDB_and_TVDB_ {
+            get {
+                return ResourceManager.GetString("NetworkOptions_ScrapeProxyWhitelist_Comma_separated_host_suffixes_that_go_through_the_proxy_in_ScrapeOnly_mode__Default_covers_TMDB_and_TVDB_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to Media Metadata Updated
+        /// </summary>
+        public static string Notification_MetadataUpdate_EventName {
+            get {
+                return ResourceManager.GetString("Notification_MetadataUpdate_EventName", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to {0}\nPath: {1}\nReason: {2}
+        /// </summary>
+        public static string Notification_MetadataUpdate_EventDescription {
+            get {
+                return ResourceManager.GetString("Notification_MetadataUpdate_EventDescription", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Media Image Updated
+        /// </summary>
+        public static string Notification_ImageUpdate_EventName {
+            get {
+                return ResourceManager.GetString("Notification_ImageUpdate_EventName", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to {0}\nPath: {1}
+        /// </summary>
+        public static string Notification_ImageUpdate_EventDescription {
+            get {
+                return ResourceManager.GetString("Notification_ImageUpdate_EventDescription", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Boxset Updated
+        /// </summary>
+        public static string Notification_BoxsetUpdate_EventName {
+            get {
+                return ResourceManager.GetString("Notification_BoxsetUpdate_EventName", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Boxset: {0}\nItem: {1}\nAction: {2}
+        /// </summary>
+        public static string Notification_BoxsetUpdate_EventDescription {
+            get {
+                return ResourceManager.GetString("Notification_BoxsetUpdate_EventDescription", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Metadata Update Tracked Fields
+        /// </summary>
+        public static string ExperienceEnhanceOptions_MetadataUpdateTrackedFields_Metadata_Update_Tracked_Fields {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_MetadataUpdateTrackedFields_Metadata_Update_Tracked_Fields", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Comma-separated metadata fields that trigger the metadata update notification (blank notifies all). Default is EMPTY..
+        /// </summary>
+        public static string ExperienceEnhanceOptions_MetadataUpdateTrackedFields_Comma_separated_metadata_fields_that_trigger_the_metadata_update_notification__blank_notifies_all__Default_is_EMPTY_ {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_MetadataUpdateTrackedFields_Comma_separated_metadata_fields_that_trigger_the_metadata_update_notification__blank_notifies_all__Default_is_EMPTY_", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Intro Detection Fingerprint Length (Minute).
         /// </summary>
         public static string IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Minutes {
             get {
                 return ResourceManager.GetString("IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Min" +
                         "utes", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Per-Library Fingerprint Minutes.
+        /// </summary>
+        public static string IntroSkipOptions_LibraryFingerprintMinutes_Per_Library_Fingerprint_Minutes {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_LibraryFingerprintMinutes_Per_Library_Fingerprint_Minutes", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Overrides for specific libraries in libraryId:minutes format, separated by comma (falls back to the global value). Default is EMPTY..
+        /// </summary>
+        public static string IntroSkipOptions_LibraryFingerprintMinutes_Overrides_for_specific_libraries_in_libraryId_minutes_format_separated_by_comma__falls_back_to_the_global_value__Default_is_EMPTY_ {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_LibraryFingerprintMinutes_Overrides_for_specific_libraries_in_libraryId_minutes_format_separated_by_comma__falls_back_to_the_global_value__Default_is_EMPTY_", resourceCulture);
             }
         }
         

@@ -88,6 +88,72 @@ namespace StrmAssistant.Common
             }
         }
 
+        /// <summary>
+        /// 关键字黑名单：逗号分隔，大小写不敏感，匹配 item.Path。
+        /// </summary>
+        public static bool IsKeywordExcluded(BaseItem item, string keywords)
+        {
+            var list = (keywords ?? string.Empty)
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(k => k.Trim())
+                .Where(k => k.Length > 0)
+                .ToArray();
+
+            if (list.Length == 0 || string.IsNullOrEmpty(item?.Path)) return false;
+
+            return list.Any(k => item.Path.IndexOf(k, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        /// <summary>
+        /// 容器黑名单：逗号分隔的 MediaContainers 枚举名或扩展名别名，
+        /// 命中 item.MediaContainer 或文件扩展名即排除。
+        /// </summary>
+        public static bool IsContainerExcluded(BaseItem item, string containers)
+        {
+            var list = (containers ?? string.Empty)
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(c => c.Trim())
+                .Where(c => c.Length > 0)
+                .ToArray();
+
+            if (list.Length == 0 || item == null) return false;
+
+            var parsed = list.Select(c => Enum.TryParse<MediaContainers>(c, true, out var container)
+                    ? container
+                    : (MediaContainers?)null)
+                .Where(c => c.HasValue)
+                .Select(c => c.Value)
+                .Distinct()
+                .ToArray();
+
+            if (parsed.Length == 0)
+            {
+                // 未命中枚举名时按扩展名原文匹配
+                if (!item.IsShortcut && item.IsFileProtocol && !string.IsNullOrEmpty(item.Path))
+                {
+                    var ext = Path.GetExtension(item.Path).TrimStart('.');
+                    return list.Contains(ext, StringComparer.OrdinalIgnoreCase);
+                }
+
+                return false;
+            }
+
+            if (item.MediaContainer.HasValue && parsed.Contains(item.MediaContainer.Value)) return true;
+
+            if (!item.IsShortcut && item.IsFileProtocol && !string.IsNullOrEmpty(item.Path))
+            {
+                var fileExtension = Path.GetExtension(item.Path).TrimStart('.');
+                var aliases = parsed.SelectMany(c => c.GetAliases() ?? Array.Empty<string>())
+                    .Where(a => !string.IsNullOrWhiteSpace(a))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                if (aliases.Contains(fileExtension, StringComparer.OrdinalIgnoreCase)) return true;
+            }
+
+            return false;
+        }
+
         public static readonly HashSet<string> ExcludedCollectionTypes = new HashSet<string>
         {
             CollectionType.Books.ToString(),
@@ -503,6 +569,20 @@ namespace StrmAssistant.Common
 
         public bool IsExtractNeeded(BaseItem item, bool enableImageCapture)
         {
+            var miOptions = Plugin.Instance.MediaInfoExtractStore.GetOptions();
+
+            if (IsKeywordExcluded(item, miOptions.MediaInfoExcludeKeywords))
+            {
+                _logger.Debug("MediaInfoExtract - Keyword excluded: " + item.Path);
+                return false;
+            }
+
+            if (IsContainerExcluded(item, miOptions.MediaInfoExcludeMediaContainers))
+            {
+                _logger.Debug("MediaInfoExtract - Container excluded: " + item.Path);
+                return false;
+            }
+
             if (item.MediaContainer.HasValue && ExcludeMediaContainers.Contains(item.MediaContainer.Value))
                 return false;
 

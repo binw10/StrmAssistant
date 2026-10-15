@@ -1,8 +1,10 @@
 using Emby.Web.GenericEdit.Elements;
 using HarmonyLib;
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Reflection;
 using static StrmAssistant.Common.CommonUtility;
 using static StrmAssistant.Mod.PatchManager;
@@ -12,19 +14,6 @@ namespace StrmAssistant.Mod
     public class EnableProxyServer : PatchBase<EnableProxyServer>
     {
         private static MethodInfo _createHttpClientHandler;
-
-        private static readonly string[] BypassAddressList =
-        {
-            // RFC 1918 Private Address Space
-            "10.*",                                                              // 10.0.0.0/8
-            "172.16.*", "172.17.*", "172.18.*", "172.19.*",                     // 172.16.0.0/12
-            "172.20.*", "172.21.*", "172.22.*", "172.23.*",
-            "172.24.*", "172.25.*", "172.26.*", "172.27.*",
-            "172.28.*", "172.29.*", "172.30.*", "172.31.*",
-            "192.168.*",                                                         // 192.168.0.0/16
-            // Loopback
-            "127.*", "localhost"                                                 // 127.0.0.0/8
-        };
 
         public EnableProxyServer()
         {
@@ -62,10 +51,8 @@ namespace StrmAssistant.Mod
                 proxyStatus == ItemStatus.Succeeded && TryParseProxyUrl(options.ProxyServerUrl, out var schema,
                     out var host, out var port, out var username, out var password))
             {
-                var proxy = new WebProxy(proxyUri)
+                var proxy = new SelectiveWebProxy(proxyUri, options.ProxyMode, options.ScrapeProxyWhitelist)
                 {
-                    BypassProxyOnLocal = true,
-                    BypassList = BypassAddressList,
                     Credentials = !string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password)
                         ? new NetworkCredential(username, password)
                         : null
@@ -91,6 +78,74 @@ namespace StrmAssistant.Mod
                             (sender, cert, chain, sslErrors) => true;
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// 按路由模式决定是否走代理的 IWebProxy：
+        /// Global 全部出站走代理（保留本地/私网直连）；ScrapeOnly 仅白名单后缀主机走代理。
+        /// </summary>
+        private sealed class SelectiveWebProxy : IWebProxy
+        {
+            private readonly Uri _proxyUri;
+            private readonly NetworkOptions.ProxyRoutingMode _mode;
+            private readonly string[] _whitelist;
+            private static readonly string[] BypassHosts =
+            {
+                "localhost", "127.", "10.", "192.168.", "[::1]"
+            };
+
+            public SelectiveWebProxy(Uri proxyUri, NetworkOptions.ProxyRoutingMode mode, string whitelist)
+            {
+                _proxyUri = proxyUri;
+                _mode = mode;
+                _whitelist = (whitelist ?? string.Empty)
+                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(h => h.Trim().TrimStart('.').ToLowerInvariant())
+                    .Where(h => h.Length > 0)
+                    .ToArray();
+            }
+
+            public ICredentials Credentials { get; set; }
+
+            public Uri GetProxy(Uri destination) => ShouldProxy(destination) ? _proxyUri : destination;
+
+            public bool IsBypassed(Uri host) => !ShouldProxy(host);
+
+            private bool ShouldProxy(Uri destination)
+            {
+                if (destination == null) return false;
+
+                if (destination.IsLoopback) return false;
+
+                var host = destination.Host.ToLowerInvariant();
+
+                foreach (var bypass in BypassHosts)
+                {
+                    if (host.StartsWith(bypass)) return false;
+                }
+
+                // 私网 IPv4 文本段（10.x/172.16-31.x/192.168.x）
+                if (System.Net.IPAddress.TryParse(host, out var ip) && ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    var parts = host.Split('.');
+                    if (parts[0] == "10" || parts[0] == "192" && parts[1] == "168" ||
+                        parts[0] == "172" && int.TryParse(parts[1], out var second) &&
+                        second >= 16 && second <= 31)
+                    {
+                        return false;
+                    }
+                }
+
+                if (_mode == NetworkOptions.ProxyRoutingMode.Global) return true;
+
+                // ScrapeOnly：白名单后缀匹配
+                foreach (var suffix in _whitelist)
+                {
+                    if (host == suffix || host.EndsWith("." + suffix, StringComparison.Ordinal)) return true;
+                }
+
+                return false;
             }
         }
     }

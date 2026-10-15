@@ -62,6 +62,15 @@ namespace StrmAssistant.ScheduledTask
             var groupedBySeason = episodes.GroupBy(e => e.Season).ToList();
             var seasonTasks = new List<Task>();
 
+            // 并行声纹计算：绕过为 ffprobe 设计的 MasterSemaphore，用 CPU 核数级专用信号量
+            var parallelMarkers = Plugin.Instance.IntroSkipStore.GetOptions().ParallelMarkerComputation &&
+                                  Plugin.Instance.IsModSupported;
+            var workSemaphore = parallelMarkers ? QueueManager.ParallelMarkerSemaphore : QueueManager.MasterSemaphore;
+            if (parallelMarkers)
+            {
+                _logger.Info($"IntroFingerprintExtract - Parallel Marker Computation enabled (cores: {Environment.ProcessorCount})");
+            }
+
             double totalSeasons = groupedBySeason.Count;
             double totalEpisodes = episodes.Count;
 
@@ -99,7 +108,7 @@ namespace StrmAssistant.ScheduledTask
 
                     try
                     {
-                        await QueueManager.MasterSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+                        await workSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
                     }
                     catch
                     {
@@ -108,7 +117,7 @@ namespace StrmAssistant.ScheduledTask
 
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        QueueManager.MasterSemaphore.Release();
+                        workSemaphore.Release();
                         _logger.Info("IntroFingerprintExtract - Scheduled Task Cancelled");
                         return;
                     }
@@ -195,7 +204,7 @@ namespace StrmAssistant.ScheduledTask
                                 }
                             }
 
-                            QueueManager.MasterSemaphore.Release();
+                            workSemaphore.Release();
 
                             var currentCount = Interlocked.Increment(ref processedEpisodes);
 

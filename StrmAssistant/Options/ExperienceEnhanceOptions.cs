@@ -62,11 +62,22 @@ namespace StrmAssistant.Options
         [VisibleCondition(nameof(MergeMultiVersion), SimpleCondition.IsTrue)]
         public SpacerItem SplitMovieProgressSeparator { get; set; } = new SpacerItem(SpacerSize.Small);
 
+        [DisplayNameL("ExperienceEnhanceOptions_FolderVideoGroupingLimit_Folder_Video_Grouping_Limit", typeof(Resources))]
+        [DescriptionL("ExperienceEnhanceOptions_FolderVideoGroupingLimit_Maximum_number_of_videos_in_the_same_folder_eligible_for_multi_version_merge__8_is_the_Emby_default__Default_is_8_", typeof(Resources))]
+        [VisibleCondition(nameof(MergeMultiVersion), SimpleCondition.IsTrue)]
+        [Required]
+        public int FolderVideoGroupingLimit { get; set; } = 8;
+
         [DisplayNameL("ExperienceEnhanceOptions_EnhanceNotification_Enhance_Notification", typeof(Resources))]
         [DescriptionL("ExperienceEnhanceOptions_EnhanceNotification_Show_episode_details_in_series_notification__Default_is_OFF_", typeof(Resources))]
         [Required]
         [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
         public bool EnhanceNotificationSystem { get; set; } = false;
+
+        [DisplayNameL("ExperienceEnhanceOptions_MetadataUpdateTrackedFields_Metadata_Update_Tracked_Fields", typeof(Resources))]
+        [DescriptionL("ExperienceEnhanceOptions_MetadataUpdateTrackedFields_Comma_separated_metadata_fields_that_trigger_the_metadata_update_notification__blank_notifies_all__Default_is_EMPTY_", typeof(Resources))]
+        [VisibleCondition(nameof(EnhanceNotificationSystem), SimpleCondition.IsTrue)]
+        public string MetadataUpdateTrackedFields { get; set; } = string.Empty;
         
         [DisplayNameL("ExperienceEnhanceOptions_EnableDeepDelete_Enable_Deep_Delete", typeof(Resources))]
         [DescriptionL("ExperienceEnhanceOptions_EnableDeepDelete_Attempt_to_cascade_delete_the_underlying_file_of_strm_or_symlink__Default_is_OFF_", typeof(Resources))]

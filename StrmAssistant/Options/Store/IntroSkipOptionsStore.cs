@@ -170,6 +170,12 @@ namespace StrmAssistant.Options.Store
                     Plugin.FingerprintApi.UpdateLibraryPathsInScope(options.MarkerEnabledLibraryScope);
                     Plugin.FingerprintApi.UpdateLibraryIntroDetectionFingerprintLength(options.IntroDetectionFingerprintMinutes);
                 }
+
+                if (changedProperties.Contains(nameof(IntroSkipOptions.LibraryFingerprintMinutes)) &&
+                    options.UnlockIntroSkip)
+                {
+                    Plugin.FingerprintApi.UpdateLibraryIntroDetectionFingerprintLength(options.IntroDetectionFingerprintMinutes);
+                }
             }
         }
 
@@ -180,6 +186,8 @@ namespace StrmAssistant.Options.Store
                 _logger.Info("UnlockIntroSkip is set to {0}", options.UnlockIntroSkip);
                 _logger.Info("IntroDetectionFingerprintMinutes is set to {0}",
                     options.IntroDetectionFingerprintMinutes);
+                _logger.Info("LibraryFingerprintMinutes is set to {0}",
+                    options.LibraryFingerprintMinutes);
 
                 var markerEnabledLibraryScope = string.Join(", ",
                     options.MarkerEnabledLibraryScope

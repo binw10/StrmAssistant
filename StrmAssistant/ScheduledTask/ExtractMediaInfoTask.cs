@@ -35,6 +35,9 @@ namespace StrmAssistant.ScheduledTask
             var enableIntroSkip = Plugin.Instance.IntroSkipStore.GetOptions().EnableIntroSkip;
             _logger.Info("Intro Skip Enabled: " + enableIntroSkip);
 
+            var timeoutMs = Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoExtractionTimeoutMs;
+            if (timeoutMs > 0) _logger.Info("Media Info Extraction Timeout (ms): " + timeoutMs);
+
             var items = Plugin.LibraryApi.FetchPreExtractTaskItems();
 
             if (items.Count > 0) IsRunning = true;
@@ -69,6 +72,7 @@ namespace StrmAssistant.ScheduledTask
                 var task = Task.Run(async () =>
                 {
                     bool? result = null;
+                    CancellationTokenSource timeoutCts = null;
 
                     try
                     {
@@ -78,8 +82,16 @@ namespace StrmAssistant.ScheduledTask
                             return;
                         }
 
+                        var itemToken = cancellationToken;
+                        if (timeoutMs > 0)
+                        {
+                            timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                            timeoutCts.CancelAfter(timeoutMs);
+                            itemToken = timeoutCts.Token;
+                        }
+
                         result = await Plugin.LibraryApi
-                            .OrchestrateMediaInfoProcessAsync(taskItem, "MediaInfoExtract Task", cancellationToken)
+                            .OrchestrateMediaInfoProcessAsync(taskItem, "MediaInfoExtract Task", itemToken)
                             .ConfigureAwait(false);
 
                         if (result is null)
@@ -103,7 +115,14 @@ namespace StrmAssistant.ScheduledTask
                     }
                     catch (OperationCanceledException)
                     {
-                        _logger.Info($"MediaInfoExtract - Item cancelled: {taskItem.Name} - {taskItem.Path}");
+                        if (!cancellationToken.IsCancellationRequested)
+                        {
+                            _logger.Warn($"MediaInfoExtract - Item timed out ({timeoutMs}ms): {taskItem.Name} - {taskItem.Path}");
+                        }
+                        else
+                        {
+                            _logger.Info($"MediaInfoExtract - Item cancelled: {taskItem.Name} - {taskItem.Path}");
+                        }
                     }
                     catch (Exception e)
                     {
@@ -113,6 +132,8 @@ namespace StrmAssistant.ScheduledTask
                     }
                     finally
                     {
+                        timeoutCts?.Dispose();
+
                         if (result is true && cooldownSeconds.HasValue)
                         {
                             try

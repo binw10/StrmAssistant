@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading;
 using static StrmAssistant.Mod.PatchManager;
 using static StrmAssistant.Options.ExperienceEnhanceOptions;
@@ -25,6 +26,9 @@ namespace StrmAssistant.Mod
         private static MethodInfo _canRefreshImage;
         private static MethodInfo _addLibrariesToPresentationUniqueKey;
         private static MethodInfo _getRefreshOptions;
+        private static MethodInfo _getVideosGroupedByVersion;
+
+        private static int _folderGroupingLimit = 8;
 
         public static readonly AsyncLocal<BaseItem[]> CurrentAllCollectionFolders = new AsyncLocal<BaseItem[]>();
 
@@ -51,10 +55,18 @@ namespace StrmAssistant.Mod
                     {
                         _isEligibleForMultiVersion = videoListResolverType.GetMethod("IsEligibleForMultiVersion",
                             BindingFlags.Static | BindingFlags.NonPublic);
-                        
+
+                        _getVideosGroupedByVersion = videoListResolverType.GetMethod("GetVideosGroupedByVersion",
+                            BindingFlags.Instance | BindingFlags.NonPublic);
+
                         if (_isEligibleForMultiVersion != null && Plugin.Instance.DebugMode)
                         {
                             Plugin.Instance.Logger.Debug("MergeMultiVersion: IsEligibleForMultiVersion method found");
+                        }
+
+                        if (_getVideosGroupedByVersion != null && Plugin.Instance.DebugMode)
+                        {
+                            Plugin.Instance.Logger.Debug("MergeMultiVersion: GetVideosGroupedByVersion method found");
                         }
                     }
                 }
@@ -152,6 +164,96 @@ namespace StrmAssistant.Mod
             PatchUnpatch(PatchTracker, apply, _addLibrariesToPresentationUniqueKey,
                 prefix: nameof(AddLibrariesToPresentationUniqueKeyPrefix));
             PatchUnpatch(PatchTracker, apply, _getRefreshOptions, postfix: nameof(GetRefreshOptionsPostfix));
+            ApplyFolderGroupingLimit(apply);
+        }
+
+        /// <summary>
+        /// 同目录版本合并上限（Emby 默认 8）：仅当配置值 != 8 时，用 Transpiler 把
+        /// VideoListResolver.GetVideosGroupedByVersion 中 videos.Count &lt;= 8 的常量替换为静态字段。
+        /// 字段随配置保存即时更新，无需重打补丁。
+        /// </summary>
+        private static void ApplyFolderGroupingLimit(bool apply)
+        {
+            _folderGroupingLimit = Plugin.Instance.ExperienceEnhanceStore.GetOptions().FolderVideoGroupingLimit;
+
+            if (_getVideosGroupedByVersion == null)
+            {
+                if (_folderGroupingLimit != 8)
+                {
+                    Plugin.Instance.Logger.Warn(
+                        "MergeMultiVersion: GetVideosGroupedByVersion not found - folder grouping limit ignored");
+                }
+
+                return;
+            }
+
+            if (_folderGroupingLimit != 8)
+            {
+                PatchUnpatch(Instance.PatchTracker, apply, _getVideosGroupedByVersion,
+                    transpiler: nameof(FolderGroupingLimitTranspiler));
+            }
+        }
+
+        /// <summary>
+        /// 配置变更时由 ExperienceEnhanceOptionsStore 调用：更新静态上限值，
+        /// 并按需补上/移除 Transpiler（8 = Emby 原生行为，无需补丁）。
+        /// </summary>
+        public static void UpdateFolderGroupingLimit(int limit)
+        {
+            _folderGroupingLimit = Math.Max(1, limit);
+
+            if (_getVideosGroupedByVersion == null || Instance.PatchTracker.Status != PatchStatus.Applied)
+            {
+                return;
+            }
+
+            if (_folderGroupingLimit != 8)
+            {
+                PatchUnpatch(Instance.PatchTracker, true, _getVideosGroupedByVersion,
+                    transpiler: nameof(FolderGroupingLimitTranspiler));
+            }
+            else
+            {
+                PatchUnpatch(Instance.PatchTracker, false, _getVideosGroupedByVersion,
+                    transpiler: nameof(FolderGroupingLimitTranspiler));
+            }
+        }
+
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> FolderGroupingLimitTranspiler(
+            IEnumerable<CodeInstruction> instructions)
+        {
+            var code = instructions.ToList();
+
+            if (_getVideosGroupedByVersion == null) return code;
+
+            var videosParameter = _getVideosGroupedByVersion.GetParameters()[0].ParameterType;
+            var countGetter = videosParameter.GetProperty("Count")?.GetGetMethod();
+            var limitField = AccessTools.Field(typeof(MergeMultiVersion), nameof(_folderGroupingLimit));
+
+            if (countGetter == null || limitField == null) return code;
+
+            var replaced = 0;
+            for (var i = 0; i < code.Count - 1; i++)
+            {
+                // 目标模式：callvirt get_Count 后紧跟 ldc.i4.8（即 videos.Count <= 8 的比较量）
+                if (code[i].Calls(countGetter) && code[i + 1].opcode == OpCodes.Ldc_I4_8)
+                {
+                    code[i + 1] = new CodeInstruction(OpCodes.Ldsfld, limitField)
+                    {
+                        labels = code[i + 1].labels
+                    };
+                    replaced++;
+                }
+            }
+
+            if (replaced > 0 && Plugin.Instance.DebugMode)
+            {
+                Plugin.Instance.Logger.Debug(
+                    $"MergeMultiVersion: FolderGroupingLimit transpiler replaced {replaced} constant(s)");
+            }
+
+            return code;
         }
 
         [HarmonyPrefix]

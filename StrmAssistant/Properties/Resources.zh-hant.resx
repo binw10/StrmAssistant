@@ -32,6 +32,18 @@
   <data name="PluginOptions_LibraryScope_Library_scope_to_extract__Blank_includes_all_" xml:space="preserve">
     <value>媒體庫範圍，留空包含所有。</value>
   </data>
+  <data name="MediaInfoExtractOptions_CustomProbePath_Custom_Probe_Path" xml:space="preserve">
+    <value>自訂 Probe 路徑</value>
+  </data>
+  <data name="MediaInfoExtractOptions_CustomProbePath_Custom_ffprobe_binary_used_for_media_info_extraction__leave_empty_to_use_the_Emby_builtin__supports_rffmpeg_wrapper_for_distributed_extraction_" xml:space="preserve">
+    <value>用於媒體資訊提取的自訂 ffprobe 二進位（留空使用 Emby 內建）。支援 rffmpeg 包裝器實現分散式提取。</value>
+  </data>
+  <data name="MediaInfoExtractOptions_CustomEncoderPath_Custom_Encoder_Path" xml:space="preserve">
+    <value>自訂 Encoder 路徑</value>
+  </data>
+  <data name="MediaInfoExtractOptions_CustomEncoderPath_Custom_ffmpeg_binary_used_for_image_capture_and_thumbnails__leave_empty_to_use_the_Emby_builtin__a_build_with_libplacebo_fixes_DV_P5_green_tint_" xml:space="preserve">
+    <value>用於截圖和影片縮圖的自訂 ffmpeg 二進位（留空使用 Emby 內建）。帶 libplacebo 的建置可修復 DV P5 截圖發綠。</value>
+  </data>
   <data name="PluginOptions_MaxConcurrentCount_Max_Concurrent_Count" xml:space="preserve">
     <value>主最大並發線程數</value>
   </data>
@@ -416,6 +428,24 @@
   <data name="ModOptions_ProxyServer_Enable_http_proxy_server__Blank_is_OFF_" xml:space="preserve">
     <value>支援 HTTP(S) 代理伺服器，至 Google 的延遲必須小於 999 毫秒，測試失敗或留空則停用，設定變更後須重新啟動生效。</value>
   </data>
+  <data name="NetworkOptions_ProxyMode_Proxy_Mode" xml:space="preserve">
+    <value>代理模式</value>
+  </data>
+  <data name="NetworkOptions_ProxyMode_Global_proxies_all_outbound_requests__ScrapeOnly_proxies_only_the_scraping_whitelist_hosts__Default_is_Global_" xml:space="preserve">
+    <value>全域代理所有出站請求；僅刮削模式只代理刮削白名單主機。預設為全域。</value>
+  </data>
+  <data name="ProxyMode_Global_Global" xml:space="preserve">
+    <value>全域</value>
+  </data>
+  <data name="ProxyMode_ScrapeOnly_ScrapeOnly" xml:space="preserve">
+    <value>僅刮削</value>
+  </data>
+  <data name="NetworkOptions_ScrapeProxyWhitelist_Scrape_Proxy_Whitelist" xml:space="preserve">
+    <value>刮削代理白名單</value>
+  </data>
+  <data name="NetworkOptions_ScrapeProxyWhitelist_Comma_separated_host_suffixes_that_go_through_the_proxy_in_ScrapeOnly_mode__Default_covers_TMDB_and_TVDB_" xml:space="preserve">
+    <value>僅刮削模式下走代理的主機後綴，逗號分隔。預設涵蓋 TMDB 和 TVDB。</value>
+  </data>
   <data name="ProxyServer_Available" xml:space="preserve">
     <value>可用</value>
   </data>
@@ -539,6 +569,18 @@
   <data name="IntroSkipOptions_IntroDetectionFingerprintMinutes_It_must_be_between_2_and_20__Default_is_10_" xml:space="preserve">
     <value>自訂片頭聲紋探測時長，必須在 2 至 20 之間，預設為 10。</value>
   </data>
+  <data name="IntroSkipOptions_LibraryFingerprintMinutes_Per_Library_Fingerprint_Minutes" xml:space="preserve">
+    <value>分庫聲紋探測時長</value>
+  </data>
+  <data name="IntroSkipOptions_LibraryFingerprintMinutes_Overrides_for_specific_libraries_in_libraryId_minutes_format_separated_by_comma__falls_back_to_the_global_value__Default_is_EMPTY_" xml:space="preserve">
+    <value>按 媒體庫ID:分鐘 格式為指定媒體庫設定聲紋探測時長，逗號分隔，未設定的庫回退全域值。預設為空。</value>
+  </data>
+  <data name="IntroSkipOptions_ParallelMarkerComputation_Parallel_Marker_Computation" xml:space="preserve">
+    <value>並行聲紋計算</value>
+  </data>
+  <data name="IntroSkipOptions_ParallelMarkerComputation_Bypass_the_master_concurrency_limit_for_fingerprint_extraction_and_parallelize_across_all_CPU_cores__Default_is_OFF_" xml:space="preserve">
+    <value>聲紋提取繞過主並行限制，按全部 CPU 核心並行計算。預設為關閉。</value>
+  </data>
   <data name="UIFunctionOptions_NoBoxsetsAutoCreation_Prevent_Boxsets_Auto_Creation" xml:space="preserve">
     <value>隱藏合集媒體庫</value>
   </data>
@@ -596,6 +638,36 @@
   <data name="MediaInfoExtractOptions_ImageCaptureOffset_Image_capture_position_as_a_percentage_of_runtime__Default_is_10_" xml:space="preserve">
     <value>視訊截圖的偏移位置，基於時長的百分比，必須在 10 至 90 之間，預設為 10。</value>
   </data>
+  <data name="MediaInfoExtractOptions_MediaInfoExcludeKeywords_Media_Info_Exclude_Keywords" xml:space="preserve">
+    <value>媒體資訊排除關鍵字</value>
+  </data>
+  <data name="MediaInfoExtractOptions_MediaInfoExcludeKeywords_Comma_separated_keywords_matched_against_the_file_path_to_skip_media_info_extraction__Default_is_EMPTY_" xml:space="preserve">
+    <value>逗號分隔的關鍵字，符合檔案路徑則跳過媒體資訊提取。預設為空。</value>
+  </data>
+  <data name="MediaInfoExtractOptions_MediaInfoExcludeMediaContainers_Media_Info_Exclude_Media_Containers" xml:space="preserve">
+    <value>媒體資訊排除媒體容器</value>
+  </data>
+  <data name="MediaInfoExtractOptions_MediaInfoExcludeMediaContainers_Comma_separated_container_names_or_extensions_to_skip_media_info_extraction__Default_is_EMPTY_" xml:space="preserve">
+    <value>逗號分隔的容器名稱或副檔名，命中則跳過媒體資訊提取。預設為空。</value>
+  </data>
+  <data name="MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Video_Thumbnail_Exclude_Keywords" xml:space="preserve">
+    <value>影片縮圖排除關鍵字</value>
+  </data>
+  <data name="MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Comma_separated_keywords_matched_against_the_file_path_to_skip_video_thumbnail_extraction__Default_is_EMPTY_" xml:space="preserve">
+    <value>逗號分隔的關鍵字，符合檔案路徑則跳過影片縮圖提取。預設為空。</value>
+  </data>
+  <data name="MediaInfoExtractOptions_VideoThumbnailExcludeMediaContainers_Video_Thumbnail_Exclude_Media_Containers" xml:space="preserve">
+    <value>影片縮圖排除媒體容器</value>
+  </data>
+  <data name="MediaInfoExtractOptions_VideoThumbnailExcludeMediaContainers_Comma_separated_container_names_or_extensions_to_skip_video_thumbnail_extraction__Default_is_EMPTY_" xml:space="preserve">
+    <value>逗號分隔的容器名稱或副檔名，命中則跳過影片縮圖提取。預設為空。</value>
+  </data>
+  <data name="MediaInfoExtractOptions_MediaInfoExtractionTimeoutMs_Media_Info_Extraction_Timeout" xml:space="preserve">
+    <value>媒體資訊提取逾時</value>
+  </data>
+  <data name="MediaInfoExtractOptions_MediaInfoExtractionTimeoutMs_Per_item_extraction_timeout_in_milliseconds__0_disables_the_timeout__Default_is_0_" xml:space="preserve">
+    <value>單一條目提取逾時（毫秒）。0 表示不啟用逾時。預設為 0。</value>
+  </data>
   <data name="ExperienceEnhanceOptions_EnhanceNotification_Enhance_Notification" xml:space="preserve">
     <value>通知系統增強</value>
   </data>
@@ -646,6 +718,12 @@
   </data>
   <data name="ExperienceEnhanceOptions_EnableMultiVersionEnhance_Show_quality_badges_and_sort_by_quality_on_multi_version_detail_pages__Default_is_OFF_" xml:space="preserve">
     <value>多版本詳情頁顯示畫質標識並按畫質排序。預設為關閉。</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_FolderVideoGroupingLimit_Folder_Video_Grouping_Limit" xml:space="preserve">
+    <value>同目錄版本合併上限</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_FolderVideoGroupingLimit_Maximum_number_of_videos_in_the_same_folder_eligible_for_multi_version_merge__8_is_the_Emby_default__Default_is_8_" xml:space="preserve">
+    <value>同一資料夾內可參與多版本合併的影片數量上限。Emby 預設為 8。預設為 8。</value>
   </data>
   <data name="PluginOptions_CatchupMinWaitMinutes_Min_Wait_After_Library_Insert" xml:space="preserve">
     <value>入庫最小等待時間</value>
@@ -808,6 +886,30 @@
   </data>
   <data name="Notification_DeepDelete_EventName" xml:space="preserve">
     <value>媒體深度刪除</value>
+  </data>
+  <data name="Notification_MetadataUpdate_EventName" xml:space="preserve">
+    <value>媒體元資料更新</value>
+  </data>
+  <data name="Notification_MetadataUpdate_EventDescription" xml:space="preserve">
+    <value>{0}\n路徑：{1}\n原因：{2}</value>
+  </data>
+  <data name="Notification_ImageUpdate_EventName" xml:space="preserve">
+    <value>媒體圖像更新</value>
+  </data>
+  <data name="Notification_ImageUpdate_EventDescription" xml:space="preserve">
+    <value>{0}\n路徑：{1}</value>
+  </data>
+  <data name="Notification_BoxsetUpdate_EventName" xml:space="preserve">
+    <value>合集更新</value>
+  </data>
+  <data name="Notification_BoxsetUpdate_EventDescription" xml:space="preserve">
+    <value>合集：{0}\n條目：{1}\n動作：{2}</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_MetadataUpdateTrackedFields_Metadata_Update_Tracked_Fields" xml:space="preserve">
+    <value>元資料更新跟蹤欄位</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_MetadataUpdateTrackedFields_Comma_separated_metadata_fields_that_trigger_the_metadata_update_notification__blank_notifies_all__Default_is_EMPTY_" xml:space="preserve">
+    <value>逗號分隔的元資料欄位名，僅這些欄位變化時才發送元資料更新通知（留空通知全部）。預設為空。</value>
   </data>
   <data name="Notification_DeepDelete_EventDescription" xml:space="preserve">
     <value>名稱:\n{0}\n\n路徑:\n{1}\n\n裝載路徑:\n{2}</value>

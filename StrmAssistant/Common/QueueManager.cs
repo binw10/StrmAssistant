@@ -31,6 +31,11 @@ namespace StrmAssistant.Common
         public static CancellationTokenSource EpisodeRefreshTokenSource;
         public static SemaphoreSlim MasterSemaphore;
         public static SemaphoreSlim Tier2Semaphore;
+        /// <summary>
+        /// 并行声纹计算专用信号量（CPU 核数），仅在 ParallelMarkerComputation 开启时由
+        /// ExtractIntroFingerprintTask 使用，绕过为 ffprobe 设计的 MasterSemaphore 限流。
+        /// </summary>
+        public static SemaphoreSlim ParallelMarkerSemaphore;
         public static ConcurrentQueue<BaseItem> MediaInfoExtractItemQueue = new ConcurrentQueue<BaseItem>();
         public static ConcurrentQueue<Episode> IntroSkipItemQueue = new ConcurrentQueue<Episode>();
         public static ConcurrentQueue<BaseItem> FingerprintItemQueue = new ConcurrentQueue<BaseItem>();
@@ -50,6 +55,7 @@ namespace StrmAssistant.Common
 
             MasterSemaphore = new SemaphoreSlim(_currentMasterMaxConcurrentCount);
             Tier2Semaphore = new SemaphoreSlim(_currentTier2MaxConcurrentCount);
+            ParallelMarkerSemaphore = new SemaphoreSlim(Math.Max(1, Environment.ProcessorCount));
         }
 
         public static void Initialize()

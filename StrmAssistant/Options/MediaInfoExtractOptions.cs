@@ -52,6 +52,31 @@ namespace StrmAssistant.Options
         [Required]
         public string ImageCaptureExcludeMediaContainers { get; set; } = string.Empty;
 
+        [DisplayNameL("MediaInfoExtractOptions_MediaInfoExcludeKeywords_Media_Info_Exclude_Keywords", typeof(Resources))]
+        [DescriptionL("MediaInfoExtractOptions_MediaInfoExcludeKeywords_Comma_separated_keywords_matched_against_the_file_path_to_skip_media_info_extraction__Default_is_EMPTY_", typeof(Resources))]
+        [Required]
+        public string MediaInfoExcludeKeywords { get; set; } = string.Empty;
+
+        [DisplayNameL("MediaInfoExtractOptions_MediaInfoExcludeMediaContainers_Media_Info_Exclude_Media_Containers", typeof(Resources))]
+        [DescriptionL("MediaInfoExtractOptions_MediaInfoExcludeMediaContainers_Comma_separated_container_names_or_extensions_to_skip_media_info_extraction__Default_is_EMPTY_", typeof(Resources))]
+        [Required]
+        public string MediaInfoExcludeMediaContainers { get; set; } = string.Empty;
+
+        [DisplayNameL("MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Video_Thumbnail_Exclude_Keywords", typeof(Resources))]
+        [DescriptionL("MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Comma_separated_keywords_matched_against_the_file_path_to_skip_video_thumbnail_extraction__Default_is_EMPTY_", typeof(Resources))]
+        [Required]
+        public string VideoThumbnailExcludeKeywords { get; set; } = string.Empty;
+
+        [DisplayNameL("MediaInfoExtractOptions_VideoThumbnailExcludeMediaContainers_Video_Thumbnail_Exclude_Media_Containers", typeof(Resources))]
+        [DescriptionL("MediaInfoExtractOptions_VideoThumbnailExcludeMediaContainers_Comma_separated_container_names_or_extensions_to_skip_video_thumbnail_extraction__Default_is_EMPTY_", typeof(Resources))]
+        [Required]
+        public string VideoThumbnailExcludeMediaContainers { get; set; } = string.Empty;
+
+        [DisplayNameL("MediaInfoExtractOptions_MediaInfoExtractionTimeoutMs_Media_Info_Extraction_Timeout", typeof(Resources))]
+        [DescriptionL("MediaInfoExtractOptions_MediaInfoExtractionTimeoutMs_Per_item_extraction_timeout_in_milliseconds__0_disables_the_timeout__Default_is_0_", typeof(Resources))]
+        [Required, MinValue(0)]
+        public int MediaInfoExtractionTimeoutMs { get; set; } = 0;
+
         [DisplayNameL("ModOptions_ExclusiveExtract_Exclusive_Extract", typeof(Resources))]
         [DescriptionL("ModOptions_ExclusiveExtract_Only_allow_this_plugin_to_extract_media_info__ffprobe__and_capture_image__ffmpeg___Default_is_OFF_", typeof(Resources))]
         [Required]
@@ -118,6 +143,18 @@ namespace StrmAssistant.Options
         [EditMultilSelect]
         [SelectItemsSource(nameof(LibraryList))]
         public string LibraryScope { get; set; } = string.Empty;
+
+        [DisplayNameL("MediaInfoExtractOptions_CustomProbePath_Custom_Probe_Path", typeof(Resources))]
+        [DescriptionL("MediaInfoExtractOptions_CustomProbePath_Custom_ffprobe_binary_used_for_media_info_extraction__leave_empty_to_use_the_Emby_builtin__supports_rffmpeg_wrapper_for_distributed_extraction_", typeof(Resources))]
+        [EditFilePicker]
+        [Required]
+        public string CustomProbePath { get; set; } = string.Empty;
+
+        [DisplayNameL("MediaInfoExtractOptions_CustomEncoderPath_Custom_Encoder_Path", typeof(Resources))]
+        [DescriptionL("MediaInfoExtractOptions_CustomEncoderPath_Custom_ffmpeg_binary_used_for_image_capture_and_thumbnails__leave_empty_to_use_the_Emby_builtin__a_build_with_libplacebo_fixes_DV_P5_green_tint_", typeof(Resources))]
+        [EditFilePicker]
+        [Required]
+        public string CustomEncoderPath { get; set; } = string.Empty;
 
         [Browsable(false)]
         public bool IsModSupported => RuntimeInformation.ProcessArchitecture == Architecture.X64 || RuntimeInformation.ProcessArchitecture == Architecture.Arm64;

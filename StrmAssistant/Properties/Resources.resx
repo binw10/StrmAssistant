@@ -131,6 +131,18 @@
   <data name="PluginOptions_LibraryScope_Library_scope_to_extract__Blank_includes_all_" xml:space="preserve">
     <value>Library scope to extract. Blank includes all.</value>
   </data>
+  <data name="MediaInfoExtractOptions_CustomProbePath_Custom_Probe_Path" xml:space="preserve">
+    <value>Custom Probe Path</value>
+  </data>
+  <data name="MediaInfoExtractOptions_CustomProbePath_Custom_ffprobe_binary_used_for_media_info_extraction__leave_empty_to_use_the_Emby_builtin__supports_rffmpeg_wrapper_for_distributed_extraction_" xml:space="preserve">
+    <value>Custom ffprobe binary used for media info extraction (leave empty to use the Emby builtin). Supports rffmpeg wrapper for distributed extraction.</value>
+  </data>
+  <data name="MediaInfoExtractOptions_CustomEncoderPath_Custom_Encoder_Path" xml:space="preserve">
+    <value>Custom Encoder Path</value>
+  </data>
+  <data name="MediaInfoExtractOptions_CustomEncoderPath_Custom_ffmpeg_binary_used_for_image_capture_and_thumbnails__leave_empty_to_use_the_Emby_builtin__a_build_with_libplacebo_fixes_DV_P5_green_tint_" xml:space="preserve">
+    <value>Custom ffmpeg binary used for image capture and thumbnails (leave empty to use the Emby builtin). A build with libplacebo fixes DV P5 green tint.</value>
+  </data>
   <data name="PluginOptions_EnableImageCapture_Enable_Image_Capture" xml:space="preserve">
     <value>Image Capture and Thumbnail Preview Enhanced</value>
   </data>
@@ -503,6 +515,24 @@
   <data name="ModOptions_ProxyServer_Enable_http_proxy_server__Blank_is_OFF_" xml:space="preserve">
     <value>Support http(s) proxy server. Latency to Google must be less than 999 milliseconds. Disabled if unavailabe or leave blank. Restart if any changes.</value>
   </data>
+  <data name="NetworkOptions_ProxyMode_Proxy_Mode" xml:space="preserve">
+    <value>Proxy Mode</value>
+  </data>
+  <data name="NetworkOptions_ProxyMode_Global_proxies_all_outbound_requests__ScrapeOnly_proxies_only_the_scraping_whitelist_hosts__Default_is_Global_" xml:space="preserve">
+    <value>Global proxies all outbound requests; ScrapeOnly proxies only the scraping whitelist hosts. Default is Global.</value>
+  </data>
+  <data name="ProxyMode_Global_Global" xml:space="preserve">
+    <value>Global</value>
+  </data>
+  <data name="ProxyMode_ScrapeOnly_ScrapeOnly" xml:space="preserve">
+    <value>ScrapeOnly</value>
+  </data>
+  <data name="NetworkOptions_ScrapeProxyWhitelist_Scrape_Proxy_Whitelist" xml:space="preserve">
+    <value>Scrape Proxy Whitelist</value>
+  </data>
+  <data name="NetworkOptions_ScrapeProxyWhitelist_Comma_separated_host_suffixes_that_go_through_the_proxy_in_ScrapeOnly_mode__Default_covers_TMDB_and_TVDB_" xml:space="preserve">
+    <value>Comma-separated host suffixes that go through the proxy in ScrapeOnly mode. Default covers TMDB and TVDB.</value>
+  </data>
   <data name="ProxyServer_Available" xml:space="preserve">
     <value>Available</value>
   </data>
@@ -626,6 +656,18 @@
   <data name="IntroSkipOptions_IntroDetectionFingerprintMinutes_It_must_be_between_2_and_20__Default_is_10_" xml:space="preserve">
     <value>Customize intro detection fingerprint length. It must be between 2 and 20. Default is 10.</value>
   </data>
+  <data name="IntroSkipOptions_LibraryFingerprintMinutes_Per_Library_Fingerprint_Minutes" xml:space="preserve">
+    <value>Per-Library Fingerprint Minutes</value>
+  </data>
+  <data name="IntroSkipOptions_LibraryFingerprintMinutes_Overrides_for_specific_libraries_in_libraryId_minutes_format_separated_by_comma__falls_back_to_the_global_value__Default_is_EMPTY_" xml:space="preserve">
+    <value>Overrides for specific libraries in libraryId:minutes format, separated by comma (falls back to the global value). Default is EMPTY.</value>
+  </data>
+  <data name="IntroSkipOptions_ParallelMarkerComputation_Parallel_Marker_Computation" xml:space="preserve">
+    <value>Parallel Marker Computation</value>
+  </data>
+  <data name="IntroSkipOptions_ParallelMarkerComputation_Bypass_the_master_concurrency_limit_for_fingerprint_extraction_and_parallelize_across_all_CPU_cores__Default_is_OFF_" xml:space="preserve">
+    <value>Bypass the master concurrency limit for fingerprint extraction and parallelize across all CPU cores. Default is OFF.</value>
+  </data>
   <data name="UIFunctionOptions_NoBoxsetsAutoCreation_Prevent_Boxsets_Auto_Creation" xml:space="preserve">
     <value>Hide Collection Library</value>
   </data>
@@ -683,6 +725,36 @@
   <data name="MediaInfoExtractOptions_ImageCaptureOffset_Image_capture_position_as_a_percentage_of_runtime__Default_is_10_" xml:space="preserve">
     <value>Image capture offset as a percentage of runtime. It must be between 10 and 90. Default is 10.</value>
   </data>
+  <data name="MediaInfoExtractOptions_MediaInfoExcludeKeywords_Media_Info_Exclude_Keywords" xml:space="preserve">
+    <value>Media Info Exclude Keywords</value>
+  </data>
+  <data name="MediaInfoExtractOptions_MediaInfoExcludeKeywords_Comma_separated_keywords_matched_against_the_file_path_to_skip_media_info_extraction__Default_is_EMPTY_" xml:space="preserve">
+    <value>Comma-separated keywords matched against the file path to skip media info extraction. Default is EMPTY.</value>
+  </data>
+  <data name="MediaInfoExtractOptions_MediaInfoExcludeMediaContainers_Media_Info_Exclude_Media_Containers" xml:space="preserve">
+    <value>Media Info Exclude Media Containers</value>
+  </data>
+  <data name="MediaInfoExtractOptions_MediaInfoExcludeMediaContainers_Comma_separated_container_names_or_extensions_to_skip_media_info_extraction__Default_is_EMPTY_" xml:space="preserve">
+    <value>Comma-separated container names or extensions to skip media info extraction. Default is EMPTY.</value>
+  </data>
+  <data name="MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Video_Thumbnail_Exclude_Keywords" xml:space="preserve">
+    <value>Video Thumbnail Exclude Keywords</value>
+  </data>
+  <data name="MediaInfoExtractOptions_VideoThumbnailExcludeKeywords_Comma_separated_keywords_matched_against_the_file_path_to_skip_video_thumbnail_extraction__Default_is_EMPTY_" xml:space="preserve">
+    <value>Comma-separated keywords matched against the file path to skip video thumbnail extraction. Default is EMPTY.</value>
+  </data>
+  <data name="MediaInfoExtractOptions_VideoThumbnailExcludeMediaContainers_Video_Thumbnail_Exclude_Media_Containers" xml:space="preserve">
+    <value>Video Thumbnail Exclude Media Containers</value>
+  </data>
+  <data name="MediaInfoExtractOptions_VideoThumbnailExcludeMediaContainers_Comma_separated_container_names_or_extensions_to_skip_video_thumbnail_extraction__Default_is_EMPTY_" xml:space="preserve">
+    <value>Comma-separated container names or extensions to skip video thumbnail extraction. Default is EMPTY.</value>
+  </data>
+  <data name="MediaInfoExtractOptions_MediaInfoExtractionTimeoutMs_Media_Info_Extraction_Timeout" xml:space="preserve">
+    <value>Media Info Extraction Timeout</value>
+  </data>
+  <data name="MediaInfoExtractOptions_MediaInfoExtractionTimeoutMs_Per_item_extraction_timeout_in_milliseconds__0_disables_the_timeout__Default_is_0_" xml:space="preserve">
+    <value>Per-item extraction timeout in milliseconds. 0 disables the timeout. Default is 0.</value>
+  </data>
   <data name="ExperienceEnhanceOptions_EnhanceNotification_Enhance_Notification" xml:space="preserve">
     <value>Notification Enhanced</value>
   </data>
@@ -733,6 +805,12 @@
   </data>
   <data name="ExperienceEnhanceOptions_EnableMultiVersionEnhance_Show_quality_badges_and_sort_by_quality_on_multi_version_detail_pages__Default_is_OFF_" xml:space="preserve">
     <value>Show quality badges and sort by quality on multi-version detail pages. Default is OFF.</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_FolderVideoGroupingLimit_Folder_Video_Grouping_Limit" xml:space="preserve">
+    <value>Folder Video Grouping Limit</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_FolderVideoGroupingLimit_Maximum_number_of_videos_in_the_same_folder_eligible_for_multi_version_merge__8_is_the_Emby_default__Default_is_8_" xml:space="preserve">
+    <value>Maximum number of videos in the same folder eligible for multi-version merge. 8 is the Emby default. Default is 8.</value>
   </data>
   <data name="PluginOptions_CatchupMinWaitMinutes_Min_Wait_After_Library_Insert" xml:space="preserve">
     <value>Min Wait After Library Insert</value>
@@ -895,6 +973,30 @@
   </data>
   <data name="Notification_DeepDelete_EventName" xml:space="preserve">
     <value>Media Deep Delete</value>
+  </data>
+  <data name="Notification_MetadataUpdate_EventName" xml:space="preserve">
+    <value>Media Metadata Updated</value>
+  </data>
+  <data name="Notification_MetadataUpdate_EventDescription" xml:space="preserve">
+    <value>{0}\nPath: {1}\nReason: {2}</value>
+  </data>
+  <data name="Notification_ImageUpdate_EventName" xml:space="preserve">
+    <value>Media Image Updated</value>
+  </data>
+  <data name="Notification_ImageUpdate_EventDescription" xml:space="preserve">
+    <value>{0}\nPath: {1}</value>
+  </data>
+  <data name="Notification_BoxsetUpdate_EventName" xml:space="preserve">
+    <value>Boxset Updated</value>
+  </data>
+  <data name="Notification_BoxsetUpdate_EventDescription" xml:space="preserve">
+    <value>Boxset: {0}\nItem: {1}\nAction: {2}</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_MetadataUpdateTrackedFields_Metadata_Update_Tracked_Fields" xml:space="preserve">
+    <value>Metadata Update Tracked Fields</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_MetadataUpdateTrackedFields_Comma_separated_metadata_fields_that_trigger_the_metadata_update_notification__blank_notifies_all__Default_is_EMPTY_" xml:space="preserve">
+    <value>Comma-separated metadata fields that trigger the metadata update notification (blank notifies all). Default is EMPTY.</value>
   </data>
   <data name="Notification_DeepDelete_EventDescription" xml:space="preserve">
     <value>Item Name:\n{0}\n\nItem Path:\n{1}\n\nMount Paths:\n{2}</value>

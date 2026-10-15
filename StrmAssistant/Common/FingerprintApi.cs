@@ -416,9 +416,10 @@ namespace StrmAssistant.Common
             foreach (var library in libraries)
             {
                 var options = library.LibraryOptions;
-                if (options.IntroDetectionFingerprintLength != currentLength && long.TryParse(library.ItemId, out var itemId))
+                var effectiveMinutes = GetLibraryFingerprintMinutesOverride(library.ItemId) ?? currentLength;
+                if (options.IntroDetectionFingerprintLength != effectiveMinutes && long.TryParse(library.ItemId, out var itemId))
                 {
-                    options.IntroDetectionFingerprintLength = currentLength;
+                    options.IntroDetectionFingerprintLength = effectiveMinutes;
                     CollectionFolder.SaveLibraryOptions(itemId, options);
                 }
             }
@@ -429,10 +430,47 @@ namespace StrmAssistant.Common
             UpdateLibraryIntroDetectionFingerprintLength(Plugin.Instance.IntroSkipStore.GetOptions().IntroDetectionFingerprintMinutes);
         }
 
+        /// <summary>
+        /// 解析 LibraryFingerprintMinutes（格式 libraryId:minutes，逗号分隔）中指定库的覆盖值，
+        /// 未配置或格式非法返回 null（回退全局值）。值域钳制 2-20。
+        /// </summary>
+        public static int? GetLibraryFingerprintMinutesOverride(string libraryId)
+        {
+            var raw = Plugin.Instance.IntroSkipStore.GetOptions().LibraryFingerprintMinutes;
+            if (string.IsNullOrWhiteSpace(raw) || string.IsNullOrEmpty(libraryId)) return null;
+
+            foreach (var pair in raw.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var parts = pair.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 2 && parts[0].Trim() == libraryId.Trim() &&
+                    int.TryParse(parts[1].Trim(), out var minutes))
+                {
+                    return Math.Max(2, Math.Min(20, minutes));
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 取 season 所属媒体库的有效声纹探测时长（分库覆盖 > 全局值）。
+        /// </summary>
+        public int GetEffectiveFingerprintMinutes(Season season)
+        {
+            var collectionFolder = _libraryManager.GetCollectionFolders(season).FirstOrDefault();
+            if (collectionFolder != null &&
+                GetLibraryFingerprintMinutesOverride(collectionFolder.Id.ToString()) is { } minutes)
+            {
+                return minutes;
+            }
+
+            return Plugin.Instance.IntroSkipStore.GetOptions().IntroDetectionFingerprintMinutes;
+        }
+
 #nullable enable
         public async Task UpdateIntroMarkerForSeason(Season season, CancellationToken cancellationToken, IProgress<double>? progress = null)
         {
-            var minutes = Plugin.Instance.IntroSkipStore.GetOptions().IntroDetectionFingerprintMinutes;
+            var minutes = GetEffectiveFingerprintMinutes(season);
             var libraryOptions = _libraryManager.GetLibraryOptions(season);
             var directoryService = new DirectoryService(_logger, _fileSystem);
 

@@ -25,6 +25,28 @@ namespace StrmAssistant
         [VisibleCondition(nameof(EnableProxyServer), SimpleCondition.IsTrue)]
         public string ProxyServerUrl { get; set; } = string.Empty;
 
+        public enum ProxyRoutingMode
+        {
+            [DescriptionL("ProxyMode_Global_Global", typeof(Resources))]
+            Global,
+            [DescriptionL("ProxyMode_ScrapeOnly_ScrapeOnly", typeof(Resources))]
+            ScrapeOnly
+        }
+
+        [DisplayNameL("NetworkOptions_ProxyMode_Proxy_Mode", typeof(Resources))]
+        [DescriptionL("NetworkOptions_ProxyMode_Global_proxies_all_outbound_requests__ScrapeOnly_proxies_only_the_scraping_whitelist_hosts__Default_is_Global_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableProxyServer), SimpleCondition.IsTrue)]
+        public ProxyRoutingMode ProxyMode { get; set; } = ProxyRoutingMode.Global;
+
+        [DisplayNameL("NetworkOptions_ScrapeProxyWhitelist_Scrape_Proxy_Whitelist", typeof(Resources))]
+        [DescriptionL("NetworkOptions_ScrapeProxyWhitelist_Comma_separated_host_suffixes_that_go_through_the_proxy_in_ScrapeOnly_mode__Default_covers_TMDB_and_TVDB_", typeof(Resources))]
+        [VisibleCondition(nameof(ShowScrapeProxyWhitelist), SimpleCondition.IsTrue)]
+        public string ScrapeProxyWhitelist { get; set; } =
+            "api.themoviedb.org,image.tmdb.org,www.themoviedb.org,api.thetvdb.com,www.thetvdb.com,thetvdb.com";
+
+        [Browsable(false)]
+        public bool ShowScrapeProxyWhitelist => EnableProxyServer && ProxyMode == ProxyRoutingMode.ScrapeOnly;
+
         [VisibleCondition(nameof(ShowProxyServerStatus), SimpleCondition.IsTrue)]
         public StatusItem ProxyServerStatus { get; set; } = new StatusItem();
 

@@ -445,8 +445,25 @@ namespace StrmAssistant.Common
             }
 
             var isModSupported = Plugin.Instance.IsModSupported;
+            var vtOptions = Plugin.Instance.MediaInfoExtractStore.GetOptions();
             var combined = favoritesWithExtra.Concat(items).Concat(extras).GroupBy(i => i.InternalId)
-                .Select(g => g.First()).Where(i => isModSupported || !i.IsShortcut).OfType<Video>().ToList();
+                .Select(g => g.First()).Where(i => isModSupported || !i.IsShortcut).OfType<Video>()
+                .Where(i =>
+                {
+                    if (LibraryApi.IsKeywordExcluded(i, vtOptions.VideoThumbnailExcludeKeywords))
+                    {
+                        _logger.Debug("VideoThumbnailExtract - Keyword excluded: " + i.Path);
+                        return false;
+                    }
+
+                    if (LibraryApi.IsContainerExcluded(i, vtOptions.VideoThumbnailExcludeMediaContainers))
+                    {
+                        _logger.Debug("VideoThumbnailExtract - Container excluded: " + i.Path);
+                        return false;
+                    }
+
+                    return true;
+                }).ToList();
 
             return combined;
         }

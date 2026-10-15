@@ -304,6 +304,10 @@ namespace StrmAssistant
                 mediaMountManager, serverApplicationPaths, libraryMonitor, ffmpegManager);
             ShortcutMenuHelper.Initialize(configurationManager);
 
+            FfmpegPathOverride.Initialize(ffmpegManager, Logger);
+            var mediaInfoOptions = MediaInfoExtractStore.GetOptions();
+            FfmpegPathOverride.Apply(mediaInfoOptions.CustomProbePath, mediaInfoOptions.CustomEncoderPath);
+
             if (MainOptionsStore.GetOptions().GeneralOptions.CatchupMode) QueueManager.Initialize();
             if (IntroSkipStore.GetOptions().EnableIntroSkip) PlaySessionMonitor.Initialize();
             if (ExperienceEnhanceStore.GetOptions().EnableAutoMarkWatched) AutoMarkWatched.Initialize();
@@ -458,6 +462,13 @@ namespace StrmAssistant
         {
             try
             {
+                // 合集变更通知：条目加入合集
+                if (ExperienceEnhanceStore.GetOptions().EnhanceNotificationSystem &&
+                    (e.Parent ?? e.Item?.Parent) is BoxSet boxsetAdded)
+                {
+                    NotificationApi.BoxsetUpdateSendNotification(boxsetAdded, e.Item, true);
+                }
+
                 var deserializeResult = false;
 
                 if (e.Item is Video && MediaInfoExtractStore.GetOptions().PersistMediaInfoMode !=
@@ -558,10 +569,85 @@ namespace StrmAssistant
                     MetadataApi.UpdateSeriesPeople(series);
                 }
             }
+
+            // 增强通知系统：元数据/图像更新通知（发给管理员）
+            if (ExperienceEnhanceStore.GetOptions().EnhanceNotificationSystem &&
+                (e.Item is Video || e.Item is Audio))
+            {
+                if ((e.UpdateReason & ItemUpdateType.ImageUpdate) != 0)
+                {
+                    NotificationApi.ImageUpdateSendNotification(e.Item);
+                }
+                else if ((e.UpdateReason &
+                          (ItemUpdateType.MetadataDownload | ItemUpdateType.MetadataEdit |
+                           ItemUpdateType.MetadataImport)) != 0)
+                {
+                    var trackedFields = ExperienceEnhanceStore.GetOptions().MetadataUpdateTrackedFields;
+                    if (MatchesTrackedFields(e, trackedFields))
+                    {
+                        NotificationApi.MetadataUpdateSendNotification(e.Item,
+                            string.Format(Resources.Notification_MetadataUpdate_EventDescription.Replace("\\n",
+                                Environment.NewLine), e.Item.Name, e.Item.Path,
+                            DescribeUpdateReason(e.UpdateReason)));
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// MetadataUpdateTrackedFields 过滤：逗号分隔的字段名（如 Overview,CommunityRating），
+        /// 为空表示全部通知。若 Emby 提供 ItemChangeEventArgs.MetadataChangedFields 则按其过滤，
+        /// 否则退化为 UpdateReason 粒度（始终命中）。
+        /// </summary>
+        private static bool MatchesTrackedFields(ItemChangeEventArgs e, string trackedFields)
+        {
+            var tracked = (trackedFields ?? string.Empty)
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(f => f.Trim())
+                .Where(f => f.Length > 0)
+                .ToArray();
+
+            if (tracked.Length == 0) return true;
+
+            try
+            {
+                var property = typeof(ItemChangeEventArgs).GetProperty("MetadataChangedFields",
+                    BindingFlags.Public | BindingFlags.Instance);
+                if (property?.GetValue(e) is IEnumerable<string> changed)
+                {
+                    var changedFields = changed as string[] ?? changed.ToArray();
+                    if (changedFields.Length == 0) return true;
+
+                    return changedFields.Any(c => tracked.Any(t =>
+                        string.Equals(t, c, StringComparison.OrdinalIgnoreCase)));
+                }
+            }
+            catch (Exception)
+            {
+                // 字段不可用则不阻断通知
+            }
+
+            return true;
+        }
+
+        private static string DescribeUpdateReason(ItemUpdateType reason)
+        {
+            if ((reason & ItemUpdateType.MetadataDownload) != 0) return "MetadataDownload";
+            if ((reason & ItemUpdateType.MetadataEdit) != 0) return "MetadataEdit";
+            if ((reason & ItemUpdateType.MetadataImport) != 0) return "MetadataImport";
+            if ((reason & ItemUpdateType.ImageUpdate) != 0) return "ImageUpdate";
+            return reason.ToString();
         }
 
         private void OnItemRemoved(object sender, ItemChangeEventArgs e)
         {
+            // 合集变更通知：条目移出合集
+            if (ExperienceEnhanceStore.GetOptions().EnhanceNotificationSystem &&
+                (e.Parent ?? e.Item?.Parent) is BoxSet boxsetRemoved)
+            {
+                NotificationApi.BoxsetUpdateSendNotification(boxsetRemoved, e.Item, false);
+            }
+
             if (e.Item is Video && MediaInfoExtractStore.GetOptions().PersistMediaInfoMode !=
                 PersistMediaInfoOption.Restore.ToString())
             {

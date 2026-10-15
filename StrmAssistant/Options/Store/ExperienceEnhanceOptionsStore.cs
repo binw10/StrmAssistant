@@ -63,6 +63,14 @@ namespace StrmAssistant.Options.Store
 
                 if (options.MergeMultiVersion) Plugin.LibraryApi.EnsureLibraryEnabledAutomaticSeriesGrouping();
 
+                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.FolderVideoGroupingLimit)))
+                {
+                    if (options.MergeMultiVersion && options.IsModSupported)
+                    {
+                        MergeMultiVersion.UpdateFolderGroupingLimit(options.FolderVideoGroupingLimit);
+                    }
+                }
+
                 if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.EnhanceNotificationSystem)))
                 {
                     if (options.EnhanceNotificationSystem)
@@ -184,6 +192,7 @@ namespace StrmAssistant.Options.Store
                     _logger.Info("AutoMarkWatchedThreshold is set to {0}", options.AutoMarkWatchedThreshold);
                     _logger.Info("AutoMarkWatchedExcludeFavorites is set to {0}", options.AutoMarkWatchedExcludeFavorites);
                     _logger.Info("EnableMultiVersionEnhance is set to {0}", options.EnableMultiVersionEnhance);
+                    _logger.Info("FolderVideoGroupingLimit is set to {0}", options.FolderVideoGroupingLimit);
 
                     // 系列合并仅 GlobalScope 生效的可见提示（参考 Mod/MergeMultiVersion.cs 行 217-218）
                     if (options.MergeMultiVersion &&

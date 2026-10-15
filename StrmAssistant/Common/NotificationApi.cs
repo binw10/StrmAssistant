@@ -139,9 +139,65 @@ namespace StrmAssistant.Common
             _notificationManager.SendNotification(request);
         }
 
-        public async Task SendMessageToAdmins(string text, long? timeout)
+        /// <summary>
+        /// 元数据更新通知（metadata.update）：发给管理员。
+        /// </summary>
+        public void MetadataUpdateSendNotification(BaseItem item, string description)
         {
-            var message = new MessageCommand
+            SendAdminItemNotification("metadata.update", item, description);
+        }
+
+        /// <summary>
+        /// 图像更新通知（image.update）：发给管理员。
+        /// </summary>
+        public void ImageUpdateSendNotification(BaseItem item)
+        {
+            Resources.Culture = Thread.CurrentThread.CurrentUICulture;
+            SendAdminItemNotification("image.update", item,
+                string.Format(Resources.Notification_ImageUpdate_EventDescription.Replace("\\n", Environment.NewLine),
+                    item.Name, item.Path));
+        }
+
+        /// <summary>
+        /// 合集变更通知（boxset.update）：发给管理员。
+        /// </summary>
+        public void BoxsetUpdateSendNotification(BaseItem boxset, BaseItem changedItem, bool added)
+        {
+            Resources.Culture = Thread.CurrentThread.CurrentUICulture;
+            SendAdminItemNotification("boxset.update", boxset,
+                string.Format(Resources.Notification_BoxsetUpdate_EventDescription.Replace("\\n", Environment.NewLine),
+                    boxset.Name, changedItem.Name, added ? "+" : "-"));
+        }
+
+        private void SendAdminItemNotification(string eventId, BaseItem item, string description)
+        {
+            try
+            {
+                Resources.Culture = Thread.CurrentThread.CurrentUICulture;
+
+                var admins = LibraryApi.AllUsers.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
+
+                foreach (var admin in admins)
+                {
+                    var request = new NotificationRequest
+                    {
+                        Title = Resources.PluginOptions_EditorTitle_Strm_Assistant,
+                        EventId = eventId,
+                        User = admin,
+                        Item = item,
+                        Description = description
+                    };
+                    _notificationManager.SendNotification(request);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug("Notification " + eventId + " failed: " + ex.Message);
+            }
+        }
+
+        public async Task SendMessageToAdmins(string text, long? timeout)
+        {            var message = new MessageCommand
             {
                 Header = Resources.PluginOptions_EditorTitle_Strm_Assistant,
                 Text = text,
