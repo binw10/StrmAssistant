@@ -17,9 +17,16 @@ namespace StrmAssistant.Options
 {
     public enum RefreshPersonOption
     {
+        [DescriptionL("RefreshPersonOption_Default_Default", typeof(Resources))]
         Default,
+        [DescriptionL("RefreshPersonOption_FullRefresh_FullRefresh", typeof(Resources))]
         FullRefresh,
-        NoAdult
+        [DescriptionL("RefreshPersonOption_NoAdult_NoAdult", typeof(Resources))]
+        NoAdult,
+        [DescriptionL("RefreshPersonOption_ExcludeIfChinese_ExcludeIfChinese", typeof(Resources))]
+        ExcludeIfChinese,
+        [DescriptionL("RefreshPersonOption_DownloadImagesInAdvance_DownloadImagesInAdvance", typeof(Resources))]
+        DownloadImagesInAdvance
     }
 
     public class MetadataEnhanceOptions : EditableOptionsBase
@@ -177,7 +184,13 @@ namespace StrmAssistant.Options
         public bool EnhanceMovieDbPerson { get; set; } = false;
         
         [Browsable(false)]
-        [Required]
+        public List<EditorSelectOption> RefreshPersonOptionList { get; set; } = new List<EditorSelectOption>();
+
+        [DisplayNameL("MetadataEnhanceOptions_RefreshPersonMode_Refresh_Person_Preferences", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_RefreshPersonMode_By_default__refresh_metadata__30_days_old__excluding_adults_and_those_with_an_avatar_", typeof(Resources))]
+        [EditMultilSelect]
+        [SelectItemsSource(nameof(RefreshPersonOptionList))]
+        [VisibleCondition(nameof(EnhanceMovieDbPerson), SimpleCondition.IsTrue)]
         public string RefreshPersonMode { get; set; } = RefreshPersonOption.Default.ToString();
 
         [DisplayNameL("ModOptions_OriginalPoster_Original_Poster", typeof(Resources))]
@@ -419,6 +432,20 @@ namespace StrmAssistant.Options
                 };
 
                 EpisodeRefreshOptionList.Add(selectOption);
+            }
+
+            RefreshPersonOptionList.Clear();
+
+            foreach (Enum item in Enum.GetValues(typeof(RefreshPersonOption)))
+            {
+                var selectOption = new EditorSelectOption
+                {
+                    Value = item.ToString(),
+                    Name = Utility.GetEnumDescription(item),
+                    IsEnabled = true,
+                };
+
+                RefreshPersonOptionList.Add(selectOption);
             }
 
             MetadataCacheModeList.Clear();

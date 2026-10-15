@@ -1220,6 +1220,27 @@
   <data name="MetadataCacheRootFolderNotAllowed" xml:space="preserve">
     <value>Metadata cache root folder is not allowed (drive root or system folder).</value>
   </data>
+  <data name="MetadataEnhanceOptions_RefreshPersonMode_Refresh_Person_Preferences" xml:space="preserve">
+    <value>Refresh Person Preferences</value>
+  </data>
+  <data name="MetadataEnhanceOptions_RefreshPersonMode_By_default__refresh_metadata__30_days_old__excluding_adults_and_those_with_an_avatar_" xml:space="preserve">
+    <value>By default, refresh metadata older than 30 days, excluding adults and those with an avatar.</value>
+  </data>
+  <data name="RefreshPersonOption_Default_Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="RefreshPersonOption_FullRefresh_FullRefresh" xml:space="preserve">
+    <value>Full refresh</value>
+  </data>
+  <data name="RefreshPersonOption_NoAdult_NoAdult" xml:space="preserve">
+    <value>Exclude adult persons</value>
+  </data>
+  <data name="RefreshPersonOption_ExcludeIfChinese_ExcludeIfChinese" xml:space="preserve">
+    <value>Exclude if Chinese metadata</value>
+  </data>
+  <data name="RefreshPersonOption_DownloadImagesInAdvance_DownloadImagesInAdvance" xml:space="preserve">
+    <value>Download images in advance</value>
+  </data>
   <data name="MergeScopeOption_FolderScope_FolderScope" xml:space="preserve">
     <value>Folder Scope</value>
   </data>

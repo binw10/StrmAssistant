@@ -1133,6 +1133,27 @@
   <data name="MetadataCacheRootFolderNotAllowed" xml:space="preserve">
     <value>中繼資料快取根目錄不被允許（磁碟根或系統目錄）。</value>
   </data>
+  <data name="MetadataEnhanceOptions_RefreshPersonMode_Refresh_Person_Preferences" xml:space="preserve">
+    <value>演員重新整理偏好</value>
+  </data>
+  <data name="MetadataEnhanceOptions_RefreshPersonMode_By_default__refresh_metadata__30_days_old__excluding_adults_and_those_with_an_avatar_" xml:space="preserve">
+    <value>預設僅重新整理超過 30 天的中繼資料，排除成人及已有頭像者。</value>
+  </data>
+  <data name="RefreshPersonOption_Default_Default" xml:space="preserve">
+    <value>預設</value>
+  </data>
+  <data name="RefreshPersonOption_FullRefresh_FullRefresh" xml:space="preserve">
+    <value>完全重新整理</value>
+  </data>
+  <data name="RefreshPersonOption_NoAdult_NoAdult" xml:space="preserve">
+    <value>排除成人演員</value>
+  </data>
+  <data name="RefreshPersonOption_ExcludeIfChinese_ExcludeIfChinese" xml:space="preserve">
+    <value>已有中文中繼資料則排除</value>
+  </data>
+  <data name="RefreshPersonOption_DownloadImagesInAdvance_DownloadImagesInAdvance" xml:space="preserve">
+    <value>預先下載頭像</value>
+  </data>
   <data name="MergeScopeOption_FolderScope_FolderScope" xml:space="preserve">
     <value>同目錄合併</value>
   </data>

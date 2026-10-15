@@ -131,6 +131,8 @@ namespace StrmAssistant.ScheduledTask
                 ? string.Join(", ", refreshPersonOptions)
                 : RefreshPersonOption.Default.ToString()));
             NoAdult = refreshPersonOptions.Contains(RefreshPersonOption.NoAdult);
+            var excludeIfChinese = refreshPersonOptions.Contains(RefreshPersonOption.ExcludeIfChinese);
+            var downloadImagesInAdvance = refreshPersonOptions.Contains(RefreshPersonOption.DownloadImagesInAdvance);
 
             for (var startIndex = 0; startIndex < remainingCount; startIndex += batchSize)
             {
@@ -153,11 +155,13 @@ namespace StrmAssistant.ScheduledTask
                     var metadataRefreshSkip =
                         (taskItem.IsFieldLocked(MetadataFields.Name) &&
                          taskItem.IsFieldLocked(MetadataFields.Overview)) ||
+                        (excludeIfChinese && IsChinese(taskItem.Name) && IsChinese(taskItem.Overview)) ||
                         (!refreshPersonOptions.Contains(RefreshPersonOption.FullRefresh) && IsChinese(taskItem.Name) &&
                          IsChinese(taskItem.Overview) && taskItem.DateLastSaved >= DateTimeOffset.UtcNow.AddDays(-30));
                     var imageRefreshSkip = taskItem.HasImage(ImageType.Primary) ||
-                                           !refreshPersonOptions.Contains(RefreshPersonOption.FullRefresh) &&
-                                           taskItem.DateLastRefreshed >= DateTimeOffset.UtcNow.AddDays(-30);
+                                           (!refreshPersonOptions.Contains(RefreshPersonOption.FullRefresh) &&
+                                            !downloadImagesInAdvance &&
+                                            taskItem.DateLastRefreshed >= DateTimeOffset.UtcNow.AddDays(-30));
 
                     if (metadataRefreshSkip && imageRefreshSkip)
                     {

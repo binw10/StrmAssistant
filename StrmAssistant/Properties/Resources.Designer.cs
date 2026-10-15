@@ -2583,6 +2583,70 @@ namespace StrmAssistant.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Refresh Person Preferences.
+        /// </summary>
+        public static string MetadataEnhanceOptions_RefreshPersonMode_Refresh_Person_Preferences {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_RefreshPersonMode_Refresh_Person_Preferences", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to By default, refresh metadata older than 30 days, excluding adults and those with an avatar..
+        /// </summary>
+        public static string MetadataEnhanceOptions_RefreshPersonMode_By_default__refresh_metadata__30_days_old__excluding_adults_and_those_with_an_avatar_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_RefreshPersonMode_By_default__refresh_metadata__30_days_o" +
+                        "ld__excluding_adults_and_those_with_an_avatar_", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Default.
+        /// </summary>
+        public static string RefreshPersonOption_Default_Default {
+            get {
+                return ResourceManager.GetString("RefreshPersonOption_Default_Default", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Full refresh.
+        /// </summary>
+        public static string RefreshPersonOption_FullRefresh_FullRefresh {
+            get {
+                return ResourceManager.GetString("RefreshPersonOption_FullRefresh_FullRefresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Exclude adult persons.
+        /// </summary>
+        public static string RefreshPersonOption_NoAdult_NoAdult {
+            get {
+                return ResourceManager.GetString("RefreshPersonOption_NoAdult_NoAdult", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Exclude if Chinese metadata.
+        /// </summary>
+        public static string RefreshPersonOption_ExcludeIfChinese_ExcludeIfChinese {
+            get {
+                return ResourceManager.GetString("RefreshPersonOption_ExcludeIfChinese_ExcludeIfChinese", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Download images in advance.
+        /// </summary>
+        public static string RefreshPersonOption_DownloadImagesInAdvance_DownloadImagesInAdvance {
+            get {
+                return ResourceManager.GetString("RefreshPersonOption_DownloadImagesInAdvance_DownloadImagesInAdvance", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Enable Local Episode Group.
         /// </summary>
         public static string MetadataEnhanceOptions_LocalEpisodeGroup_Local_Episode_Group {

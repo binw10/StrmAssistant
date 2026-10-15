@@ -1133,6 +1133,27 @@
   <data name="MetadataCacheRootFolderNotAllowed" xml:space="preserve">
     <value>元数据缓存根目录不被允许（盘符根或系统目录）。</value>
   </data>
+  <data name="MetadataEnhanceOptions_RefreshPersonMode_Refresh_Person_Preferences" xml:space="preserve">
+    <value>演员刷新偏好</value>
+  </data>
+  <data name="MetadataEnhanceOptions_RefreshPersonMode_By_default__refresh_metadata__30_days_old__excluding_adults_and_those_with_an_avatar_" xml:space="preserve">
+    <value>默认仅刷新超过 30 天的元数据，排除成人及已有头像者。</value>
+  </data>
+  <data name="RefreshPersonOption_Default_Default" xml:space="preserve">
+    <value>默认</value>
+  </data>
+  <data name="RefreshPersonOption_FullRefresh_FullRefresh" xml:space="preserve">
+    <value>完全刷新</value>
+  </data>
+  <data name="RefreshPersonOption_NoAdult_NoAdult" xml:space="preserve">
+    <value>排除成人演员</value>
+  </data>
+  <data name="RefreshPersonOption_ExcludeIfChinese_ExcludeIfChinese" xml:space="preserve">
+    <value>已有中文元数据则排除</value>
+  </data>
+  <data name="RefreshPersonOption_DownloadImagesInAdvance_DownloadImagesInAdvance" xml:space="preserve">
+    <value>预先下载头像</value>
+  </data>
   <data name="MergeScopeOption_FolderScope_FolderScope" xml:space="preserve">
     <value>同目录合并</value>
   </data>
