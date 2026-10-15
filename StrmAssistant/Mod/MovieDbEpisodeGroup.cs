@@ -25,6 +25,9 @@ namespace StrmAssistant.Mod
             public int? LookupSeasonNumber { get; set; }
             public string LookupLanguage { get; set; }
             public string GroupName { get; set; }
+            // 剧集组 json 扩展字段（EnableMovieDbEpisodeGroupExtendedInfo 开启时应用）
+            public string CustomOverview { get; set; }
+            public DateTimeOffset? CustomAirDate { get; set; }
         }
 
         internal class SeasonEpisodeMapping
@@ -240,7 +243,9 @@ namespace StrmAssistant.Mod
                 {
                     LookupSeasonNumber = season.IndexNumber,
                     LookupLanguage = season.MetadataLanguage,
-                    GroupName = matchingSeason.name
+                    GroupName = matchingSeason.name,
+                    CustomOverview = matchingSeason.overview,
+                    CustomAirDate = matchingSeason.air_date
                 };
             }
         }
@@ -286,6 +291,21 @@ namespace StrmAssistant.Mod
 
             metadataResult.Item.PremiereDate = null;
             metadataResult.Item.ProductionYear = null;
+
+            // 剧集组 json 扩展：自定义季简介与首播日期
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().EnableMovieDbEpisodeGroupExtendedInfo)
+            {
+                if (!string.IsNullOrWhiteSpace(__state.CustomOverview))
+                {
+                    metadataResult.Item.Overview = __state.CustomOverview;
+                }
+
+                if (__state.CustomAirDate.HasValue)
+                {
+                    metadataResult.Item.PremiereDate = __state.CustomAirDate.Value.UtcDateTime;
+                    metadataResult.Item.ProductionYear = __state.CustomAirDate.Value.Year;
+                }
+            }
 
             metadataResult.HasMetadata = true;
         }

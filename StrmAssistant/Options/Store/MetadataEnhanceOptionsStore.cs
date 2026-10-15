@@ -147,6 +147,18 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
+                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.PreferTraditionalChinese)))
+                {
+                    if (options.PreferTraditionalChinese && options.IsModSupported)
+                    {
+                        PatchManager.PreferTraditionalChinese.Patch();
+                    }
+                    else
+                    {
+                        PatchManager.PreferTraditionalChinese.Unpatch();
+                    }
+                }
+
                 if (changedProperties.Contains(nameof(MetadataEnhanceOptions.AltMovieDbConfig)))
                 {
                     if (options.AltMovieDbConfig)

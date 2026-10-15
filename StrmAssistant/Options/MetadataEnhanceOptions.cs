@@ -83,6 +83,12 @@ namespace StrmAssistant.Options
         [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
         public bool LocalEpisodeGroup { get; set; } = false;
 
+        [DisplayNameL("MetadataEnhanceOptions_EnableMovieDbEpisodeGroupExtendedInfo_Episode_Group_Extended_Info", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_EnableMovieDbEpisodeGroupExtendedInfo_Apply_custom_season_overview_and_air_date_fields_from_the_episode_group_json__Default_is_OFF_", typeof(Resources))]
+        [VisibleCondition(nameof(MovieDbEpisodeGroup), SimpleCondition.IsTrue)]
+        [Required]
+        public bool EnableMovieDbEpisodeGroupExtendedInfo { get; set; } = false;
+
         [DisplayNameL("MetadataEnhanceOptions_OptimizeMovieDbEpisodeScraping_Optimize_MovieDb_Episode_Scraping", typeof(Resources))]
         [DescriptionL("MetadataEnhanceOptions_OptimizeMovieDbEpisodeScraping_Fetch_episode_metadata_by_season_to_reduce_TMDB_requests__Default_is_OFF_", typeof(Resources))]
         [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
@@ -115,6 +121,12 @@ namespace StrmAssistant.Options
         [Required]
         [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
         public bool ClearTagline { get; set; } = false;
+
+        [DisplayNameL("MetadataEnhanceOptions_PreferTraditionalChinese_Prefer_Traditional_Chinese", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_PreferTraditionalChinese_Convert_simplified_Chinese_overviews_from_the_MovieDb_provider_to_traditional_on_refresh__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
+        public bool PreferTraditionalChinese { get; set; } = false;
 
         [DisplayNameL("MetadataEnhanceOptions_DoubanCastChinese_Douban_Cast_Chinese_Names", typeof(Resources))]
         [DescriptionL("MetadataEnhanceOptions_DoubanCastChinese_Replace_English_actor_names_with_Douban_Chinese_names_for_matched_items__Default_is_OFF_", typeof(Resources))]

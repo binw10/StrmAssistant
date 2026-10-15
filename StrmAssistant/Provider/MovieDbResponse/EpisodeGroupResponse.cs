@@ -15,6 +15,12 @@ namespace StrmAssistant.Provider
         public string name { get; set; }
         public int order { get; set; }
         public List<GroupEpisode> episodes { get; set; }
+
+        // ---- 自定义扩展字段（EnableMovieDbEpisodeGroupExtendedInfo 开启时生效）----
+        // 自定义季简介；留空则季简介维持置空
+        public string overview { get; set; }
+        // 自定义季首播日期（ISO 8601）；留空则首播维持置空
+        public DateTimeOffset? air_date { get; set; }
     }
 
     public class GroupEpisode

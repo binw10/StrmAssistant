@@ -1472,6 +1472,44 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to Prefer Traditional Chinese.
+        /// </summary>
+        public static string MetadataEnhanceOptions_PreferTraditionalChinese_Prefer_Traditional_Chinese {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_PreferTraditionalChinese_Prefer_Traditional_Chinese", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Convert simplified Chinese overviews from the MovieDb provider to traditional on refresh. Default is OFF..
+        /// </summary>
+        public static string MetadataEnhanceOptions_PreferTraditionalChinese_Convert_simplified_Chinese_overviews_from_the_MovieDb_provider_to_traditional_on_refresh__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_PreferTraditionalChinese_Convert_simplified_Chinese_overviews_from_the_MovieDb_provider_to_traditional_on_refresh__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to Episode Group Extended Info.
+        /// </summary>
+        public static string MetadataEnhanceOptions_EnableMovieDbEpisodeGroupExtendedInfo_Episode_Group_Extended_Info {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_EnableMovieDbEpisodeGroupExtendedInfo_Episode_Group_Extended_Info", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Apply custom season overview and air_date fields from the episode group json. Default is OFF..
+        /// </summary>
+        public static string MetadataEnhanceOptions_EnableMovieDbEpisodeGroupExtendedInfo_Apply_custom_season_overview_and_air_date_fields_from_the_episode_group_json__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_EnableMovieDbEpisodeGroupExtendedInfo_Apply_custom_season_overview_and_air_date_fields_from_the_episode_group_json__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Intro Detection Fingerprint Length (Minute).
         /// </summary>
         public static string IntroSkipOptions_IntroDetectionFingerprintMinutes_Intro_Detection_Fingerprint_Minutes {

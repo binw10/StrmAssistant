@@ -23,6 +23,7 @@ namespace StrmAssistant.Mod
         public static ExclusiveExtract ExclusiveExtract;
         public static ChineseMovieDb ChineseMovieDb;
         public static ClearTagline ClearTagline;
+        public static PreferTraditionalChinese PreferTraditionalChinese;
         public static ChineseTvdb ChineseTvdb;
         public static EnhanceMovieDbPerson EnhanceMovieDbPerson;
         public static AltMovieDbConfig AltMovieDbConfig;
@@ -83,6 +84,7 @@ namespace StrmAssistant.Mod
             ExclusiveExtract = new ExclusiveExtract();
             ChineseMovieDb = new ChineseMovieDb();
             ClearTagline = new ClearTagline();
+            PreferTraditionalChinese = new PreferTraditionalChinese();
             ChineseTvdb = new ChineseTvdb();
             EnhanceMovieDbPerson = new EnhanceMovieDbPerson();
             AltMovieDbConfig = new AltMovieDbConfig();

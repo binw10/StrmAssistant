@@ -488,6 +488,12 @@
   <data name="MetadataEnhanceOptions_LocalEpisodeGroup_Store_or_load_episode_group_info_to_from_JSON_file__Default_is_OFF_" xml:space="preserve">
     <value>保存或加载剧集组至/自 JSON 文件，默认关闭。</value>
   </data>
+  <data name="MetadataEnhanceOptions_EnableMovieDbEpisodeGroupExtendedInfo_Episode_Group_Extended_Info" xml:space="preserve">
+    <value>剧集组扩展信息</value>
+  </data>
+  <data name="MetadataEnhanceOptions_EnableMovieDbEpisodeGroupExtendedInfo_Apply_custom_season_overview_and_air_date_fields_from_the_episode_group_json__Default_is_OFF_" xml:space="preserve">
+    <value>应用剧集组 json 中自定义的季简介（overview）与首播日期（air_date）字段。默认关闭。</value>
+  </data>
   <data name="MetadataEnhanceOptions_LocalEpisodeGroup_Local_Episode_Group" xml:space="preserve">
     <value>启用本地剧集组 TMDB</value>
   </data>
@@ -874,6 +880,12 @@
   </data>
   <data name="MetadataEnhanceOptions_ClearTagline_Clear_taglines_populated_by_the_MovieDb_provider_on_refresh__Default_is_OFF_" xml:space="preserve">
     <value>刷新时清除 MovieDb 刮削器填充的标语。默认关闭。</value>
+  </data>
+  <data name="MetadataEnhanceOptions_PreferTraditionalChinese_Prefer_Traditional_Chinese" xml:space="preserve">
+    <value>优先繁中</value>
+  </data>
+  <data name="MetadataEnhanceOptions_PreferTraditionalChinese_Convert_simplified_Chinese_overviews_from_the_MovieDb_provider_to_traditional_on_refresh__Default_is_OFF_" xml:space="preserve">
+    <value>刷新时将 MovieDb 刮削的简体中文概要转换为繁体。默认关闭。</value>
   </data>
   <data name="MetadataEnhanceOptions_DoubanCastChinese_Douban_Cast_Chinese_Names" xml:space="preserve">
     <value>豆瓣演员中文名</value>
