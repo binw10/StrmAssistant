@@ -638,6 +638,15 @@ namespace StrmAssistant.Properties {
                 return ResourceManager.GetString("RuntimeStatus_SearchIndex", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Conflict plugin detected: {0}.
+        /// </summary>
+        public static string RuntimeStatus_ConflictPlugin {
+            get {
+                return ResourceManager.GetString("RuntimeStatus_ConflictPlugin", resourceCulture);
+            }
+        }
 
         /// <summary>
         ///   Looks up a localized string similar to Server is restarting from the plugin options page.

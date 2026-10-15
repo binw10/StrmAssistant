@@ -94,6 +94,17 @@ namespace StrmAssistant.Options.View
                         EnhanceChineseSearch.GetSearchIndexStatus()),
                     Icon = IconNames.search
                 });
+
+                var conflicts = ConflictDetector.GetConflictingAssemblies();
+                if (conflicts.Length > 0)
+                {
+                    options.RuntimeStatusList.Add(new GenericListItem
+                    {
+                        PrimaryText = string.Format(Resources.RuntimeStatus_ConflictPlugin,
+                            string.Join(", ", conflicts)),
+                        Icon = IconNames.warning
+                    });
+                }
             }
             catch (Exception)
             {

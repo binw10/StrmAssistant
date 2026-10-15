@@ -860,6 +860,9 @@
   <data name="RuntimeStatus_SearchIndex" xml:space="preserve">
     <value>搜尋索引：{0}</value>
   </data>
+  <data name="RuntimeStatus_ConflictPlugin" xml:space="preserve">
+    <value>偵測到衝突外掛：{0}</value>
+  </data>
   <data name="RuntimeStatus_ServerRestarting" xml:space="preserve">
     <value>伺服器正在從外掛選項頁觸發重啟</value>
   </data>

@@ -290,6 +290,14 @@
 
 **实现（本地）**：新增 `Mod/ShowCollectionsFromSeasons.cs`——反射解析 `Emby.Api.UserLibrary.ItemsService.GetQueryResult`（不引入 Emby.Api 编译引用，沿用 `Assembly.Load("Emby.Api")` 范式），Harmony prefix 复刻上述逻辑；选项 `UIFunctionOptions.ShowCollectionsFromSeasons`；默认 OFF 不打补丁；类型/方法缺失静默跳过。
 
+### ✅ 已完成 · 冲突插件检测（PRO `PluginOptions_HasConflictPluginLoaded`）
+- **侦察**：PRO 遍历 `AssemblyLoadContext.All`，排除默认与本插件自身上下文，查找名为
+  **`StrmAssistant` / `StrmAssistantLite`** 的程序集（strings.txt `[958] StrmAssistant` / `[996] StrmAssistantLite`），命中即视为冲突（社区版/Lite 与本插件并存会重复打补丁）。
+- **实现**：新增 `Core/ConflictDetector.cs`（`GetConflictingAssemblies()` / `HasConflictPluginLoaded()`）；
+  在既有的运维状态区（`HomePageView.PopulateRuntimeStatus` → `GeneralOptions.RuntimeStatusList`）
+  **仅在检测到冲突时**追加一行告警（`RuntimeStatus_ConflictPlugin`，三语）。
+- 与 PRO 差异：PRO 用独立 `StatusItem`；本地接入既有状态区（更贴合本地设计），语义等价。
+
 ### ✅ 已完成 · Phase 4-1 本地 TMDB 缓存（v1，被动缓存；默认关闭）
 **关键侦察（本轮反编译 MovieDb 10.9.5.0 得出，权威）**：
 - MovieDb 元数据 HTTP 唯一出口 = `MovieDbProviderBase.GetMovieDbResponse(HttpRequestOptions options)`：`internal async Task<HttpResponseInfo>`；`options.Url` 含 `api_key`/`language`/`append_to_response`；内部做 `_lastRequestTicks` 限流后 `HttpClient.SendAsync`。
