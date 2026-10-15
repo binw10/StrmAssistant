@@ -61,17 +61,30 @@ namespace StrmAssistant.Common
             }
         }
 
-        /// <summary>判断是否为本地 ISO 文件路径（容忍 ffmpeg 输入串里的引号）。</summary>
+        /// <summary>
+        /// 判断是否为本地 ISO 文件路径。
+        /// 兼容 ffmpeg 输入串的两种包裹：<c>file:"D:\a.iso"</c>（本地文件）与 <c>"D:\a.iso"</c>。
+        /// </summary>
         public static bool TryNormalizeIsoPath(string raw, out string isoPath)
         {
             isoPath = null;
             if (string.IsNullOrWhiteSpace(raw)) return false;
 
-            var candidate = raw.Trim().Trim('"');
-            if (!candidate.EndsWith(".iso", StringComparison.OrdinalIgnoreCase)) return false;
+            var candidate = raw.Trim();
 
-            // 排除 http/rtsp 等远程输入
-            if (candidate.Contains("://")) return false;
+            // 去掉 Emby 为本地文件生成的 file: 协议前缀
+            if (candidate.StartsWith("file:", StringComparison.OrdinalIgnoreCase))
+                candidate = candidate.Substring(5).Trim();
+
+            candidate = candidate.Trim('"', '\'').Trim();
+            if (candidate.Length == 0) return false;
+
+            // 排除 concat/多输入与远程协议
+            if (candidate.Contains("://") || candidate.Contains('|') ||
+                candidate.Contains("concat:", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            if (!candidate.EndsWith(".iso", StringComparison.OrdinalIgnoreCase)) return false;
 
             try
             {

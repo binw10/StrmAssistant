@@ -71,17 +71,27 @@ namespace StrmAssistant.Mod
         }
 
         [HarmonyPrefix]
-        private static void GetMediaInfoInternalPrefix(ref string inputPath, ref string primaryPath)
+        private static void GetMediaInfoInternalPrefix(ref string inputPath)
         {
             try
             {
-                if (!IsoMounter.TryNormalizeIsoPath(inputPath, out var isoPath)) return;
+                if (!IsoMounter.TryNormalizeIsoPath(inputPath, out var isoPath))
+                {
+                    if (Plugin.Instance.DebugMode &&
+                        inputPath?.IndexOf(".iso", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        Plugin.Instance.Logger.Debug($"IsoExtraction - iso input not handled: {inputPath}");
+                    }
+
+                    return;
+                }
 
                 var probePath = IsoMounter.GetProbePath(isoPath);
                 if (string.IsNullOrEmpty(probePath)) return;
 
-                inputPath = probePath;
-                primaryPath = probePath;
+                // 只替换 ffprobe 的输入串（保留 Emby 原有的 file:"..." 包裹形式）：
+                // 绝不能改 primaryPath —— 它会被写进 MediaInfo.Path（即条目播放路径）。
+                inputPath = inputPath.Replace(isoPath, probePath);
 
                 Plugin.Instance.Logger.Info(
                     $"IsoExtraction - probing mounted title for {isoPath} -> {probePath}");

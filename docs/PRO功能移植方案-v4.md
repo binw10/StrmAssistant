@@ -304,23 +304,28 @@
 - **本地实现**：不改全局 `GetLocalApiUrl`（影响面大），改为在 **`UdpServer.SendMessage` 前缀改写 `localUrl`** —— 只影响 UDP 发现响应体，安全。
 - 选项 `NetworkOptions.LocalDiscoveryUrl` + URL 校验（http/https 绝对地址）+ 保存即时 Patch/Unpatch；默认空 = 不打补丁。
 
-### ✅ 已完成 · ISO 提取（提交 `06c9399`，**真正可用**）
-- **关键侦察**：Emby 4.10 的探测入口是
-  `Emby.Server.MediaEncoding.Probing.MediaProbeManager.GetMediaInfoInternal(mediaSource, inputPath, primaryPath, protocol, ...)`，
-  其中 `inputPath` / `primaryPath` **只用于 ffprobe 参数**，`MediaSourceInfo.Path` 不受影响
-  → 「只换探测输入、不动播放路径与条目身份」的理想钩子。
-  （PRO 在相邻位置补 `ProbeResultNormalizer.GetMediaInfo(...)` 并把 Container 置为 `Iso`/`DvdIso`。）
-- **免依赖实现**（替代 PRO 的 `BlurayMounter.dll`，该 dll 在 Releases 全树不存在）：
-  - `Common/IsoMounter.cs`：调用 **Windows 自带** `Mount-DiskImage` / `Dismount-DiskImage` 把本地 `.iso`
-    挂成虚拟光驱；按 `BDMV\STREAM` 最大 `.m2ts` → `VIDEO_TS\VTS_01_1.VOB` → 卷内最大视频 定位正片；
-    按路径缓存挂载、空闲 10 分钟自动卸载、插件卸载时全部卸载。
-  - `Mod/IsoExtraction.cs`：Harmony **前缀只改 `inputPath`/`primaryPath`**，且仅在「本地存在的 `.iso`」时介入
-    （http 流 / 普通视频原样放行）。
-  - 开关复用 `MediaInfoExtractOptions.EnableIsoExtraction`（默认 OFF）。
-- **实测**（自建测试 ISO：pycdlib 造盘 + Emby ffmpeg 生成真视频）：挂载 → 盘符 `E:` → 解析出 `00000.m2ts`
-  → Emby ffprobe 返回完整流信息（h264 / 320x240 / 3s）→ 正常卸载，链路通过。
-- **局限（如实）**：仅 Windows；正片选择为启发式（不解析 `.mpls` 播放列表，PRO 用 BlurayMounter 精确选片）；
-  仅适用本地 `.iso`，ISO-over-strm（远程 http）不适用。
+### 🟡 部分完成 · ISO 提取（提交 `06c9399` + 后续修正）
+**已做且实测有效的部分**：
+- 定位到 Emby 4.10 探测入口 `MediaProbeManager.GetMediaInfoInternal(mediaSource, inputPath, primaryPath, protocol, ...)`；
+  `inputPath` 只喂 ffprobe、`primaryPath` 会写进 `MediaInfo.Path` ⇒ 只替换 `inputPath`（保留 `file:"..."` 包裹）。
+- `Common/IsoMounter.cs`：Windows 自带 `Mount-DiskImage`/`Dismount-DiskImage` 挂载本地 `.iso`，
+  正片定位 `BDMV\STREAM` 最大 `.m2ts` → `VIDEO_TS\VTS_01_1.VOB` → 卷内最大视频；缓存 + 空闲 10 分钟卸载。
+  **实测通过**：挂载 → 盘符 E: → 解析出正片 → Emby ffprobe 返回完整流信息 → 卸载。
+- 修掉一个真实 bug：Emby 本地文件的输入串是 `file:"D:\a.iso"`，原解析未去 `file:` 前缀导致 `File.Exists` 失败被跳过。
+
+**卡点（实测发现，未解决）**：
+- **Emby 根本不会探测原生 `.iso` 条目**。实测：库内放 `X.iso` → Emby 生成条目（`Container=iso`、`Protocol=File`）但
+  `MediaSources[0].MediaStreams.Length==0`、`Size==0`，**日志中没有任何 ffprobe 调用** → 补丁没有被调用的机会，
+  提取结果 `MediaInfoPersist - Serialization Skipped - No MediaInfo`。
+- Emby 自带的 ISO 支持走的是 **`IMediaMountManager` / `IMediaMounter` 扩展点**（`MediaMountManager.AddParts(GetExports<IMediaMounter>())`，
+  `LibraryManager` 注入 `IMediaMountManager _isoManager`）。没有注册 mounter 时，Emby 只给一个空壳 MediaSource。
+- **用户实际场景是远程 ISO**：库内是 `杜比视界测试：双层 FEL.iso.strm`（内容为 faststrm 代理 URL，`file_name=xxx.iso`，
+  `Protocol=Http`）—— 挂载方案对 http ISO **完全不适用**。
+
+**结论**：当前实现只在「Emby 主动探测本地 .iso」的前提下有效，而 Emby 不这么做 ⇒ **对用户场景尚未生效**。
+下一步二选一（待用户定）：
+1. **注册 `IMediaMounter`**（Emby 官方扩展点）：让 Emby 自己调用我们的挂载器 → 自动探测+播放都走挂载路径（仅解决本地 ISO）。
+2. **自建探测**：在插件提取链里对 ISO 条目自行 ffprobe（本地 `.iso` 直接挂载；http `.iso.strm` 需下载到临时文件再挂载，代价大）。
 
 ### ✅ 已完成 · 元数据缓存根目录误报修复（同提交）
 - 根因：选了缓存模式但**未填目录**时，复用了 `MetadataCacheRootFolderNotExist`（文案「不存在或不可写」），与场景不符。
