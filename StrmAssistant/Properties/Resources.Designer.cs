@@ -1470,6 +1470,42 @@ namespace StrmAssistant.Properties {
                 return ResourceManager.GetString("HidePersonOption_NonChinese_NonChinese", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Natural sort.
+        /// </summary>
+        public static string ItemOrderOption_NaturalSort_NaturalSort {
+            get {
+                return ResourceManager.GetString("ItemOrderOption_NaturalSort_NaturalSort", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reverse season order.
+        /// </summary>
+        public static string ItemOrderOption_ReverseSeasonOrder_ReverseSeasonOrder {
+            get {
+                return ResourceManager.GetString("ItemOrderOption_ReverseSeasonOrder_ReverseSeasonOrder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reverse episode order.
+        /// </summary>
+        public static string ItemOrderOption_ReverseEpisodeOrder_ReverseEpisodeOrder {
+            get {
+                return ResourceManager.GetString("ItemOrderOption_ReverseEpisodeOrder_ReverseEpisodeOrder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Collection ordered by item date created.
+        /// </summary>
+        public static string ItemOrderOption_CollectionPerItemDateCreated_CollectionPerItemDateCreated {
+            get {
+                return ResourceManager.GetString("ItemOrderOption_CollectionPerItemDateCreated_CollectionPerItemDateCreated", resourceCulture);
+            }
+        }
 
         /// <summary>
         /// <summary>

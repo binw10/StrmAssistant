@@ -31,7 +31,8 @@ namespace StrmAssistant
             await Task.Yield();
             progress.Report(0);
 
-            var items = Plugin.LibraryApi.FetchPostExtractTaskItems(false);
+            // includeAudio=true：音乐持久化（专辑/艺术家及其内嵌封面由 MediaInfoApi 的 Audio 分支处理）
+            var items = Plugin.LibraryApi.FetchPostExtractTaskItems(true);
             _logger.Info("MediaInfoPersist - Number of items: " + items.Count);
 
             var directoryService = new DirectoryService(_logger, _fileSystem);

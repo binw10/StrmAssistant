@@ -252,9 +252,27 @@
 | `DoubanAccessToken` | 本地豆瓣走 `movie.douban.com` HTML + `subject_suggest` + wikidata + mdblist，**未使用 frodo v22 API**，该令牌本地无落点；若将来接入 frodo 再加 |
 
 ### ⏭ 未开始
-- Phase 2（UI：OptimizeMediaItemOrder 四选补完 / ShowCollectionsFromSeasons / EnforceUserPreferences）
 - Phase 3（MovieDb 1.9.9.0 实测适配 / 仪表盘 / 刷新偏好多选 / LocalDiscoveryUrl / 冲突检测）
-- Phase 4 其余（分布式 API / 音乐持久化 / ISO / 跨库进度）
+- Phase 4 其余（分布式 API / ISO / 跨库进度）
+
+### ✅ 已完成 · 音乐持久化（代码级复核：实为「开关未开」而非未实现）
+- **反查结论**：`MediaInfoApi` **早已实现音频分支**——`SerializeMediaInfo` 对 `item is Audio` 读取主图 → base64 存 `EmbeddedImage`；`DeserializeMediaInfo` 对 `Audio` 用 `SaveImage` 恢复封面。且 `FetchPreExtractTaskItems` 的提取查询本就含 `MediaType.Audio`（`IsExtractNeeded` 有 Audio 分支）。
+- **唯一缺口**：`PersistMediaInfoTask` 调 `FetchPostExtractTaskItems(false)` → 持久化任务从未纳入音频。
+- **修复**：改为 `FetchPostExtractTaskItems(true)`。`ScanExternalSubtitleTask` 维持 false（音频无需字幕）。
+
+### ✅ 已完成 · OptimizeItemOrderPreferences（媒体项目显示顺序 四选，PRO 同构）
+- 侦察更正：PRO 的 `OptimizeMediaItemOrder` 是 **bool**（自然排序总开关，与本地一致），四项选择在**独立属性** `OptimizeItemOrderPreferences`（`ItemOrderOption` 多选）。
+- 新增 `ItemOrderOption`（NaturalSort / ReverseSeasonOrder / ReverseEpisodeOrder / CollectionPerItemDateCreated）+ `ItemOrderOptionList` + `OptimizeItemOrderPreferences`（可见条件=OptimizeMediaItemOrder）。
+- 新增 `Mod/OptimizeItemOrder.cs`：挂钩 Emby 4.10 既有实现——
+  `Series.SetAutoSorting`（非递归=季列表，翻转 `IndexNumber` 为降序）、`Folder.SetAutoSorting`（`Season` 继承，翻转集序）、`BoxSet.SetSorting`（改写 `OrderBy` 为 `DateCreated`）。
+  NaturalSort 仍由既有 `PinyinSortName`（SortName 数字补零）实现。
+- 安全边界：三项均未选中 → 不打补丁（零行为变化）；方法缺失逐项跳过；postfix 内 try/catch 不影响主流程。
+- **假设（待实测）**：`CollectionPerItemDateCreated` 取「创建日期升序」。
+
+### ⏸ 暂缓 · ShowCollectionsFromSeasons（唯一未完成项）
+- 语义已知（"某季在合集 → 整部剧视为合集成员"），但**挂点未定位**：`Series` 仅暴露 `LibraryManager.GetCollectionFolders(item)`（返回媒体库，非合集），合集归属走 BoxSet 成员查询，PRO 的落点埋在混淆 helper。
+- 需在 `Emby.Api` / `Emby.Server.Implementations` 中定位"剧集详情页合集列表"的 id 列表构建点，再并入季的 InternalId。
+- 判定：改错会破坏剧集页合集展示，**不做无把握的猜测实现**（红线：宁缺毋滥）。
 
 ### ✅ 已完成 · Phase 4-1 本地 TMDB 缓存（v1，被动缓存；默认关闭）
 **关键侦察（本轮反编译 MovieDb 10.9.5.0 得出，权威）**：

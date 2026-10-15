@@ -70,6 +70,27 @@ namespace StrmAssistant.Options
         [Required]
         public bool OptimizeMediaItemOrder { get; set; } = false;
 
+        public enum ItemOrderOption
+        {
+            [DescriptionL("ItemOrderOption_NaturalSort_NaturalSort", typeof(Resources))]
+            NaturalSort,
+            [DescriptionL("ItemOrderOption_ReverseSeasonOrder_ReverseSeasonOrder", typeof(Resources))]
+            ReverseSeasonOrder,
+            [DescriptionL("ItemOrderOption_ReverseEpisodeOrder_ReverseEpisodeOrder", typeof(Resources))]
+            ReverseEpisodeOrder,
+            [DescriptionL("ItemOrderOption_CollectionPerItemDateCreated_CollectionPerItemDateCreated", typeof(Resources))]
+            CollectionPerItemDateCreated
+        }
+
+        [Browsable(false)]
+        public List<EditorSelectOption> ItemOrderOptionList { get; set; } = new List<EditorSelectOption>();
+
+        [DisplayName("")]
+        [EditMultilSelect]
+        [SelectItemsSource(nameof(ItemOrderOptionList))]
+        [VisibleCondition(nameof(OptimizeMediaItemOrder), SimpleCondition.IsTrue)]
+        public string OptimizeItemOrderPreferences { get; set; } = string.Empty;
+
         [DisplayNameL("UIFunctionOptions_ReplaceUnplayedWithTotal_Show_Total_Episodes", typeof(Resources))]
         [DescriptionL("UIFunctionOptions_ReplaceUnplayedWithTotal_Show_total_episode_count_instead_of_unplayed_count_on_series_cards__Default_is_OFF_", typeof(Resources))]
         [Required]
@@ -107,6 +128,20 @@ namespace StrmAssistant.Options
                 };
 
                 HidePersonOptionList.Add(selectOption);
+            }
+
+            ItemOrderOptionList.Clear();
+
+            foreach (Enum item in Enum.GetValues(typeof(ItemOrderOption)))
+            {
+                var selectOption = new EditorSelectOption
+                {
+                    Value = item.ToString(),
+                    Name = Utility.GetEnumDescription(item),
+                    IsEnabled = true,
+                };
+
+                ItemOrderOptionList.Add(selectOption);
             }
         }
     }

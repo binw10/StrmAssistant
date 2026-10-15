@@ -47,6 +47,7 @@ namespace StrmAssistant.Mod
         public static StrmDirectRedirect StrmDirectRedirect;
         public static LiveTvDirectRedirect LiveTvDirectRedirect;
         public static LocalTmdbCache LocalTmdbCache;
+        public static OptimizeItemOrder OptimizeItemOrder;
 
         private static readonly ConcurrentDictionary<Tuple<Type, string>, HarmonyMethod> HarmonyMethodCache 
             = new ConcurrentDictionary<Tuple<Type, string>, HarmonyMethod>();
@@ -109,6 +110,7 @@ namespace StrmAssistant.Mod
             StrmDirectRedirect = new StrmDirectRedirect();
             LiveTvDirectRedirect = new LiveTvDirectRedirect();
             LocalTmdbCache = new LocalTmdbCache();
+            OptimizeItemOrder = new OptimizeItemOrder();
 
             // ★ 总览日志：遍历所有 PatchTracker，打印每个模块的最终状态（Info 级别，无需开启 DebugMode）
             try

@@ -755,6 +755,18 @@
   <data name="HidePersonOption_NonChinese_NonChinese" xml:space="preserve">
     <value>Non-Chinese</value>
   </data>
+  <data name="ItemOrderOption_NaturalSort_NaturalSort" xml:space="preserve">
+    <value>Natural sort</value>
+  </data>
+  <data name="ItemOrderOption_ReverseSeasonOrder_ReverseSeasonOrder" xml:space="preserve">
+    <value>Reverse season order</value>
+  </data>
+  <data name="ItemOrderOption_ReverseEpisodeOrder_ReverseEpisodeOrder" xml:space="preserve">
+    <value>Reverse episode order</value>
+  </data>
+  <data name="ItemOrderOption_CollectionPerItemDateCreated_CollectionPerItemDateCreated" xml:space="preserve">
+    <value>Collection ordered by item date created</value>
+  </data>
   <data name="ExclusiveControl_NoIntroProtect_NoIntroProtect" xml:space="preserve">
     <value>No Intro Marker Protect</value>
   </data>

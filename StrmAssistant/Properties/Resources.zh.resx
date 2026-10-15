@@ -668,6 +668,18 @@
   <data name="HidePersonOption_NonChinese_NonChinese" xml:space="preserve">
     <value>仅中文名</value>
   </data>
+  <data name="ItemOrderOption_NaturalSort_NaturalSort" xml:space="preserve">
+    <value>自然排序</value>
+  </data>
+  <data name="ItemOrderOption_ReverseSeasonOrder_ReverseSeasonOrder" xml:space="preserve">
+    <value>季倒序显示</value>
+  </data>
+  <data name="ItemOrderOption_ReverseEpisodeOrder_ReverseEpisodeOrder" xml:space="preserve">
+    <value>集倒序显示</value>
+  </data>
+  <data name="ItemOrderOption_CollectionPerItemDateCreated_CollectionPerItemDateCreated" xml:space="preserve">
+    <value>合集按条目创建日期排序</value>
+  </data>
   <data name="ExclusiveControl_NoIntroProtect_NoIntroProtect" xml:space="preserve">
     <value>无片头标记保护</value>
   </data>

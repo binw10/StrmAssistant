@@ -175,6 +175,25 @@ namespace StrmAssistant.Options.Store
                         PatchManager.NoBoxsetsAutoCreation.Unpatch();
                     }
                 }
+
+                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.OptimizeItemOrderPreferences)) ||
+                    changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.OptimizeMediaItemOrder)))
+                {
+                    var prefs = options.UIFunctionOptions.OptimizeItemOrderPreferences ?? string.Empty;
+                    var orderModuleOn =
+                        prefs.Contains(nameof(ItemOrderOption.ReverseSeasonOrder), StringComparison.OrdinalIgnoreCase) ||
+                        prefs.Contains(nameof(ItemOrderOption.ReverseEpisodeOrder), StringComparison.OrdinalIgnoreCase) ||
+                        prefs.Contains(nameof(ItemOrderOption.CollectionPerItemDateCreated), StringComparison.OrdinalIgnoreCase);
+
+                    if (orderModuleOn)
+                    {
+                        PatchManager.OptimizeItemOrder.Patch();
+                    }
+                    else
+                    {
+                        PatchManager.OptimizeItemOrder.Unpatch();
+                    }
+                }
             }
         }
 
