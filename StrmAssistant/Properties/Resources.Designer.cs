@@ -1989,6 +1989,33 @@ namespace StrmAssistant.Properties {
                 return ResourceManager.GetString("InvalidProxyServer", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Discovery URL is invalid..
+        /// </summary>
+        public static string InvalidDiscoveryUrl {
+            get {
+                return ResourceManager.GetString("InvalidDiscoveryUrl", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Customize Local Discovery Url.
+        /// </summary>
+        public static string NetworkOptions_LocalDiscoveryUrl_Customize_Local_Discovery_Url {
+            get {
+                return ResourceManager.GetString("NetworkOptions_LocalDiscoveryUrl_Customize_Local_Discovery_Url", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Address returned by the local UDP discovery protocol..
+        /// </summary>
+        public static string NetworkOptions_LocalDiscoveryUrl_Discover_local_reverse_proxy__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("NetworkOptions_LocalDiscoveryUrl_Discover_local_reverse_proxy__Default_is_OFF_", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to TV show or season ID is invalid: {0}.

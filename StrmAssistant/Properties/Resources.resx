@@ -521,6 +521,15 @@
   <data name="InvalidProxyServer" xml:space="preserve">
     <value>Proxy Server is invalid. Format is http[s]://[&lt;username&gt;:&lt;password&gt;@]&lt;host&gt;:&lt;port&gt;</value>
   </data>
+  <data name="InvalidDiscoveryUrl" xml:space="preserve">
+    <value>Discovery URL is invalid. It must be an absolute http/https URL, e.g. http://media.example.com:8096</value>
+  </data>
+  <data name="NetworkOptions_LocalDiscoveryUrl_Customize_Local_Discovery_Url" xml:space="preserve">
+    <value>Customize Local Discovery Url</value>
+  </data>
+  <data name="NetworkOptions_LocalDiscoveryUrl_Discover_local_reverse_proxy__Default_is_OFF_" xml:space="preserve">
+    <value>Address returned by the local UDP discovery protocol (e.g. a reverse proxy address). Blank is OFF and uses the default local address.</value>
+  </data>
   <data name="ModOptions_ProxyServer_Proxy_Server" xml:space="preserve">
     <value>Proxy Server</value>
   </data>

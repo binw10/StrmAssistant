@@ -65,6 +65,11 @@ namespace StrmAssistant.Options.Store
                         ? options.NetworkOptions.ProxyServerUrl.Trim().TrimEnd('/')
                         : options.NetworkOptions.ProxyServerUrl?.Trim();
 
+                options.NetworkOptions.LocalDiscoveryUrl =
+                    !string.IsNullOrWhiteSpace(options.NetworkOptions.LocalDiscoveryUrl)
+                        ? options.NetworkOptions.LocalDiscoveryUrl.Trim().TrimEnd('/')
+                        : options.NetworkOptions.LocalDiscoveryUrl?.Trim();
+
                 if (!suppress)
                 {
                     if (options.NetworkOptions.EnableProxyServer &&
@@ -190,6 +195,18 @@ namespace StrmAssistant.Options.Store
                     else if (!options.NetworkOptions.EnableProxyServer)
                     {
                         Plugin.Instance.ApplicationHost.NotifyPendingRestart();
+                    }
+                }
+
+                if (changedProperties.Contains(nameof(PluginOptions.NetworkOptions.LocalDiscoveryUrl)))
+                {
+                    if (!string.IsNullOrWhiteSpace(options.NetworkOptions.LocalDiscoveryUrl))
+                    {
+                        PatchManager.CustomLocalDiscovery.Patch();
+                    }
+                    else
+                    {
+                        PatchManager.CustomLocalDiscovery.Unpatch();
                     }
                 }
 

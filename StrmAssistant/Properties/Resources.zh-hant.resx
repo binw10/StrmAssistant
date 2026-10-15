@@ -434,6 +434,15 @@
   <data name="InvalidProxyServer" xml:space="preserve">
     <value>代理伺服器無效，格式為 http[s]://[&lt;username&gt;:&lt;password&gt;@]&lt;host&gt;:&lt;port&gt;</value>
   </data>
+  <data name="InvalidDiscoveryUrl" xml:space="preserve">
+    <value>探索位址無效，必須是合法的 http/https 絕對位址，例如 http://media.example.com:8096</value>
+  </data>
+  <data name="NetworkOptions_LocalDiscoveryUrl_Customize_Local_Discovery_Url" xml:space="preserve">
+    <value>自訂本機探索位址</value>
+  </data>
+  <data name="NetworkOptions_LocalDiscoveryUrl_Discover_local_reverse_proxy__Default_is_OFF_" xml:space="preserve">
+    <value>區域網路 UDP 探索協定回應的位址（例如反向代理位址）。留空即關閉，使用預設本機位址。</value>
+  </data>
   <data name="ModOptions_ProxyServer_Proxy_Server" xml:space="preserve">
     <value>代理伺服器</value>
   </data>

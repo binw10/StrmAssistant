@@ -4,6 +4,7 @@ using Emby.Web.GenericEdit.Validation;
 using MediaBrowser.Model.Attributes;
 using MediaBrowser.Model.LocalizationAttributes;
 using StrmAssistant.Properties;
+using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using static StrmAssistant.Common.CommonUtility;
@@ -56,6 +57,10 @@ namespace StrmAssistant
         [Browsable(false)]
         public bool IgnoreCertificateValidation { get; set; } = false;
 
+        [DisplayNameL("NetworkOptions_LocalDiscoveryUrl_Customize_Local_Discovery_Url", typeof(Resources))]
+        [DescriptionL("NetworkOptions_LocalDiscoveryUrl_Discover_local_reverse_proxy__Default_is_OFF_", typeof(Resources))]
+        public string LocalDiscoveryUrl { get; set; } = string.Empty;
+
         [Browsable(false)]
         public bool IsModSupported => RuntimeInformation.ProcessArchitecture == Architecture.X64 || RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
 
@@ -66,6 +71,18 @@ namespace StrmAssistant
             {
                 context.AddValidationError(Resources.InvalidProxyServer);
             }
+
+            if (!string.IsNullOrWhiteSpace(LocalDiscoveryUrl) &&
+                !IsValidDiscoveryUrl(LocalDiscoveryUrl))
+            {
+                context.AddValidationError(Resources.InvalidDiscoveryUrl);
+            }
+        }
+
+        private static bool IsValidDiscoveryUrl(string value)
+        {
+            return Uri.TryCreate(value?.Trim(), UriKind.Absolute, out var uri) &&
+                   (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
         }
 
         public void Initialize()
