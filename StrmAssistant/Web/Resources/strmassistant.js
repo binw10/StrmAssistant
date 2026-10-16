@@ -522,7 +522,58 @@
             function anyEnabled() {
                 const c = cfg();
                 return c.replaceUnplayedWithTotal || c.showLibraryItemCount ||
-                    c.reverseLogLines || c.blockSearchRecommend;
+                    c.reverseLogLines || c.blockSearchRecommend || c.showMediaInfo;
+            }
+
+            // ShowMediaInfo（PRO 同构）：在搜索结果页，按当前搜索 tab 类型为结果项追加显示字段
+            // （评分 / 容器格式等），使搜索结果直接呈现媒体信息。包裹 ItemsView.getViewSettingDefaults。
+            let mediaInfoPatched = false;
+
+            function patchSearchMediaInfo() {
+                if (mediaInfoPatched || !cfg().showMediaInfo) return;
+
+                try {
+                    require(['components/items/itemsview'], function (responses) {
+                        const ItemsView = responses && responses[0];
+                        const proto = ItemsView && ItemsView.prototype;
+                        if (!proto || !proto.getViewSettingDefaults || proto.__saMediaInfoPatched) return;
+
+                        const original = proto.getViewSettingDefaults;
+                        proto.getViewSettingDefaults = function () {
+                            let result;
+                            try {
+                                result = original.apply(this, arguments);
+                                const params = this.params;
+                                if (!params || params.type !== 'search') return result;
+
+                                const view = this.view;
+                                const tabEl = view && view.querySelector(
+                                    '.emby-searchable-tab-button.emby-tab-button-active');
+                                const tab = tabEl ? tabEl.getAttribute('data-searchtype') : null;
+                                if (!tab) return result;
+
+                                if (!Array.isArray(result.fields)) result.fields = [];
+                                const fields = result.fields;
+
+                                if (tab === 'Movie' || tab === 'Series' || tab === 'Season') {
+                                    if (fields.indexOf('CommunityRating') < 0) {
+                                        fields.push('CommunityRating', 'CriticRating');
+                                    }
+                                }
+                                if (tab === 'Movie' || tab === 'Episode' || tab === 'Video') {
+                                    if (fields.indexOf('Container') < 0) fields.push('Container');
+                                }
+                                return result;
+                            } catch (e) {
+                                return result;
+                            }
+                        };
+                        proto.__saMediaInfoPatched = true;
+                        mediaInfoPatched = true;
+                    });
+                } catch (e) {
+                    // ignore
+                }
             }
 
             function scanTotalEpisodes() {
@@ -641,6 +692,7 @@
                 initialized = true;
 
                 if (!anyEnabled()) return;
+                patchSearchMediaInfo();
                 scan();
                 if (window.MutationObserver) {
                     new MutationObserver(scheduleScan).observe(document.body,

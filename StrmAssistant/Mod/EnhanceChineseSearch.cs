@@ -74,10 +74,16 @@ namespace StrmAssistant.Mod
 
         /// <summary>
         /// 索引侧归一化：剥离引号/句点/间隔号/连字符，中文统一转为简体，保证索引与查询可简繁互通。
+        /// 当 MixedChineseVariants 开启时，额外做变体归一化（全角/标点变体等）。
         /// </summary>
         internal static string NormalizeSearchTerm(string searchTerm)
         {
             if (string.IsNullOrEmpty(searchTerm)) return searchTerm;
+
+            if (IsMixedVariantsEnabled())
+            {
+                return LanguageUtility.NormalizeChineseVariants(searchTerm);
+            }
 
             var normalized = searchTerm
                 .Replace("'", string.Empty)
@@ -92,10 +98,16 @@ namespace StrmAssistant.Mod
 
         /// <summary>
         /// 查询侧归一化：与索引侧同步处理间隔号/连字符并繁转简；句点/引号保持原有查询行为不变。
+        /// 当 MixedChineseVariants 开启时，与索引侧使用同一套变体归一化规则。
         /// </summary>
         private static string NormalizeQueryTerm(string searchTerm)
         {
             if (string.IsNullOrEmpty(searchTerm)) return searchTerm;
+
+            if (IsMixedVariantsEnabled())
+            {
+                return LanguageUtility.NormalizeChineseVariants(searchTerm);
+            }
 
             var normalized = searchTerm
                 .Replace("·", string.Empty)
@@ -513,6 +525,12 @@ namespace StrmAssistant.Mod
 
                 ApplySimplifiedSweep(connection, ftsTableName);
 
+                // MixedChineseVariants：在简繁归一化之上再做变体归一化（全角/标点变体等）。
+                if (Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.MixedChineseVariants)
+                {
+                    ApplyVariantsSweep(connection, ftsTableName);
+                }
+
                 connection.CommitTransaction();
 
                 WriteNormV2Marker();
@@ -604,13 +622,89 @@ namespace StrmAssistant.Mod
             }
         }
 
-        private static string ConvertToSimplified(string input)
+        /// <summary>
+        /// 读取 MixedChineseVariants 开关（防御式：Plugin 未初始化时返回 false）。
+        /// </summary>
+        private static bool IsMixedVariantsEnabled()
         {
-            if (string.IsNullOrEmpty(input) || !LanguageUtility.IsChinese(input)) return input;
+            try
+            {
+                return Plugin.Instance?.MainOptionsStore?.GetOptions()?.ModOptions?.MixedChineseVariants == true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string ConvertToSimplified(string input)
+        {            if (string.IsNullOrEmpty(input) || !LanguageUtility.IsChinese(input)) return input;
 
             var simplified = LanguageUtility.ConvertTraditionalToSimplified(input);
 
             return string.Equals(input, simplified, StringComparison.Ordinal) ? input : simplified;
+        }
+
+        /// <summary>
+        /// MixedChineseVariants 索引侧扫描：对 FTS 表中不满足变体归一化的行做一次写回，
+        /// 保证索引侧与查询侧使用同一套变体归一化规则（否则互通匹配会失效）。
+        /// </summary>
+        private static void ApplyVariantsSweep(IDatabaseConnection connection, string ftsTableName)
+        {
+            try
+            {
+                var convertedRows = new Dictionary<long, string[]>();
+
+                using (var select = connection.PrepareStatement(
+                           $"SELECT RowId, Name, OriginalTitle, SeriesName, Album FROM {ftsTableName}"))
+                {
+                    while (select.MoveNext())
+                    {
+                        var row = select.Current;
+                        var rowId = row.GetInt64(0);
+                        var converted = new string[4];
+                        var differs = false;
+
+                        for (var i = 0; i < 4; i++)
+                        {
+                            var original = row.GetString(i + 1);
+                            converted[i] = LanguageUtility.NormalizeChineseVariants(original);
+
+                            if (!string.Equals(original, converted[i], StringComparison.Ordinal))
+                            {
+                                differs = true;
+                            }
+                        }
+
+                        if (differs)
+                        {
+                            convertedRows[rowId] = converted;
+                        }
+                    }
+                }
+
+                foreach (var pair in convertedRows)
+                {
+                    var values = pair.Value;
+
+                    connection.Execute(
+                        $"UPDATE {ftsTableName} SET Name = {SqlQuote(values[0])}, OriginalTitle = {SqlQuote(values[1])}, " +
+                        $"SeriesName = {SqlQuote(values[2])}, Album = {SqlQuote(values[3])} WHERE RowId = {pair.Key}");
+                }
+
+                if (convertedRows.Count > 0)
+                {
+                    Plugin.Instance.Logger.Info($"EnhanceChineseSearch - Variants sweep normalized {convertedRows.Count} FTS rows");
+                }
+            }
+            catch (Exception e)
+            {
+                Plugin.Instance.Logger.Warn($"EnhanceChineseSearch - Variants sweep failed, continue without variant normalization: {e.Message}");
+                if (Plugin.Instance.DebugMode)
+                {
+                    Plugin.Instance.Logger.Debug(e.StackTrace);
+                }
+            }
         }
 
         private static string SqlQuote(string value)
@@ -1247,6 +1341,22 @@ namespace StrmAssistant.Mod
                             query.SearchTerm = null;
                             break;
                         }
+                    }
+                }
+
+                // DigitsAsTmdbId（PRO 同构）：纯数字搜索词直接当作 TMDB ID 精确匹配。
+                // 仅当已开启该开关、且前面的 provider 前缀匹配未命中时生效；匹配后不再走分词查询。
+                if (!string.IsNullOrEmpty(query.SearchTerm) &&
+                    Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.DigitsAsTmdbId)
+                {
+                    var digits = query.SearchTerm.Trim();
+                    if (digits.Length > 0 && digits.All(char.IsDigit))
+                    {
+                        query.AnyProviderIdEquals = new List<KeyValuePair<string, string>>
+                        {
+                            new KeyValuePair<string, string>("tmdb", digits)
+                        };
+                        query.SearchTerm = null;
                     }
                 }
 

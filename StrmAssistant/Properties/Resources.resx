@@ -767,6 +767,24 @@
   <data name="ModOptions_ExcludeOriginalTitle_Exclude_original_title_from_search__Default_is_OFF_" xml:space="preserve">
     <value>Exclude original title from search. Default is OFF.</value>
   </data>
+  <data name="ModOptions_DigitsAsTmdbId_Digits_As_Tmdb_Id" xml:space="preserve">
+    <value>Digits As TMDB Id</value>
+  </data>
+  <data name="ModOptions_DigitsAsTmdbId_Treat_a_pure_numeric_search_term_as_a_TMDB_id__Default_is_OFF_" xml:space="preserve">
+    <value>Treat a pure numeric search term (e.g. 550) as a TMDB id for an exact match. Default is OFF.</value>
+  </data>
+  <data name="ModOptions_MixedChineseVariants_Mixed_Chinese_Variants" xml:space="preserve">
+    <value>Mixed Chinese Variants</value>
+  </data>
+  <data name="ModOptions_MixedChineseVariants_Match_traditional_simplified_and_variant_Chinese_characters_interchangeably__Default_is_OFF_" xml:space="preserve">
+    <value>Match traditional, simplified and variant Chinese characters interchangeably in search. Default is OFF.</value>
+  </data>
+  <data name="ModOptions_ShowMediaInfo_Show_Media_Info" xml:space="preserve">
+    <value>Show Media Info</value>
+  </data>
+  <data name="ModOptions_ShowMediaInfo_Show_media_info_on_search_result_items__Default_is_OFF_" xml:space="preserve">
+    <value>Show media info on search result items. Default is OFF.</value>
+  </data>
   <data name="IntroSkipPreference_NoDetectionButReset_NoDetectionButReset" xml:space="preserve">
     <value>No detection but pause operation to set intro and/or credits markers</value>
   </data>
@@ -819,7 +837,7 @@
     <value>Enable ISO Extraction</value>
   </data>
   <data name="MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__Windows_native_OS_mount__Linux_Docker_in_process_UDF_read_with_custom_ffprobe__Default_is_OFF_" xml:space="preserve">
-    <value>Include ISO images in media info extraction. Windows: native OS mount, read by the built-in ffprobe. Linux/Docker: in-process UDF read for main-title selection plus a custom ffprobe to read the ISO. Default is OFF.</value>
+    <value>Include ISO images in media info extraction, including local .iso files and remote strm/http ISO streams. Local: Windows native OS mount; remote: a head window is fetched to a temp file and probed. Default is OFF.</value>
   </data>
   <data name="MediaInfoExtractOptions_ClearEmbeddedMetadata_Clear_Embedded_Metadata" xml:space="preserve">
     <value>Clear Embedded Metadata</value>
@@ -1052,6 +1070,12 @@
   <data name="MetadataEnhanceOptions_DoubanCookie_Optional_Douban_cookie_for_anti_crawler_verification__Default_is_empty_" xml:space="preserve">
     <value>Optional Douban cookie for anti-crawler verification. Default is empty.</value>
   </data>
+  <data name="MetadataEnhanceOptions_DoubanAccessToken_Douban_Access_Token" xml:space="preserve">
+    <value>Douban Access Token (Optional)</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanAccessToken_Used_to_assist_in_retrieving_Douban_info__Default_is_BLANK_" xml:space="preserve">
+    <value>Used to assist in retrieving Douban info via the official V2 API (Authorization: Bearer). When set, the API is preferred over HTML scraping. Default is BLANK.</value>
+  </data>
   <data name="MetadataEnhanceOptions_DoubanRatingOverride_Override_Rating_With_Douban" xml:space="preserve">
     <value>Override Rating With Douban</value>
   </data>
@@ -1217,6 +1241,9 @@
   <data name="EpisodeRefreshOption_DefaultEpisodeName_Default_Episode_Name" xml:space="preserve">
     <value>Default Episode Name</value>
   </data>
+  <data name="EpisodeRefreshOption_DefaultSeasonName_Default_Season_Name" xml:space="preserve">
+    <value>Default Season Name</value>
+  </data>
   <data name="MetadataEnhanceOptions_EpisodeRefreshScope_Episode_refresh_scope_for_scheduled_task_and_catch_up__Default_is_no_overview_and_no_image_" xml:space="preserve">
     <value>Episode metadata refresh scope for scheduled task and catch-up across all TV show libraries. Default is No Overview and No Image.</value>
   </data>
@@ -1288,6 +1315,12 @@
   </data>
   <data name="RefreshPersonOption_DownloadImagesInAdvance_DownloadImagesInAdvance" xml:space="preserve">
     <value>Download images in advance</value>
+  </data>
+  <data name="RefreshPersonOption_DefaultImageRefresh_DefaultImageRefresh" xml:space="preserve">
+    <value>Default image refresh</value>
+  </data>
+  <data name="RefreshPersonOption_FullImageRefresh_FullImageRefresh" xml:space="preserve">
+    <value>Full image refresh</value>
   </data>
   <data name="MergeScopeOption_FolderScope_FolderScope" xml:space="preserve">
     <value>Folder Scope</value>

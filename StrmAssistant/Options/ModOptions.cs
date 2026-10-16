@@ -66,6 +66,23 @@ namespace StrmAssistant.Options
         [VisibleCondition(nameof(EnhanceChineseSearch), SimpleCondition.IsTrue)]
         public bool ExcludeOriginalTitleFromSearch { get; set; } = false;
 
+        [DisplayNameL("ModOptions_DigitsAsTmdbId_Digits_As_Tmdb_Id", typeof(Resources))]
+        [DescriptionL("ModOptions_DigitsAsTmdbId_Treat_a_pure_numeric_search_term_as_a_TMDB_id__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        [VisibleCondition(nameof(EnhanceChineseSearch), SimpleCondition.IsTrue)]
+        public bool DigitsAsTmdbId { get; set; } = false;
+
+        [DisplayNameL("ModOptions_MixedChineseVariants_Mixed_Chinese_Variants", typeof(Resources))]
+        [DescriptionL("ModOptions_MixedChineseVariants_Match_traditional_simplified_and_variant_Chinese_characters_interchangeably__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        [VisibleCondition(nameof(EnhanceChineseSearch), SimpleCondition.IsTrue)]
+        public bool MixedChineseVariants { get; set; } = false;
+
+        [DisplayNameL("ModOptions_ShowMediaInfo_Show_Media_Info", typeof(Resources))]
+        [DescriptionL("ModOptions_ShowMediaInfo_Show_media_info_on_search_result_items__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        public bool ShowMediaInfo { get; set; } = false;
+
         [DisplayNameL("DirectLinkOptions_EditorTitle_Direct_Link", typeof(Resources))]
         public DirectLinkOptions DirectLinkOptions { get; set; } = new DirectLinkOptions();
 

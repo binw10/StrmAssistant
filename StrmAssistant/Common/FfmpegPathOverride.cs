@@ -20,6 +20,19 @@ namespace StrmAssistant.Common
         private static ILogger _logger;
         private static bool _initialized;
 
+        /// <summary>
+        /// 自定义 ffprobe 是否具备 bluray 输入协议能力（<c>--enable-libbluray</c>）。
+        /// 由 <see cref="SelfCheck"/> 在应用 CustomProbePath 时探测并缓存；
+        /// <c>IsoExtraction</c> 据此决定是否把探测输入改写为 <c>bluray:"{0}"</c>。
+        ///
+        /// 语义：<c>null</c>=尚未探测（未知）；<c>true</c>=支持；<c>false</c>=不支持。
+        /// 未配置自定义 ffprobe 或探测失败时保持 <c>null</c>，调用方应保守回退（不改写输入）。
+        /// </summary>
+        public static bool? ProbeSupportsBluray { get; private set; }
+
+        /// <summary>自定义 ffmpeg 是否具备 bluray 输入协议能力（预留，用于截图/章节图路径）。</summary>
+        public static bool? EncoderSupportsBluray { get; private set; }
+
         public static void Initialize(IFfmpegManager ffmpegManager, ILogger logger)
         {
             _ffmpegManager = ffmpegManager;
@@ -32,7 +45,20 @@ namespace StrmAssistant.Common
         /// </summary>
         public static void Apply(string customProbePath, string customEncoderPath)
         {
+            if (_logger != null)
+            {
+                _logger.Info(
+                    "FfmpegPathOverride - Apply invoked: probe='{0}', encoder='{1}', initialized={2}, mgr={3}, cfg={4}",
+                    customProbePath ?? "(null)", customEncoderPath ?? "(null)", _initialized,
+                    _ffmpegManager == null ? "null" : _ffmpegManager.GetType().Name,
+                    _ffmpegManager?.FfmpegConfiguration == null ? "null" : _ffmpegManager.FfmpegConfiguration.GetType().Name);
+            }
+
             if (!_initialized || _ffmpegManager?.FfmpegConfiguration == null) return;
+
+            // 每次重新应用先复位能力位，避免旧值残留导致误判
+            if (string.IsNullOrWhiteSpace(customProbePath)) ProbeSupportsBluray = null;
+            if (string.IsNullOrWhiteSpace(customEncoderPath)) EncoderSupportsBluray = null;
 
             TryOverride(_ffmpegManager.FfmpegConfiguration, "ProbePath", customProbePath);
             TryOverride(_ffmpegManager.FfmpegConfiguration, "EncoderPath", customEncoderPath);
@@ -74,7 +100,14 @@ namespace StrmAssistant.Common
                                 .FirstOrDefault(f => f.FieldType == typeof(string) &&
                                                      f.Name.IndexOf(propertyName, StringComparison.OrdinalIgnoreCase) >= 0);
 
-                if (field == null) return false;
+                if (field == null)
+                {
+                    var names = string.Join(", ", configuration.GetType()
+                        .GetFields(flags).Select(f => f.Name).Take(20));
+                    _logger.Warn("FfmpegPathOverride - no backing field for {0}; fields=[{1}]",
+                        propertyName, names);
+                    return false;
+                }
 
                 // .NET Core 下反射写入 initonly（readonly）后备字段是有效的；
                 // 若目标运行时未来禁止此操作，SetValue 会抛异常并落入 catch 返回 false。
@@ -90,9 +123,12 @@ namespace StrmAssistant.Common
 
         /// <summary>
         /// 自检：执行 -version 并把协议/能力相关输出写入日志，便于诊断 bluray/smb/chromaprint 支持。
+        /// 同时把 bluray 能力缓存到 <see cref="ProbeSupportsBluray"/> / <see cref="EncoderSupportsBluray"/>。
         /// </summary>
         private static void SelfCheck(string binaryPath, string label)
         {
+            var isProbe = string.Equals(label, "ProbePath", StringComparison.OrdinalIgnoreCase);
+
             try
             {
                 var startInfo = new ProcessStartInfo
@@ -118,6 +154,15 @@ namespace StrmAssistant.Common
                     var features = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                         .Where(l => l.Contains("--enable"))
                         .ToList();
+
+                    // 关键：探测 bluray 输入协议能力（--enable-libbluray）并缓存
+                    var supportsBluray = features.Any(l => l.IndexOf("libbluray", StringComparison.OrdinalIgnoreCase) >= 0);
+                    if (isProbe) ProbeSupportsBluray = supportsBluray;
+                    else EncoderSupportsBluray = supportsBluray;
+
+                    _logger.Info("FfmpegPathOverride - {0} {1} bluray input protocol",
+                        label, supportsBluray ? "supports" : "does NOT support");
+
                     if (features.Count > 0)
                     {
                         var keywords = new[] { "bluray", "libsmbclient", "chromaprint", "libplacebo", "vulkan" };

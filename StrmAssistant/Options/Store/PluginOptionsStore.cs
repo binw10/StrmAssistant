@@ -172,6 +172,25 @@ namespace StrmAssistant.Options.Store
                     UpdateSearchScope(options.ModOptions.SearchScope);
                 }
 
+                // MixedChineseVariants 改变了索引侧的归一化规则，切换时必须重建 FTS 索引，
+                // 否则旧索引与新查询规则不一致会导致互通匹配失效。
+                if (changedProperties.Contains(nameof(PluginOptions.ModOptions.MixedChineseVariants)))
+                {
+                    _logger.Info("MixedChineseVariants is set to {0}", options.ModOptions.MixedChineseVariants);
+                    EnhanceChineseSearch.ScheduleIndexRebuild();
+                    Plugin.Instance.ApplicationHost.NotifyPendingRestart();
+                }
+
+                if (changedProperties.Contains(nameof(PluginOptions.ModOptions.DigitsAsTmdbId)))
+                {
+                    _logger.Info("DigitsAsTmdbId is set to {0}", options.ModOptions.DigitsAsTmdbId);
+                }
+
+                if (changedProperties.Contains(nameof(PluginOptions.ModOptions.ShowMediaInfo)))
+                {
+                    _logger.Info("ShowMediaInfo is set to {0}", options.ModOptions.ShowMediaInfo);
+                }
+
                 if (changedProperties.Contains(nameof(PluginOptions.NetworkOptions.EnableProxyServer)))
                 {
                     if (options.NetworkOptions.EnableProxyServer)

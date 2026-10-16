@@ -680,6 +680,24 @@
   <data name="ModOptions_ExcludeOriginalTitle_Exclude_original_title_from_search__Default_is_OFF_" xml:space="preserve">
     <value>排除原语言标题搜索，默认关闭。</value>
   </data>
+  <data name="ModOptions_DigitsAsTmdbId_Digits_As_Tmdb_Id" xml:space="preserve">
+    <value>纯数字作为 TMDB ID</value>
+  </data>
+  <data name="ModOptions_DigitsAsTmdbId_Treat_a_pure_numeric_search_term_as_a_TMDB_id__Default_is_OFF_" xml:space="preserve">
+    <value>将纯数字搜索词（如 550）作为 TMDB ID 进行精确匹配，默认关闭。</value>
+  </data>
+  <data name="ModOptions_MixedChineseVariants_Mixed_Chinese_Variants" xml:space="preserve">
+    <value>中文异体字互通</value>
+  </data>
+  <data name="ModOptions_MixedChineseVariants_Match_traditional_simplified_and_variant_Chinese_characters_interchangeably__Default_is_OFF_" xml:space="preserve">
+    <value>搜索时繁体、简体与异体字互通匹配，默认关闭。</value>
+  </data>
+  <data name="ModOptions_ShowMediaInfo_Show_Media_Info" xml:space="preserve">
+    <value>显示媒体信息</value>
+  </data>
+  <data name="ModOptions_ShowMediaInfo_Show_media_info_on_search_result_items__Default_is_OFF_" xml:space="preserve">
+    <value>在搜索结果项上显示媒体信息，默认关闭。</value>
+  </data>
   <data name="IntroSkipPreference_NoDetectionButReset_NoDetectionButReset" xml:space="preserve">
     <value>无自动探测仅暂停操作设置片头片尾标记</value>
   </data>
@@ -732,7 +750,7 @@
     <value>启用 ISO 提取</value>
   </data>
   <data name="MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__Windows_native_OS_mount__Linux_Docker_in_process_UDF_read_with_custom_ffprobe__Default_is_OFF_" xml:space="preserve">
-    <value>把 ISO 镜像纳入媒体信息提取。Windows：系统原生挂载，由内置 ffprobe 读取；Linux/Docker：进程内 UDF 选出正片，并由自定义 ffprobe 直接读取 ISO。默认关闭。</value>
+    <value>把 ISO 镜像纳入媒体信息提取，含本地 .iso 文件与 strm/http 远程 ISO 流。本地：Windows 原生挂载；远程：先拉取头部窗口到临时文件再探测。默认关闭。</value>
   </data>
   <data name="MediaInfoExtractOptions_ClearEmbeddedMetadata_Clear_Embedded_Metadata" xml:space="preserve">
     <value>清除内嵌元数据</value>
@@ -965,6 +983,12 @@
   <data name="MetadataEnhanceOptions_DoubanCookie_Optional_Douban_cookie_for_anti_crawler_verification__Default_is_empty_" xml:space="preserve">
     <value>可选的豆瓣 Cookie，用于通过反爬验证。默认留空。</value>
   </data>
+  <data name="MetadataEnhanceOptions_DoubanAccessToken_Douban_Access_Token" xml:space="preserve">
+    <value>豆瓣 Access Token（可选）</value>
+  </data>
+  <data name="MetadataEnhanceOptions_DoubanAccessToken_Used_to_assist_in_retrieving_Douban_info__Default_is_BLANK_" xml:space="preserve">
+    <value>用于通过豆瓣开放平台 V2 API（Authorization: Bearer）辅助获取豆瓣信息。配置后优先走官方接口，失败再回退网页刮削。默认留空。</value>
+  </data>
   <data name="MetadataEnhanceOptions_DoubanRatingOverride_Override_Rating_With_Douban" xml:space="preserve">
     <value>使用豆瓣评分覆盖</value>
   </data>
@@ -1130,6 +1154,9 @@
   <data name="EpisodeRefreshOption_DefaultEpisodeName_Default_Episode_Name" xml:space="preserve">
     <value>默认集标题</value>
   </data>
+  <data name="EpisodeRefreshOption_DefaultSeasonName_Default_Season_Name" xml:space="preserve">
+    <value>默认季标题</value>
+  </data>
   <data name="MetadataEnhanceOptions_EpisodeRefreshScope_Episode_refresh_scope_for_scheduled_task_and_catch_up__Default_is_no_overview_and_no_image_" xml:space="preserve">
     <value>计划任务和追更模式剧集元数据刷新的范围，涵盖所有剧集媒体库，默认为无图无简介。</value>
   </data>
@@ -1201,6 +1228,12 @@
   </data>
   <data name="RefreshPersonOption_DownloadImagesInAdvance_DownloadImagesInAdvance" xml:space="preserve">
     <value>预先下载头像</value>
+  </data>
+  <data name="RefreshPersonOption_DefaultImageRefresh_DefaultImageRefresh" xml:space="preserve">
+    <value>默认图像刷新</value>
+  </data>
+  <data name="RefreshPersonOption_FullImageRefresh_FullImageRefresh" xml:space="preserve">
+    <value>全量图像刷新</value>
   </data>
   <data name="MergeScopeOption_FolderScope_FolderScope" xml:space="preserve">
     <value>同目录合并</value>

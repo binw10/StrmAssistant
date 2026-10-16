@@ -226,7 +226,7 @@ setTimeout(() => {
 
             const string injectDoubanBadgeBootstrap = @"
 // StrmAssistant Douban badge bootstrap
-window.__saUI = { replaceUnplayedWithTotal: REPLACE_UNPLAYED_TOTAL, showLibraryItemCount: SHOW_LIB_COUNT, reverseLogLines: REVERSE_LOGS, blockSearchRecommend: BLOCK_SEARCH_RECS };
+window.__saUI = { replaceUnplayedWithTotal: REPLACE_UNPLAYED_TOTAL, showLibraryItemCount: SHOW_LIB_COUNT, reverseLogLines: REVERSE_LOGS, blockSearchRecommend: BLOCK_SEARCH_RECS, showMediaInfo: SHOW_MEDIA_INFO };
 require(['components/strmassistant/strmassistant'], function (responses) {
     var mod = responses && responses[0];
     if (mod && mod.badges) { try { mod.badges.init(); } catch (e) {} }
@@ -235,11 +235,13 @@ require(['components/strmassistant/strmassistant'], function (responses) {
 });
 ";
             var uiOptions = Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions;
+            var modOptions = Plugin.Instance.MainOptionsStore.GetOptions().ModOptions;
             var uiConfig = injectDoubanBadgeBootstrap
                 .Replace("REPLACE_UNPLAYED_TOTAL", uiOptions.ReplaceUnplayedWithTotal ? "true" : "false")
                 .Replace("SHOW_LIB_COUNT", uiOptions.ShowLibraryItemCount ? "true" : "false")
                 .Replace("REVERSE_LOGS", uiOptions.ReverseLogLines ? "true" : "false")
-                .Replace("BLOCK_SEARCH_RECS", uiOptions.BlockSearchRecommend ? "true" : "false");
+                .Replace("BLOCK_SEARCH_RECS", uiOptions.BlockSearchRecommend ? "true" : "false")
+                .Replace("SHOW_MEDIA_INFO", modOptions.ShowMediaInfo ? "true" : "false");
             ModifiedShortcutsString += uiConfig;
 
             if (dataExplorer2Assembly != null)

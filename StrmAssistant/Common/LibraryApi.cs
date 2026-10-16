@@ -1401,6 +1401,8 @@ namespace StrmAssistant.Common
                                 !IsChinese(overview)) ||
                                (episodeRefreshOptions.Contains(EpisodeRefreshOption.DefaultEpisodeName) &&
                                 IsDefaultChineseEpisodeName(name)) ||
+                               (episodeRefreshOptions.Contains(EpisodeRefreshOption.DefaultSeasonName) &&
+                                LanguageUtility.IsDefaultSeasonName(item.Season?.Name)) ||
                                (episodeRefreshOptions.Contains(EpisodeRefreshOption.ReplaceCapturedImage) &&
                                 dimensionsMatch);
 

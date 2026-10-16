@@ -41,6 +41,75 @@ namespace StrmAssistant.Common
 
             /// <summary>蓝光为 playlist 总时长（秒）；无法计算时为 0。</summary>
             public double DurationSeconds;
+
+            /// <summary>MPLS STN_table 解析出的主音轨（语言/编码/声道）；可能为空。</summary>
+            public List<MplsStreamInfo> AudioStreams = new List<MplsStreamInfo>();
+
+            /// <summary>MPLS STN_table 解析出的字幕（语言）；可能为空。</summary>
+            public List<MplsStreamInfo> SubtitleStreams = new List<MplsStreamInfo>();
+
+            /// <summary>MPLS PlayListMark 解析出的章节（秒，升序，首个通常为 0）；可能为空。</summary>
+            public List<double> Chapters = new List<double>();
+        }
+
+        /// <summary>
+        /// STN_table 中一条基本流（primary audio / PG / IG / secondary 等）的语言与编码信息。
+        /// 仅承载 MPLS 能提供的字段；ffprobe 侧的宽度/高度/时长等由探测器补充。
+        /// </summary>
+        internal sealed class MplsStreamInfo
+        {
+            /// <summary>基本流 PID（包标识）。</summary>
+            public int Pid;
+
+            /// <summary>BD-ROM 层面的流类型，如 Audio/Subtitle。</summary>
+            public BlurayStreamKind Kind;
+
+            /// <summary>编码类型（coding_type），如 AC3/DTS/TrueHD/PG 等。</summary>
+            public BlurayCodingType Coding;
+
+            /// <summary>编码类型原始值（codint_type 4bit）。</summary>
+            public int CodingRaw;
+
+            /// <summary>语言码（ISO 639-2，3 字符，小写）；未知为 "und" 或空。</summary>
+            public string Language;
+
+            /// <summary>音频：声道数（1~8），未知为 0。</summary>
+            public int Channels;
+
+            /// <summary>音频：采样率（Hz），未知为 0。</summary>
+            public int SampleRate;
+
+            public override string ToString() =>
+                $"{Kind}/{Coding} pid={Pid} lang={Language} ch={Channels}";
+        }
+
+        internal enum BlurayStreamKind
+        {
+            Unknown = 0,
+            Audio = 1,
+            Subtitle = 2,
+            Interactive = 3,
+            Text = 4
+        }
+
+        internal enum BlurayCodingType
+        {
+            Unknown = 0,
+            Ac3,
+            Dts,
+            TrueHd,
+            Eac3,
+            Pcm,     // LPCM
+            DtsHd,
+            DtsHdMa,
+            DtsHdHra,
+            DtsHdLbr,
+            DtsExpress,
+            Dsd,
+            Pg,      // PGS 字幕
+            Ig,      // 交互图形
+            Text,    // ASCII text subtitle
+            Other
         }
 
         /// <summary>打开本地 ISO 文件解析正片；失败返回 null。</summary>
@@ -122,6 +191,10 @@ namespace StrmAssistant.Common
                 var clip = best.Clips.OrderByDescending(c => c.Duration).First();
                 var relative = BlurayStreamDir + "\\" + clip.Name + ".m2ts";
 
+                // 选中的 playlist 携带的 STN_table / 章节，供上层补全音轨、字幕与章节
+                var streams = best.Streams;
+                var chapters = best.Chapters;
+
                 if (fs.FileExists(relative))
                 {
                     return new TitleInfo
@@ -129,7 +202,10 @@ namespace StrmAssistant.Common
                         IsBluray = true,
                         RelativePath = relative,
                         SourceName = best.Name,
-                        DurationSeconds = best.TotalSeconds
+                        DurationSeconds = best.TotalSeconds,
+                        AudioStreams = streams.Where(s => s.Kind == BlurayStreamKind.Audio).ToList(),
+                        SubtitleStreams = streams.Where(s => s.Kind == BlurayStreamKind.Subtitle).ToList(),
+                        Chapters = chapters
                     };
                 }
 
@@ -179,20 +255,36 @@ namespace StrmAssistant.Common
             public string Name;
             public double TotalSeconds;
             public List<ClipEntry> Clips = new List<ClipEntry>();
+
+            /// <summary>STN_table 中解析出的基本流（音轨 + 字幕）。</summary>
+            public List<MplsStreamInfo> Streams = new List<MplsStreamInfo>();
+
+            /// <summary>PlayListMark 解析出的章节时间点（秒，升序）。</summary>
+            public List<double> Chapters = new List<double>();
         }
 
         private sealed class ClipEntry
         {
             public string Name;
             public double Duration;
+
+            /// <summary>该 PlayItem 在 MPLS 文件内的绝对起始偏移（指向 itemLength 字段）。</summary>
+            public int ItemStart;
         }
 
         /// <summary>
-        /// 轻量 MPLS 解析（MPLS0100/0200/0300）：
-        /// 头 8 字节 magic + <c>PlayList_start_address</c>（偏移 8，大端 4 字节）；
+        /// 轻量 MPLS 解析（MPLS0100/0200/0300）。
+        ///
+        /// 头部（8 字节 magic 之后均为大端）：
+        /// <c>PlayList_start_address</c>(4) <c>PlayListMark_start_address</c>(4) ...
         /// PlayList = 长度4 + 保留2 + PlayItem 数2 + SubPath 数2；
-        /// 每个 PlayItem = 长度2 + Clip 名5 + codec4 + 保留1 + 标志/still2 + in_time4 + out_time4（其后按长度跳过）。
-        /// in/out 时间戳为 45kHz。本实现只取「playlist 总时长」与「最长 PlayItem 的 Clip 名」，不解析流表。
+        /// 每个 PlayItem = 长度2 + Clip 名5 + codec4 + 保留1 + 标志/still2 + in_time4 + out_time4
+        ///                + STN_table_start_address2 + STN_table_length2 + ...（其后按长度跳过）。
+        /// STN_table = 长度2 + 保留2 + 基本流条目数2 + 每条目 [长度2 + 保留1 + 流PID2 + 子路径数1 + 子路径项...]
+        ///             + 各流的 Stream_attributes（音频/字幕语言、编码、声道等）。
+        /// PlayListMark = 长度4 + 保留1 + mark 数2 + 每条 [保留1 + 标志1 + mark_type1 + PlayItem_ref2
+        ///                + timestamp4 + duration4 + entry_ES_PID2]。
+        /// 所有 MPLS 时间戳为 45kHz。
         /// </summary>
         private static PlaylistEntry ParsePlaylist(string name, byte[] data)
         {
@@ -203,41 +295,313 @@ namespace StrmAssistant.Common
 
             var pos = 8;
             var playlistStart = ReadUInt32(data, ref pos);
+            var playlistMarkStart = ReadUInt32(data, ref pos);
             if (playlistStart + 10u > (uint)data.Length) return null;
 
+            var entry = new PlaylistEntry { Name = name };
+
+            // ---- PlayList（PlayItem 列表 + 各 item 的 STN_table）----
             pos = (int)playlistStart;
             ReadUInt32(data, ref pos);                  // PlayList 长度
             ReadUInt16(data, ref pos);                  // 保留
             var itemCount = ReadUInt16(data, ref pos);  // PlayItem 数
             ReadUInt16(data, ref pos);                  // SubPath 数
 
-            var entry = new PlaylistEntry { Name = name };
-
             for (var i = 0; i < itemCount; i++)
             {
                 if (pos + 22 > data.Length) return null;
 
                 var itemStart = pos;
-                var itemLength = ReadUInt16(data, ref pos);
+                var itemLength = ReadUInt16(data, ref pos);   // PlayItem 长度（含其后的 STN_table）
                 var clipName = ReadAscii(data, 5, ref pos);
-                ReadAscii(data, 4, ref pos);            // codec identifier，正常为 M2TS
-                pos++;                                  // 保留
-                pos += 2;                               // 标志（bit4 = 多角度）+ still mode
+                ReadAscii(data, 4, ref pos);                  // codec identifier，正常为 M2TS
+                pos++;                                        // 保留
+                pos += 2;                                     // 标志（bit4 = 多角度）+ still mode
 
                 var inTime = ReadUInt32(data, ref pos) / TicksPerSecond;
                 var outTime = ReadUInt32(data, ref pos) / TicksPerSecond;
                 var duration = Math.Max(0, outTime - inTime);
 
-                entry.Clips.Add(new ClipEntry { Name = clipName, Duration = duration });
+                if (pos + 4 > data.Length) return null;
+                var stnStart = ReadUInt16(data, ref pos);     // STN_table_start_address（相对 PlayItem 起点）
+                var stnLength = ReadUInt16(data, ref pos);    // STN_table_length
+
+                entry.Clips.Add(new ClipEntry
+                {
+                    Name = clipName,
+                    Duration = duration,
+                    ItemStart = itemStart
+                });
                 entry.TotalSeconds += duration;
+
+                // 只解析最长 PlayItem 的 STN_table（正片的流表；多 PlayItem 时后续项通常为分部）
+                if (stnLength > 0)
+                {
+                    try
+                    {
+                        ParseStnTable(data, itemStart + stnStart, stnLength, entry.Streams);
+                    }
+                    catch (Exception e)
+                    {
+                        Log($"STN_table parse failed in {name}: {e.Message}");
+                    }
+                }
 
                 var next = itemStart + 2 + itemLength;
                 if (next <= itemStart || next > data.Length) return null;
                 pos = next;
             }
 
+            // ---- PlayListMark（章节）----
+            if (playlistMarkStart > 0 && playlistMarkStart + 6u < (uint)data.Length)
+            {
+                try
+                {
+                    ParsePlayListMark(data, (int)playlistMarkStart, entry);
+                }
+                catch (Exception e)
+                {
+                    Log($"PlayListMark parse failed in {name}: {e.Message}");
+                }
+            }
+
             return entry;
         }
+
+        // ================= STN_table =================
+
+        /// <summary>
+        /// 解析 STN_table：
+        /// 长度2 + 保留2 + 基本流条目数 num_stream2，接着 num_stream 个
+        /// [stream_entry 长度2 + 保留1 + 流PID2 + 子路径数1 + (子路径项 长度1 + 类型1 + 保留1 + 子Clip名5 + codec4)]
+        /// 之后依次是 stream_attributes（与前面流一一对应）：
+        /// 音频 Stream_attributes：长度1 + 保留1 + coding_type(4bit)/format(4bit) + format/rate(4bit)/channel(4bit) + lang3
+        ///                         + 保留2（+ 若 coding=0x5(DTS_HD) 等再带 extension，见下）
+        /// PG/Text Stream_attributes：长度1 + 保留1 + coding_type(高4bit)/... + lang3
+        /// </summary>
+        private static void ParseStnTable(byte[] data, int stnStart, int stnLength, List<MplsStreamInfo> output)
+        {
+            if (stnStart <= 0 || stnStart >= data.Length) return;
+            var end = Math.Min(stnStart + stnLength, data.Length);
+
+            var pos = stnStart;
+            if (pos + 6 > end) return;
+
+            ReadUInt16(data, ref pos);                 // STN_table 长度
+            ReadUInt16(data, ref pos);                 // 保留
+            var numStream = ReadUInt16(data, ref pos); // 基本流条目数
+
+            // 先收集 stream_entry 头部的 PID + 子路径标记
+            var entries = new List<(int Pid, bool HasSubPath)>(numStream);
+
+            for (var i = 0; i < numStream; i++)
+            {
+                if (pos + 4 > end) return;
+
+                var entryLen = data[pos];   // stream_entry 长度（不含自身）
+                pos += 1;
+                pos += 1;                   // 保留
+                var pid = ReadUInt16(data, ref pos);
+                var subPathCount = pos < end ? data[pos] : 0;
+                pos += 1;
+
+                var hasSubPath = subPathCount > 0;
+
+                // 跳过子路径项：每项 = 长度1 + 类型1 + 保留1 + 子Clip名5 + codec4 + refsToSTCseqID 变长
+                for (var s = 0; s < subPathCount && pos < end; s++)
+                {
+                    var subLen = data[pos];  // 子路径项长度（不含自身）
+                    pos += 1 + subLen;
+                }
+
+                entries.Add((pid, hasSubPath));
+
+                // 条目整体长度校验（entry 内部已按字段推进，这里仅保护不越界）
+                if (pos > end) pos = end;
+                _ = entryLen;
+            }
+
+            if (pos + 2 > end) return;
+            var numStream2 = ReadUInt16(data, ref pos); // 与 numStream 相同（冗余字段）
+
+            // 逐条解析 stream_attributes，与 entries 一一对应
+            for (var i = 0; i < entries.Count && i < numStream2; i++)
+            {
+                if (pos + 1 > end) return;
+
+                var attrLen = data[pos];   // stream_attributes 长度（不含自身）
+                var attrStart = pos + 1;
+                var attrEnd = Math.Min(attrStart + attrLen, end);
+
+                var info = ParseStreamAttributes(data, attrStart, attrEnd, entries[i].Pid);
+                if (info != null) output.Add(info);
+
+                pos = attrEnd;
+                if (pos <= attrStart) return; // 防死循环
+            }
+        }
+
+        /// <summary>
+        /// 解析单条 stream_attributes：
+        /// 保留1 + coding_type/format 字节 + (format/rate|channel) 字节 + 语言3。
+        /// coding_type 高 4 位，低 4 位为 format。
+        /// </summary>
+        private static MplsStreamInfo ParseStreamAttributes(byte[] data, int start, int end, int pid)
+        {
+            if (start + 1 > end) return null;
+
+            var pos = start;
+            pos += 1;                                  // 保留
+            if (pos + 1 > end) return null;
+
+            var codingByte = pos < end ? data[pos++] : 0;    // coding_type(高4) | format(低4)
+            var coding = (codingByte >> 4) & 0x0F;
+            var format = codingByte & 0x0F;
+
+            if (pos + 1 > end) return null;
+
+            var second = pos < end ? data[pos++] : 0;        // format(高4) | rate(低4)  或  channel 相关
+            var channelByte = (second >> 4) & 0x0F;
+            var rateByte = second & 0x0F;
+
+            var language = pos + 3 <= end ? ReadAscii(data, 3, ref pos) : string.Empty;
+            language = NormalizeLanguage(language);
+
+            var info = new MplsStreamInfo
+            {
+                Pid = pid,
+                CodingRaw = coding,
+                Language = language,
+                Coding = MapCoding(coding, out var kind)
+            };
+            info.Kind = kind;
+
+            switch (kind)
+            {
+                case BlurayStreamKind.Audio:
+                    info.Channels = MapChannels(channelByte);
+                    info.SampleRate = MapSampleRate(rateByte);
+                    break;
+                case BlurayStreamKind.Subtitle:
+                case BlurayStreamKind.Text:
+                    // 字幕：coding 高 4 位在部分版本位于 byte0，这里已取 codingByte
+                    info.Coding = MapSubtitleCoding(coding, format);
+                    info.Kind = BlurayStreamKind.Subtitle;
+                    break;
+            }
+
+            return info;
+        }
+
+        private static BlurayCodingType MapCoding(int coding, out BlurayStreamKind kind)
+        {
+            switch (coding)
+            {
+                case 0x01: kind = BlurayStreamKind.Audio; return BlurayCodingType.Other;       // MPEG audio
+                case 0x03: kind = BlurayStreamKind.Audio; return BlurayCodingType.Pcm;
+                case 0x04: kind = BlurayStreamKind.Audio; return BlurayCodingType.Ac3;
+                case 0x05: kind = BlurayStreamKind.Audio; return BlurayCodingType.Dts;
+                case 0x06: kind = BlurayStreamKind.Audio; return BlurayCodingType.TrueHd;
+                case 0x07: kind = BlurayStreamKind.Audio; return BlurayCodingType.Eac3;
+                case 0x08: kind = BlurayStreamKind.Audio; return BlurayCodingType.DtsHdHra;
+                case 0x09: kind = BlurayStreamKind.Audio; return BlurayCodingType.DtsHdMa;
+                case 0x0A: kind = BlurayStreamKind.Audio; return BlurayCodingType.DtsHdLbr;
+                case 0x0B: kind = BlurayStreamKind.Audio; return BlurayCodingType.DtsExpress;
+                case 0x0C: kind = BlurayStreamKind.Audio; return BlurayCodingType.Dsd;
+                case 0x90: kind = BlurayStreamKind.Subtitle; return BlurayCodingType.Pg;
+                case 0x91: kind = BlurayStreamKind.Subtitle; return BlurayCodingType.Ig;
+                case 0x92: kind = BlurayStreamKind.Text; return BlurayCodingType.Text;
+                default: kind = BlurayStreamKind.Unknown; return BlurayCodingType.Unknown;
+            }
+        }
+
+        private static BlurayCodingType MapSubtitleCoding(int coding, int format) => coding switch
+        {
+            0x90 => BlurayCodingType.Pg,
+            0x91 => BlurayCodingType.Ig,
+            0x92 => BlurayCodingType.Text,
+            _ => BlurayCodingType.Pg
+        };
+
+        // ================= PlayListMark（章节） =================
+
+        /// <summary>
+        /// 解析 PlayListMark：长度4 + 保留1 + mark 数2，之后每条 mark 16 字节：
+        /// 保留1 + 标志1 + mark_type1 + PlayItem_ref2 + timestamp4 + duration4 + entry_ES_PID2。
+        /// mark_type = 1 为章节标记（entry mark）。其余（如 0=PlayList mark / link point）不计入章节。
+        /// 时间戳 45kHz → 秒。
+        /// </summary>
+        private static void ParsePlayListMark(byte[] data, int markStart, PlaylistEntry entry)
+        {
+            if (markStart <= 0 || markStart + 6 > data.Length) return;
+
+            var pos = markStart;
+            ReadUInt32(data, ref pos);              // PlayListMark 长度
+            pos += 1;                               // 保留
+            if (pos + 2 > data.Length) return;
+            var markCount = ReadUInt16(data, ref pos);
+
+            var marks = new List<double>(markCount);
+
+            for (var i = 0; i < markCount; i++)
+            {
+                if (pos + 14 > data.Length) break;
+
+                pos += 1;                            // 保留
+                var flags = data[pos++];             // 标志
+                var markType = data[pos++];          // mark_type
+                ReadUInt16(data, ref pos);           // PlayItem_ref
+                var timestamp = ReadUInt32(data, ref pos) / TicksPerSecond;
+                ReadUInt32(data, ref pos);           // duration
+                ReadUInt16(data, ref pos);           // entry_ES_PID
+
+                // mark_type: 1 = entry mark（章节）
+                if (markType == 1) marks.Add(timestamp);
+            }
+
+            marks.Sort();
+            entry.Chapters = marks;
+        }
+
+        // ================= 语言与属性映射 =================
+
+        /// <summary>把 3 字符语言码规范化为小写；全 0 或非法返回 "und"。</summary>
+        private static string NormalizeLanguage(string raw)
+        {
+            if (string.IsNullOrEmpty(raw)) return "und";
+
+            var cleaned = raw.Trim('\0', ' ');
+            if (cleaned.Length == 0) return "und";
+
+            // 全 0 字节 / 非 ASCII 可打印 → 未知
+            if (cleaned.All(c => c == '\0' || c < 0x21 || c > 0x7E)) return "und";
+
+            var lower = cleaned.ToLowerInvariant();
+            return lower == "und" ? "und" : lower;
+        }
+
+        /// <summary>音频声道数：BD 音频 attribute 的 channel 编码（0b0001=1ch ... 0b0111=8ch）。</summary>
+        private static int MapChannels(int channelCode) => channelCode switch
+        {
+            1 => 1,
+            2 => 2,
+            3 => 3,
+            4 => 4,
+            5 => 5,
+            6 => 6,
+            7 => 8,
+            8 => 2,   // 立体声（按规范保留）
+            _ => 0
+        };
+
+        /// <summary>音频采样率：rate code → Hz。</summary>
+        private static int MapSampleRate(int rateCode) => rateCode switch
+        {
+            1 => 48000,
+            4 => 96000,
+            5 => 192000,
+            _ => 0
+        };
 
         private static ushort ReadUInt16(byte[] data, ref int pos)
         {

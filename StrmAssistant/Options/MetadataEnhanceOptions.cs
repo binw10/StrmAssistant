@@ -26,7 +26,11 @@ namespace StrmAssistant.Options
         [DescriptionL("RefreshPersonOption_ExcludeIfChinese_ExcludeIfChinese", typeof(Resources))]
         ExcludeIfChinese,
         [DescriptionL("RefreshPersonOption_DownloadImagesInAdvance_DownloadImagesInAdvance", typeof(Resources))]
-        DownloadImagesInAdvance
+        DownloadImagesInAdvance,
+        [DescriptionL("RefreshPersonOption_DefaultImageRefresh_DefaultImageRefresh", typeof(Resources))]
+        DefaultImageRefresh,
+        [DescriptionL("RefreshPersonOption_FullImageRefresh_FullImageRefresh", typeof(Resources))]
+        FullImageRefresh
     }
 
     public class MetadataEnhanceOptions : EditableOptionsBase
@@ -111,6 +115,11 @@ namespace StrmAssistant.Options
         [DescriptionL("MetadataEnhanceOptions_DoubanCookie_Optional_Douban_cookie_for_anti_crawler_verification__Default_is_empty_", typeof(Resources))]
         [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
         public string DoubanCookie { get; set; } = string.Empty;
+
+        [DisplayNameL("MetadataEnhanceOptions_DoubanAccessToken_Douban_Access_Token", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_DoubanAccessToken_Used_to_assist_in_retrieving_Douban_info__Default_is_BLANK_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
+        public string DoubanAccessToken { get; set; } = string.Empty;
 
         [DisplayNameL("MetadataEnhanceOptions_DoubanRatingOverride_Override_Rating_With_Douban", typeof(Resources))]
         [DescriptionL("MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_with_Douban_rating__Default_is_OFF_", typeof(Resources))]
@@ -241,6 +250,8 @@ namespace StrmAssistant.Options
             NonChineseOverview,
             [DescriptionL("EpisodeRefreshOption_DefaultEpisodeName_Default_Episode_Name", typeof(Resources))]
             DefaultEpisodeName,
+            [DescriptionL("EpisodeRefreshOption_DefaultSeasonName_Default_Season_Name", typeof(Resources))]
+            DefaultSeasonName,
             [DescriptionL("EpisodeRefreshOption_ReplaceCapturedImage_Replace_Captured_Image", typeof(Resources))]
             ReplaceCapturedImage
         }

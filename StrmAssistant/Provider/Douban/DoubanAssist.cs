@@ -133,6 +133,12 @@ namespace StrmAssistant.Provider.Douban
         private const string SparqlUrl = "https://query.wikidata.org/sparql";
         private const string DoubanProviderId = "Douban";
 
+        // 豆瓣开放平台 V2 API（PRO 同构）：配置 DoubanAccessToken 后优先走官方接口，
+        // 可绕过网页端风控，且返回结构化 JSON。未配置 Token 时回退到 movie.douban.com 网页刮削。
+        private const string DoubanV2BaseUrl = "https://api.douban.com/v2";
+        private const string DoubanV2MoviePath = "/movie/{0}";
+        private const string DoubanV2TvPath = "/tv/{0}";
+
         private static readonly TimeSpan RequestInterval = TimeSpan.FromSeconds(2);
         private static readonly TimeSpan CacheDuration = TimeSpan.FromDays(7);
         private static readonly TimeSpan BreakerCooldown = TimeSpan.FromHours(6);
@@ -970,6 +976,26 @@ namespace StrmAssistant.Provider.Douban
 
             if (IsBreakerEngaged()) return null;
 
+            // 优先走豆瓣开放平台 V2 API（若已配置 Access Token）。
+            var accessToken = Plugin.Instance.MetadataEnhanceStore.GetOptions().DoubanAccessToken;
+            if (!string.IsNullOrWhiteSpace(accessToken))
+            {
+                var apiSubject = await FetchSubjectViaApiAsync(subjectId, accessToken.Trim(), cancellationToken)
+                    .ConfigureAwait(false);
+                if (apiSubject != null)
+                {
+                    SetCache(key, apiSubject);
+                    if (apiSubject.Rating.HasValue)
+                    {
+                        RecordRatingSnapshot(subjectId, apiSubject.Rating.Value, apiSubject.Votes);
+                    }
+
+                    return apiSubject;
+                }
+
+                _logger.Info("DoubanAssist - V2 API failed for {0}, falling back to HTML scraping", subjectId);
+            }
+
             var html = await RequestAsync($"{BaseUrl}/subject/{subjectId}/", cancellationToken).ConfigureAwait(false);
             if (html == null) return null;
 
@@ -994,6 +1020,110 @@ namespace StrmAssistant.Provider.Douban
             }
 
             return subject;
+        }
+
+        /// <summary>
+        /// 通过豆瓣开放平台 V2 API 拉取条目（需 Access Token）。
+        /// 先按电影 /movie/{id} 尝试，失败再按剧集 /tv/{id} 尝试。任何异常均返回 null 以触发网页回退。
+        /// </summary>
+        private async Task<DoubanSubject> FetchSubjectViaApiAsync(string subjectId, string accessToken,
+            CancellationToken cancellationToken)
+        {
+            var subject = await TryFetchV2Async(string.Format(DoubanV2MoviePath, subjectId), accessToken, cancellationToken)
+                              .ConfigureAwait(false)
+                          ?? await TryFetchV2Async(string.Format(DoubanV2TvPath, subjectId), accessToken, cancellationToken)
+                              .ConfigureAwait(false);
+
+            if (subject != null) subject.SubjectId = subjectId;
+            return subject;
+        }
+
+        private async Task<DoubanSubject> TryFetchV2Async(string path, string accessToken,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var requestOptions = new HttpRequestOptions
+                {
+                    Url = DoubanV2BaseUrl + path,
+                    CancellationToken = cancellationToken,
+                    AcceptHeader = "application/json",
+                    BufferContent = true,
+                    UserAgent = Plugin.Instance.UserAgent
+                };
+                requestOptions.RequestHeaders["Authorization"] = "Bearer " + accessToken;
+
+                using var response = await _httpClient.SendAsync(requestOptions, "GET").ConfigureAwait(false);
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    _logger.Debug("DoubanAssist - V2 {0} returned {1}", path, response.StatusCode);
+                    return null;
+                }
+
+                await using var contentStream = response.Content;
+                var payload = _jsonSerializer.DeserializeFromStream<DoubanV2Subject>(contentStream);
+                if (payload == null || string.IsNullOrEmpty(payload.id)) return null;
+
+                var subject = new DoubanSubject
+                {
+                    Summary = payload.intro
+                };
+
+                if (payload.rating != null && payload.rating.value > 0)
+                {
+                    subject.Rating = payload.rating.value;
+                }
+
+                if (payload.rating != null && payload.rating.count > 0)
+                {
+                    subject.Votes = payload.rating.count;
+                }
+
+                if (payload.genres != null)
+                {
+                    subject.Genres = payload.genres.Where(g => !string.IsNullOrWhiteSpace(g))
+                        .Select(g => g.Trim()).ToList();
+                }
+
+                if (payload.countries != null)
+                {
+                    subject.Countries = payload.countries.Where(c => !string.IsNullOrWhiteSpace(c))
+                        .Select(c => c.Trim()).ToList();
+                }
+
+                if (payload.languages != null)
+                {
+                    subject.Languages = payload.languages.Where(l => !string.IsNullOrWhiteSpace(l))
+                        .Select(l => l.Trim()).ToList();
+                }
+
+                return subject;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                _logger.Debug("DoubanAssist - V2 request failed for {0}: {1}", path, e.Message);
+                return null;
+            }
+        }
+
+        private class DoubanV2Subject
+        {
+            public string id { get; set; }
+            public string intro { get; set; }
+            public DoubanV2Rating rating { get; set; }
+            public List<string> genres { get; set; }
+            public List<string> countries { get; set; }
+            public List<string> languages { get; set; }
+        }
+
+        private class DoubanV2Rating
+        {
+            public double value { get; set; }
+            public long count { get; set; }
         }
 
         private static DoubanSubject ParseSubject(string subjectId, string html)

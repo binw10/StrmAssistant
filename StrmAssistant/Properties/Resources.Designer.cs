@@ -179,6 +179,15 @@ namespace StrmAssistant.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Default Season Name.
+        /// </summary>
+        public static string EpisodeRefreshOption_DefaultSeasonName_Default_Season_Name {
+            get {
+                return ResourceManager.GetString("EpisodeRefreshOption_DefaultSeasonName_Default_Season_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to No Image.
         /// </summary>
         public static string EpisodeRefreshOption_NoImage_No_Image {
@@ -889,6 +898,24 @@ namespace StrmAssistant.Properties {
         public static string MetadataEnhanceOptions_DoubanCookie_Optional_Douban_cookie_for_anti_crawler_verification__Default_is_empty_ {
             get {
                 return ResourceManager.GetString("MetadataEnhanceOptions_DoubanCookie_Optional_Douban_cookie_for_anti_crawler_verification__Default_is_empty_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Douban Access Token (Optional).
+        /// </summary>
+        public static string MetadataEnhanceOptions_DoubanAccessToken_Douban_Access_Token {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanAccessToken_Douban_Access_Token", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Used to assist in retrieving Douban info via the official V2 API (Authorization: Bearer). When set, the API is preferred over HTML scraping. Default is BLANK..
+        /// </summary>
+        public static string MetadataEnhanceOptions_DoubanAccessToken_Used_to_assist_in_retrieving_Douban_info__Default_is_BLANK_ {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_DoubanAccessToken_Used_to_assist_in_retrieving_Douban_info__Default_is_BLANK_", resourceCulture);
             }
         }
 
@@ -2792,6 +2819,24 @@ namespace StrmAssistant.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Default image refresh.
+        /// </summary>
+        public static string RefreshPersonOption_DefaultImageRefresh_DefaultImageRefresh {
+            get {
+                return ResourceManager.GetString("RefreshPersonOption_DefaultImageRefresh_DefaultImageRefresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Full image refresh.
+        /// </summary>
+        public static string RefreshPersonOption_FullImageRefresh_FullImageRefresh {
+            get {
+                return ResourceManager.GetString("RefreshPersonOption_FullImageRefresh_FullImageRefresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Enable Local Episode Group.
         /// </summary>
         public static string MetadataEnhanceOptions_LocalEpisodeGroup_Local_Episode_Group {
@@ -2936,6 +2981,62 @@ namespace StrmAssistant.Properties {
             get {
                 return ResourceManager.GetString("ModOptions_ExcludeOriginalTitle_Exclude_original_title_from_search__Default_is_OF" +
                         "F_", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Digits As TMDB Id.
+        /// </summary>
+        public static string ModOptions_DigitsAsTmdbId_Digits_As_Tmdb_Id {
+            get {
+                return ResourceManager.GetString("ModOptions_DigitsAsTmdbId_Digits_As_Tmdb_Id", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Treat a pure numeric search term (e.g. 550) as a TMDB id for an exact match. Default is OFF..
+        /// </summary>
+        public static string ModOptions_DigitsAsTmdbId_Treat_a_pure_numeric_search_term_as_a_TMDB_id__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("ModOptions_DigitsAsTmdbId_Treat_a_pure_numeric_search_term_as_a_TMDB_id__Default_" +
+                        "is_OFF_", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Mixed Chinese Variants.
+        /// </summary>
+        public static string ModOptions_MixedChineseVariants_Mixed_Chinese_Variants {
+            get {
+                return ResourceManager.GetString("ModOptions_MixedChineseVariants_Mixed_Chinese_Variants", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Match traditional, simplified and variant Chinese characters interchangeably in search. Default is OFF..
+        /// </summary>
+        public static string ModOptions_MixedChineseVariants_Match_traditional_simplified_and_variant_Chinese_characters_interchangeably__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("ModOptions_MixedChineseVariants_Match_traditional_simplified_and_variant_Chinese_c" +
+                        "haracters_interchangeably__Default_is_OFF_", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Media Info.
+        /// </summary>
+        public static string ModOptions_ShowMediaInfo_Show_Media_Info {
+            get {
+                return ResourceManager.GetString("ModOptions_ShowMediaInfo_Show_Media_Info", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show media info on search result items. Default is OFF..
+        /// </summary>
+        public static string ModOptions_ShowMediaInfo_Show_media_info_on_search_result_items__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("ModOptions_ShowMediaInfo_Show_media_info_on_search_result_items__Default_is_OFF_", resourceCulture);
             }
         }
         
