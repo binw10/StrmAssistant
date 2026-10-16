@@ -1,6 +1,7 @@
 # 第 4 阶段实施方案 · ISO 截图 / 章节图（Wiki#5）
 
 > **日期**：2026-10-16　**状态**：✅ 已实现并实机验证通过（IMG-1/IMG-2/IMG-4/IMG-5；决策 D1=a / D2=a / D3=b）
+> **遗留项收尾（2026-10-16 补）**：§十一 = DV P7 FEL input-seek 花屏**定论**（ffmpeg 固有 + 量化修复方案）；§十三 = IMG-5 端到端被**「MPLS 章节未消费」上游缺口阻塞**的定论。
 > **基线**：`docs/PRO功能差异全量梳理与移植计划-v8.md`（第 4 阶段）
 > **上游**：第 1 阶段（ISO-1~4）✅ `1741f6d`、第 2 阶段（MPLS 语言/章节）✅ `170cd45`、第 3 阶段（DV P7）✅ `c5dc966`、ISO 挂载释放修复 ✅ `9bd8f4e`
 > **调研环境**：Emby 4.10.1.0，库「混合内容」(`D:\视频\小号`)，样本 item 428 = `原盘\杜比视界测试：双层 FEL.iso.strm`（无海报，唯一会被截图触发的条目）
@@ -170,14 +171,62 @@ ffmpeg.exe -ss 00:00:00.520  -f mpegts -threads 1
 
 ---
 
-## 十一、观察项（非本阶段缺陷，记录备查）
+## 十一、遗留项 B 定论：DV P7 FEL 盘「非零 input seek」抽帧花屏（2026-10-16 补充实证）
 
-**DV Profile 7（FEL 双层）盘在「非零 seek」下抽帧有块状伪影。**
+> 状态：**根因已定位、方案已量化**。结论：**ffmpeg 固有行为，非插件缺陷**；已找到低风险修复路径，待决策。
 
-- 定位：`-ss` 放在 `-i` **之前**（input seek，Emby 的默认排布）→ 伪影；放在 `-i` **之后**（output seek）→ 画面干净；`-ss 0` → 干净。与 `-threads 1`、`-accurate_seek` 均无关（已对照排除）。
-- 影响面：仅本测试盘（`杜比视界测试：双层 FEL`，DV P7 FEL）。远程路径因窗口文件长度未知、ffmpeg 回退「从头解码」，反而得到干净帧。
-- 与本阶段的关系：**非本阶段引入**。改前本地 `.iso` 无法定位（抽到错误帧）、远程直接挂死（无海报）；改后二者均能正确定位并产出海报。
-- 如需进一步优化，可作为独立课题（例如把 `-ss` 移到输出侧），但需新增对 Emby 参数拼装的 patch，版本脆弱性上升，本阶段不做。
+### 11.1 复现与对照（独立 ffmpeg，脱离插件）
+
+测试素材：`杜比视界测试：双层 FEL2.iso`（本地，挂载为 `E:`）→ `E:\BDMV\STREAM\00000.m2ts`。
+ffmpeg：`embyserver-win-x64-4.10.1.0\system\ffmpeg.exe`（5.1-emby_2023_06_25_p6）。
+流结构：`index0 = hevc 3840×2160 HDR10`（BL）、`index1 = hevc 1920×1080 DolbyVision Profile 7.6`（EL/FEL）；时长 **30.667s**；关键帧 **35 个、间隔 ≈1.0s**（PTS 基址 4200s）。
+抽帧位置 `15.333s` = `max(rt×0.1, min(rt×0.5, 20s))`（rt=30.667）→ 与 Emby 自带 `GetThumbnailPositionTicks` 公式吻合。
+
+| # | 命令形态 | 结果 | 耗时 |
+|---|---|---|---|
+| T1 | `-ss 15.333` **在 `-i` 前**（input seek，Emby 现状） | **灰底 + 块状伪影**（80352 B） | 0.66s |
+| T2 | `-ss 15.333` **在 `-i` 后**（output seek） | **干净真实帧** | **26.7s** |
+| T3 | `-ss 0`（input） | 干净；与 T4 **字节完全相同**（80352→137359，`-ss 0` 被 ffmpeg 优化为空操作） | 0.43s |
+| T4 | 不 seek | 干净 | 0.44s |
+| T5 | input seek 后取连续 5 帧 | 第 1~6 帧损坏，**第 7 帧起恢复** | — |
+| T6 | input seek + `-map 0:0`（仅 BL） | **同样损坏** → 与 EL/FEL 层无关 | — |
+| T7 | input seek + `-map 0:1`（仅 EL） | 非伪影 | — |
+| T10 | input seek + `-accurate_seek` | **同样损坏** → 该开关无效 | — |
+| T14 | input seek + `-f mpegts` | **同样损坏** → 与 `-f mpegts` 无关 | — |
+| T11/T15 | input seek + **`-skip_frame nokey`** | **干净真实帧** | **0.38s** |
+| T16 | `-skip_frame nokey` @5s | 干净 | 0.30s |
+| T18 | `-skip_frame nokey` @29.9s | 有帧 | — |
+| T18b | `-skip_frame nokey` @30.5s / @30.6s | **无帧** | — |
+| T19 | **普通 input seek** @30.5s | **同样无帧** | — |
+
+**根因**：mpegts（BDMV/ISO 的 m2ts）无索引，ffmpeg input seek 按字节估算落点，**落在非 IDR 帧附近** → 解码器需重同步，seek 点后最初若干帧（本样本约 0.3~0.5s / 6 帧）解码损坏。**与插件、`-f mpegts`、DV FEL/EL 层、`-accurate_seek` 均无关**（逐项对照排除）。
+
+### 11.2 关键：Emby 真实链路下同样花屏（不是理论问题）
+
+Emby 抽帧实际使用 `-vf "thumbnail=24,format=p010,supertonemap=tonemap=hable"`。实测：
+
+| 形态 | 画面 | 耗时 |
+|---|---|---|
+| 现状（input seek + `thumbnail=24`） | **仍花屏**（窗口内全损坏，`thumbnail` 只能从损坏帧里挑） | 2.65s |
+| `-skip_frame nokey` + `thumbnail=24` | **干净** | 6.31s |
+| output seek + `thumbnail=24` | 干净 | 28.9s |
+
+→ **本地 ISO 的海报会真的变花屏**，属用户可见缺陷。
+
+### 11.3 候选方案量化
+
+| 方案 | 画面 | 速度（本样本） | 落点 | 风险 | 结论 |
+|---|---|---|---|---|---|
+| 维持 input seek（现状） | 损坏 | 2.65s | 精确 | 已存在 | 缺陷 |
+| output seek | 干净 | **28.9s**（15s 素材） | 精确 | 真实影片解码时长 ≈ 抽帧位置，**必超 Emby 5min 超时** | ❌ 不可行 |
+| **`-skip_frame nokey`** | **干净** | 6.31s | **≤1 GOP（本样本 1.0s）** | 需在 `-i` **前**注入输入参数；影响 `GetExtraInputArguments` 共享路径；与 `thumbnail=24` 有交互（帧数变多） | ✅ 可行 |
+
+**边界安全性**：普通 input seek 在 30.5s 处**同样取不到帧**（文件仅 30.667s）→ `-skip_frame nokey` **不引入新的失败面**（实测 T18b 与 T19 一致）。
+
+### 11.4 建议
+
+**建议修**，但必须**限定作用域**：`-skip_frame nokey` 只对「由 ISO 改写而来」的输入注入（判定点已有：`IsoMounter` 的挂载根 / 远程窗口临时目录），避免改变所有常规条目的抽帧行为。
+落点代价 ≤1 个关键帧间隔（典型 Blu-ray ≈1s），对海报无感知。
 
 ---
 
@@ -187,4 +236,40 @@ ffmpeg.exe -ss 00:00:00.520  -f mpegts -threads 1
 - 测试期间改动的条目海报已还原：item 424（本地 ISO，已回写原始干净帧）、item 79（已回写原图）、item 429（图片 hash 与原值一致，内容未变）。
 - item 428 **新增** Primary 海报并保留（该条目原无海报，正是本阶段修复的预期结果）。
 - 挂载已自动释放（`E:` 未挂载、挂载清单已删）；远程窗口临时文件已清理。
+
+---
+
+## 十三、遗留项 A 定论：IMG-5 端到端被「MPLS 章节未消费」阻塞（2026-10-16 补充实证）
+
+> 状态：**已定位为上游缺口，非本阶段缺陷**。IMG-5 端到端验证**在缺口关闭前无法进行**。
+
+### 13.1 现象
+
+`ExtractVideoThumbnailTask` 取项条件之一为 `HasChapterImages = false`，随后 `RefreshThumbnailImages` 用 `_itemRepository.GetChapters(item)` 取章节；**章节为空时直接 `return false`**（`VideoThumbnailApi.cs:198-205`）→ 不产生任何 BIF。
+
+实测两个 ISO 条目**均无章节**：
+
+| 来源 | 证据 |
+|---|---|
+| Emby DB | `library.db` → `Chapters3`：**item 424 / 428 无任何记录**（其余 80+ 条目均有，10 章或 16 章） |
+| 插件持久化 | `D:\视频\小号\杜比视界测试：双层 FEL2-mediainfo.json` → `"Chapters":[]` |
+
+### 13.2 根因：第 2 阶段只做了「解析」，没做「消费」
+
+该测试盘的 `BDMV\PLAYLIST\00000.mpls` **确实带 1 个 PlayListMark**（实测解析：`markType=1` entry mark、`timestamp=0x0B43E940 /45000 = 4200s` = 标题起点 0s、`numMarks=1`）。
+
+但全仓核对：
+
+- `TitleInfo.Chapters` 的**唯一赋值点**在解析器内部（`UdfTitleResolver.cs:563 entry.Chapters = marks`）；
+- **没有任何读取点** —— `IsoMounter.ResolveMountedTitle`（`:429`）/ `ResolveInProcessTitle`（`:462`）只取 `RelativePath` / `SourceName` / `DurationSeconds` / `IsBluray`，`Chapters`（及 `AudioStreams`/`SubtitleStreams`）**解析后即丢弃**；
+- 全仓 `.Chapters =` 赋值仅此一处；所有 `SaveChapters` 调用均来自通用链路（`ChapterApi` / `MediaInfoApi` 持久化-还原 / `VideoThumbnailApi` 合并回写），无一来源于 MPLS 解析结果；
+- 第 2 阶段提交 `1741f6d`（`feat(iso): 远程 ISO 探测 + MPLS 语言/章节解析`）的 diff 亦只新增解析，未新增消费。
+
+### 13.3 后果与建议
+
+- **后果**：ISO 条目永远没有章节 → **ISO 的章节图/BIF 永远不会生成**；`TitleInfo` 里解析出的音轨/字幕语言同样未被使用。
+- **对第 4 阶段的影响**：IMG-5 的「端到端」验收**被此缺口阻塞**（不是配置问题：本环境库 `EnableChapterImageExtraction=False`，且即便开启，ISO 条目仍无章节可取）。静态证明（§十 #7）依然成立且已足够。
+- **建议**：先补齐「把 MPLS 章节写入条目」的消费链路（属**第 2 阶段收尾**，价值高于第 5 阶段的 G2/G4），再回头做 IMG-5 端到端。
+
+---
 
