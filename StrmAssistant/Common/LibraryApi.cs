@@ -25,7 +25,6 @@ using System.Threading.Tasks;
 using static StrmAssistant.Common.CommonUtility;
 using static StrmAssistant.Common.LanguageUtility;
 using static StrmAssistant.Options.MediaInfoExtractOptions;
-using static StrmAssistant.Options.MetadataEnhanceOptions;
 using static StrmAssistant.Options.Utility;
 using CollectionExtensions = System.Collections.Generic.CollectionExtensions;
 
@@ -1412,17 +1411,17 @@ namespace StrmAssistant.Common
         public List<Episode> FetchEpisodeRefreshTaskItems()
         {
             var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();
-            var lookBackDays = options.EpisodeRefreshLookbackDays;
+            var lookBackDays = options.MetadataRefresh.EpisodeRefreshLookbackDays;
             _logger.Info("EpisodeRefresh - Lookback days: " + lookBackDays);
             var lookBackTime = DateTimeOffset.UtcNow.AddDays(-lookBackDays);
 
-            var episodeRefreshScope = options.EpisodeRefreshScope;
+            var episodeRefreshScope = options.MetadataRefresh.EpisodeRefreshScope;
             _logger.Info("EpisodeRefresh - Scope: " + episodeRefreshScope);
             var episodeRefreshOptions = Enum.GetValues<EpisodeRefreshOption>()
                 .Where(o => episodeRefreshScope?.Contains(o.ToString(), StringComparison.OrdinalIgnoreCase) is true)
                 .ToHashSet();
 
-            var libraryScope = options.EpisodeRefreshLibraryScope;
+            var libraryScope = options.MetadataRefresh.EpisodeRefreshLibraryScope;
             _logger.Info("EpisodeRefresh - Library scope: " + (string.IsNullOrWhiteSpace(libraryScope) ? "<all>" : libraryScope));
 
             var itemsToRefresh = _libraryManager
@@ -1472,7 +1471,7 @@ namespace StrmAssistant.Common
             _logger.Info("EpisodeRefresh - Lookback days: " + lookBackDays);
             var lookBackTime = DateTimeOffset.UtcNow.AddDays(-lookBackDays);
 
-            var episodeRefreshScope = Plugin.Instance.MetadataEnhanceStore.GetOptions().EpisodeRefreshScope;
+            var episodeRefreshScope = Plugin.Instance.MetadataEnhanceStore.GetOptions().MetadataRefresh.EpisodeRefreshScope;
             _logger.Info("EpisodeRefresh - Scope: " + episodeRefreshScope);
             var episodeRefreshOptions = Enum.GetValues<EpisodeRefreshOption>()
                 .Where(o => episodeRefreshScope?.Contains(o.ToString(), StringComparison.OrdinalIgnoreCase) is true)

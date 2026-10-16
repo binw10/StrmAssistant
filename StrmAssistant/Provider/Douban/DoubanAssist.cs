@@ -17,7 +17,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using DoubanScrapeOption = StrmAssistant.Options.MetadataEnhanceOptions.DoubanAssistScrapeOption;
+using DoubanScrapeOption = StrmAssistant.Options.DoubanAssistScrapeOption;
 
 namespace StrmAssistant.Provider.Douban
 {
@@ -391,7 +391,7 @@ namespace StrmAssistant.Provider.Douban
         private static bool IsScrapeFieldEnabled(StrmAssistant.Options.MetadataEnhanceOptions options,
             DoubanScrapeOption option)
         {
-            var scope = options.DoubanAssistScrapeScope;
+            var scope = options.DoubanAssist.DoubanAssistScrapeScope;
             if (string.IsNullOrWhiteSpace(scope)) return true;
 
             var tokens = scope.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
@@ -420,7 +420,7 @@ namespace StrmAssistant.Provider.Douban
         public async Task<bool> BuildCacheAsync(BaseItem item, CancellationToken cancellationToken)
         {
             var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();
-            if (!options.EnableDoubanAssist || item == null || item.IsLocked) return false;
+            if (!options.DoubanAssist.EnableDoubanAssist || item == null || item.IsLocked) return false;
 
             var language = ResolveMetadataLanguage(item);
             if (string.IsNullOrEmpty(language) || !language.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
@@ -479,7 +479,7 @@ namespace StrmAssistant.Provider.Douban
         {
             var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();
 
-            if (!options.EnableDoubanAssist || item == null || item.IsLocked) return;
+            if (!options.DoubanAssist.EnableDoubanAssist || item == null || item.IsLocked) return;
 
             var language = ResolveMetadataLanguage(item);
             if (string.IsNullOrEmpty(language) || !language.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
@@ -553,10 +553,10 @@ namespace StrmAssistant.Provider.Douban
                     }
                 }
 
-                if (options.DoubanRatingOverride && allowRating && subject.Rating.HasValue)
+                if (options.DoubanAssist.DoubanRatingOverride && allowRating && subject.Rating.HasValue)
                 {
                     // RatingUpdateLookbackDays：评分更新只作用于首播日期在回看期内的条目
-                    var lookbackDays = options.RatingUpdateLookbackDays;
+                    var lookbackDays = options.DoubanAssist.RatingUpdateLookbackDays;
                     var ratingAllowed = lookbackDays <= 0 || !item.PremiereDate.HasValue ||
                                         item.PremiereDate.Value >= DateTime.UtcNow.AddDays(-lookbackDays);
 
@@ -573,22 +573,22 @@ namespace StrmAssistant.Provider.Douban
                     }
                 }
 
-                var ratingInLookback = options.RatingUpdateLookbackDays <= 0 || !item.PremiereDate.HasValue ||
-                                       item.PremiereDate.Value >= DateTime.UtcNow.AddDays(-options.RatingUpdateLookbackDays);
+                var ratingInLookback = options.DoubanAssist.RatingUpdateLookbackDays <= 0 || !item.PremiereDate.HasValue ||
+                                       item.PremiereDate.Value >= DateTime.UtcNow.AddDays(-options.DoubanAssist.RatingUpdateLookbackDays);
 
-                if (ratingInLookback && allowRating && !string.IsNullOrWhiteSpace(options.MdbListApiKey))
+                if (ratingInLookback && allowRating && !string.IsNullOrWhiteSpace(options.DoubanAssist.MdbListApiKey))
                 {
-                    changed = await UpdateMdbListRatingsAsync(item, options.MdbListApiKey, cancellationToken)
+                    changed = await UpdateMdbListRatingsAsync(item, options.DoubanAssist.MdbListApiKey, cancellationToken)
                         .ConfigureAwait(false) || changed;
                 }
 
-                if (options.DoubanCastChinese && allowCast)
+                if (options.DoubanAssist.DoubanCastChinese && allowCast)
                 {
                     changed = await ApplyCastChineseNamesAsync(item, subject.SubjectId, cancellationToken)
                         .ConfigureAwait(false) || changed;
                 }
 
-                if (options.DoubanPosterFallback && allowPoster && !item.HasImage(ImageType.Primary) && suggestType == "movie")
+                if (options.DoubanAssist.DoubanPosterFallback && allowPoster && !item.HasImage(ImageType.Primary) && suggestType == "movie")
                 {
                     changed = await TrySetDoubanPosterAsync(item, subject.SubjectId, cancellationToken)
                         .ConfigureAwait(false) || changed;
@@ -757,7 +757,7 @@ namespace StrmAssistant.Provider.Douban
                     UserAgent = Plugin.Instance.UserAgent
                 };
 
-                var cookie = Plugin.Instance.MetadataEnhanceStore.GetOptions().DoubanCookie;
+                var cookie = Plugin.Instance.MetadataEnhanceStore.GetOptions().DoubanAssist.DoubanCookie;
                 if (!string.IsNullOrWhiteSpace(cookie))
                 {
                     requestOptions.RequestHeaders["Cookie"] = cookie.Trim();
@@ -977,7 +977,7 @@ namespace StrmAssistant.Provider.Douban
             if (IsBreakerEngaged()) return null;
 
             // 优先走豆瓣开放平台 V2 API（若已配置 Access Token）。
-            var accessToken = Plugin.Instance.MetadataEnhanceStore.GetOptions().DoubanAccessToken;
+            var accessToken = Plugin.Instance.MetadataEnhanceStore.GetOptions().DoubanAssist.DoubanAccessToken;
             if (!string.IsNullOrWhiteSpace(accessToken))
             {
                 var apiSubject = await FetchSubjectViaApiAsync(subjectId, accessToken.Trim(), cancellationToken)
@@ -1199,7 +1199,7 @@ namespace StrmAssistant.Provider.Douban
                     UserAgent = Plugin.Instance.UserAgent
                 };
 
-                var cookie = Plugin.Instance.MetadataEnhanceStore.GetOptions().DoubanCookie;
+                var cookie = Plugin.Instance.MetadataEnhanceStore.GetOptions().DoubanAssist.DoubanCookie;
                 if (!string.IsNullOrWhiteSpace(cookie))
                 {
                     requestOptions.RequestHeaders["Cookie"] = cookie.Trim();

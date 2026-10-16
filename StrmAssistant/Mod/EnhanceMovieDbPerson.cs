@@ -39,7 +39,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().EnhanceMovieDbPerson)
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().PersonEnhance.EnhanceMovieDbPerson)
             {
                 Patch();
             }

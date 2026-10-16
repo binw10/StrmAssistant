@@ -575,6 +575,33 @@
   <data name="ItemType_Season_Season" xml:space="preserve">
     <value>Season</value>
   </data>
+  <data name="MetadataEnhanceOptions_Group_AltMovieDb" xml:space="preserve">
+    <value>Alternative MovieDb</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_ChineseMetadata" xml:space="preserve">
+    <value>Chinese Metadata</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_DoubanAssist" xml:space="preserve">
+    <value>Douban Assist</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_EpisodeGroup" xml:space="preserve">
+    <value>Episode Group</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_MetadataCache" xml:space="preserve">
+    <value>Local Metadata Cache</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_MetadataRefresh" xml:space="preserve">
+    <value>Metadata Refresh</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_PersonEnhance" xml:space="preserve">
+    <value>Person Enhancement</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_PosterSort" xml:space="preserve">
+    <value>Poster &amp; Sorting</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_ScrapeOptimize" xml:space="preserve">
+    <value>Scrape Optimization</value>
+  </data>
   <data name="MetadataEnhanceOptions_MovieDbEpisodeGroup_Support_MovieDb_Episode_Group" xml:space="preserve">
     <value>Support MovieDb Episode Group</value>
   </data>
@@ -924,13 +951,37 @@
     <value>Version Display Option</value>
   </data>
   <data name="ExperienceEnhanceOptions_MultiVersionDisplayOption_Version_label_source__SystemDefault_MediaInfo_or_FileNameWithoutExtension__Default_is_MediaInfo_" xml:space="preserve">
-    <value>Version label source: SystemDefault, MediaInfo, or FileNameWithoutExtension. Default is MediaInfo.</value>
+    <value>Version label source: Default / Quality / File Name. Default is Quality.</value>
   </data>
   <data name="ExperienceEnhanceOptions_MultiVersionSortOption_Version_Sort_Option" xml:space="preserve">
     <value>Version Sort Option</value>
   </data>
   <data name="ExperienceEnhanceOptions_MultiVersionSortOption_Version_sort_order__SystemDefault_HighToLowQuality_LowToHighQuality_PathAscending_or_PathDescending__Default_is_SystemDefault_" xml:space="preserve">
-    <value>Version sort order: SystemDefault, HighToLowQuality, LowToHighQuality, PathAscending, or PathDescending. Default is SystemDefault.</value>
+    <value>Version sort order: Default / Quality (High to Low) / Quality (Low to High) / Path (Ascending) / Path (Descending). Default keeps the system order.</value>
+  </data>
+  <data name="MultiVersionDisplayOption_FileNameWithoutExtension_FileNameWithoutExtension" xml:space="preserve">
+    <value>File Name</value>
+  </data>
+  <data name="MultiVersionDisplayOption_MediaInfo_MediaInfo" xml:space="preserve">
+    <value>Quality</value>
+  </data>
+  <data name="MultiVersionDisplayOption_SystemDefault_SystemDefault" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="MultiVersionSortOption_HighToLowQuality_HighToLowQuality" xml:space="preserve">
+    <value>Quality (High to Low)</value>
+  </data>
+  <data name="MultiVersionSortOption_LowToHighQuality_LowToHighQuality" xml:space="preserve">
+    <value>Quality (Low to High)</value>
+  </data>
+  <data name="MultiVersionSortOption_PathAscending_PathAscending" xml:space="preserve">
+    <value>Path (Ascending)</value>
+  </data>
+  <data name="MultiVersionSortOption_PathDescending_PathDescending" xml:space="preserve">
+    <value>Path (Descending)</value>
+  </data>
+  <data name="MultiVersionSortOption_SystemDefault_SystemDefault" xml:space="preserve">
+    <value>Default</value>
   </data>
   <data name="ExperienceEnhanceOptions_OptimizeSubtitle_Optimize_Subtitle" xml:space="preserve">
     <value>Optimize Subtitle</value>

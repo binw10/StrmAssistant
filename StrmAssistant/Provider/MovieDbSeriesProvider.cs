@@ -34,7 +34,7 @@ namespace StrmAssistant.Provider
             EpisodeGroupResponse episodeGroupInfo = null;
             string localEpisodeGroupPath = null;
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().LocalEpisodeGroup &&
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().EpisodeGroup.LocalEpisodeGroup &&
                 EnhanceMissingEpisodes.CurrentSeriesContainingFolderPath.Value != null)
             {
                 localEpisodeGroupPath = Path.Combine(EnhanceMissingEpisodes.CurrentSeriesContainingFolderPath.Value,

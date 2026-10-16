@@ -23,7 +23,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().DefaultNewLibraryTmdb)
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().ChineseMetadata.DefaultNewLibraryTmdb)
             {
                 Patch();
             }

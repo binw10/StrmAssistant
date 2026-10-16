@@ -33,22 +33,12 @@ namespace StrmAssistant.Options
             return version.EndsWith(".0") ? version.Substring(0, version.Length - 2) : version;
         }
 
-        private static string GetVersionHash()
+        /// <summary>
+        /// 显示用版本号：只返回程序集版本（如 3.0.0.55），不再拼接 git commit hash。
+        /// </summary>
+        private static string GetVersion()
         {
-            var assembly = Assembly.GetExecutingAssembly();
-            var informationalVersion = assembly
-                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-
-            var fullVersion = NormalizeVersion(assembly.GetName().Version?.ToString());
-
-            if (informationalVersion != null)
-            {
-                var parts = informationalVersion.Split('+');
-                var shortCommitHash = parts.Length > 1 ? parts[1].Substring(0, 7) : "n/a";
-                return $"{fullVersion}+{shortCommitHash}";
-            }
-
-            return fullVersion;
+            return NormalizeVersion(Assembly.GetExecutingAssembly().GetName().Version?.ToString()) ?? "0.0.0.0";
         }
 
         public void Initialize()
@@ -58,7 +48,7 @@ namespace StrmAssistant.Options
             VersionInfoList.Add(
                 new GenericListItem
                 {
-                    PrimaryText = GetVersionHash(),
+                    PrimaryText = GetVersion(),
                     Icon = IconNames.info,
                     IconMode = ItemListIconMode.SmallRegular
                 });

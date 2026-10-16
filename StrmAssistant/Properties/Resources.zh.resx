@@ -488,6 +488,33 @@
   <data name="ItemType_Season_Season" xml:space="preserve">
     <value>季</value>
   </data>
+  <data name="MetadataEnhanceOptions_Group_AltMovieDb" xml:space="preserve">
+    <value>备用 MovieDb 接口</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_ChineseMetadata" xml:space="preserve">
+    <value>中文元数据</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_DoubanAssist" xml:space="preserve">
+    <value>豆瓣辅助</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_EpisodeGroup" xml:space="preserve">
+    <value>剧集组</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_MetadataCache" xml:space="preserve">
+    <value>本地元数据缓存</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_MetadataRefresh" xml:space="preserve">
+    <value>元数据刷新</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_PersonEnhance" xml:space="preserve">
+    <value>人物增强</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_PosterSort" xml:space="preserve">
+    <value>海报与排序</value>
+  </data>
+  <data name="MetadataEnhanceOptions_Group_ScrapeOptimize" xml:space="preserve">
+    <value>刮削优化</value>
+  </data>
   <data name="MetadataEnhanceOptions_MovieDbEpisodeGroup_Support_MovieDb_Episode_Group" xml:space="preserve">
     <value>支持剧集组刮削 TMDB</value>
   </data>
@@ -837,13 +864,37 @@
     <value>版本显示方式</value>
   </data>
   <data name="ExperienceEnhanceOptions_MultiVersionDisplayOption_Version_label_source__SystemDefault_MediaInfo_or_FileNameWithoutExtension__Default_is_MediaInfo_" xml:space="preserve">
-    <value>版本标签来源：SystemDefault（默认）/MediaInfo（画质）/FileNameWithoutExtension（文件名）。默认 MediaInfo。</value>
+    <value>版本标签来源：默认 / 画质 / 文件名。默认「画质」。</value>
   </data>
   <data name="ExperienceEnhanceOptions_MultiVersionSortOption_Version_Sort_Option" xml:space="preserve">
     <value>版本排序方式</value>
   </data>
   <data name="ExperienceEnhanceOptions_MultiVersionSortOption_Version_sort_order__SystemDefault_HighToLowQuality_LowToHighQuality_PathAscending_or_PathDescending__Default_is_SystemDefault_" xml:space="preserve">
-    <value>版本排序：SystemDefault（默认）/HighToLowQuality（画质降序）/LowToHighQuality（画质升序）/PathAscending（路径升序）/PathDescending（路径降序）。默认 SystemDefault。</value>
+    <value>版本排序：默认 / 画质降序 / 画质升序 / 路径升序 / 路径降序。（默认保持系统顺序）</value>
+  </data>
+  <data name="MultiVersionDisplayOption_FileNameWithoutExtension_FileNameWithoutExtension" xml:space="preserve">
+    <value>文件名</value>
+  </data>
+  <data name="MultiVersionDisplayOption_MediaInfo_MediaInfo" xml:space="preserve">
+    <value>画质</value>
+  </data>
+  <data name="MultiVersionDisplayOption_SystemDefault_SystemDefault" xml:space="preserve">
+    <value>默认</value>
+  </data>
+  <data name="MultiVersionSortOption_HighToLowQuality_HighToLowQuality" xml:space="preserve">
+    <value>画质降序</value>
+  </data>
+  <data name="MultiVersionSortOption_LowToHighQuality_LowToHighQuality" xml:space="preserve">
+    <value>画质升序</value>
+  </data>
+  <data name="MultiVersionSortOption_PathAscending_PathAscending" xml:space="preserve">
+    <value>路径升序</value>
+  </data>
+  <data name="MultiVersionSortOption_PathDescending_PathDescending" xml:space="preserve">
+    <value>路径降序</value>
+  </data>
+  <data name="MultiVersionSortOption_SystemDefault_SystemDefault" xml:space="preserve">
+    <value>默认</value>
   </data>
   <data name="ExperienceEnhanceOptions_OptimizeSubtitle_Optimize_Subtitle" xml:space="preserve">
     <value>优化字幕下载</value>

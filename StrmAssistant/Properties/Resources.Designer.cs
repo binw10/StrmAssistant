@@ -2912,6 +2912,87 @@ namespace StrmAssistant.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Support MovieDb Episode Group.
         /// </summary>
+        /// <summary>
+        ///   Looks up a localized string similar to Alternative MovieDb.
+        /// </summary>
+        public static string MetadataEnhanceOptions_Group_AltMovieDb {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_Group_AltMovieDb", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Chinese Metadata.
+        /// </summary>
+        public static string MetadataEnhanceOptions_Group_ChineseMetadata {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_Group_ChineseMetadata", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Douban Assist.
+        /// </summary>
+        public static string MetadataEnhanceOptions_Group_DoubanAssist {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_Group_DoubanAssist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Episode Group.
+        /// </summary>
+        public static string MetadataEnhanceOptions_Group_EpisodeGroup {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_Group_EpisodeGroup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Local Metadata Cache.
+        /// </summary>
+        public static string MetadataEnhanceOptions_Group_MetadataCache {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_Group_MetadataCache", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Metadata Refresh.
+        /// </summary>
+        public static string MetadataEnhanceOptions_Group_MetadataRefresh {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_Group_MetadataRefresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Person Enhancement.
+        /// </summary>
+        public static string MetadataEnhanceOptions_Group_PersonEnhance {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_Group_PersonEnhance", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Poster &amp; Sorting.
+        /// </summary>
+        public static string MetadataEnhanceOptions_Group_PosterSort {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_Group_PosterSort", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Scrape Optimization.
+        /// </summary>
+        public static string MetadataEnhanceOptions_Group_ScrapeOptimize {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_Group_ScrapeOptimize", resourceCulture);
+            }
+        }
+        
         public static string MetadataEnhanceOptions_MovieDbEpisodeGroup_Support_MovieDb_Episode_Group {
             get {
                 return ResourceManager.GetString("MetadataEnhanceOptions_MovieDbEpisodeGroup_Support_MovieDb_Episode_Group", resourceCulture);
@@ -2925,6 +3006,78 @@ namespace StrmAssistant.Properties {
             get {
                 return ResourceManager.GetString("MetadataEnhanceOptions_MovieDbEpisodeGroup_Support_MovieDb_episode_group_scrappin" +
                         "g_for_TV_shows__Default_is_OFF_", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Default.
+        /// </summary>
+        public static string MultiVersionDisplayOption_SystemDefault_SystemDefault {
+            get {
+                return ResourceManager.GetString("MultiVersionDisplayOption_SystemDefault_SystemDefault", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Quality.
+        /// </summary>
+        public static string MultiVersionDisplayOption_MediaInfo_MediaInfo {
+            get {
+                return ResourceManager.GetString("MultiVersionDisplayOption_MediaInfo_MediaInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File Name.
+        /// </summary>
+        public static string MultiVersionDisplayOption_FileNameWithoutExtension_FileNameWithoutExtension {
+            get {
+                return ResourceManager.GetString("MultiVersionDisplayOption_FileNameWithoutExtension_FileNameWithoutExtension", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Default.
+        /// </summary>
+        public static string MultiVersionSortOption_SystemDefault_SystemDefault {
+            get {
+                return ResourceManager.GetString("MultiVersionSortOption_SystemDefault_SystemDefault", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Quality (High to Low).
+        /// </summary>
+        public static string MultiVersionSortOption_HighToLowQuality_HighToLowQuality {
+            get {
+                return ResourceManager.GetString("MultiVersionSortOption_HighToLowQuality_HighToLowQuality", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Quality (Low to High).
+        /// </summary>
+        public static string MultiVersionSortOption_LowToHighQuality_LowToHighQuality {
+            get {
+                return ResourceManager.GetString("MultiVersionSortOption_LowToHighQuality_LowToHighQuality", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Path (Ascending).
+        /// </summary>
+        public static string MultiVersionSortOption_PathAscending_PathAscending {
+            get {
+                return ResourceManager.GetString("MultiVersionSortOption_PathAscending_PathAscending", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Path (Descending).
+        /// </summary>
+        public static string MultiVersionSortOption_PathDescending_PathDescending {
+            get {
+                return ResourceManager.GetString("MultiVersionSortOption_PathDescending_PathDescending", resourceCulture);
             }
         }
         

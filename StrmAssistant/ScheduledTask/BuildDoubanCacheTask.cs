@@ -33,7 +33,7 @@ namespace StrmAssistant.ScheduledTask
             _logger.Info("DoubanCacheBuild - Scheduled Task Execute");
 
             var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();
-            if (!options.EnableDoubanAssist)
+            if (!options.DoubanAssist.EnableDoubanAssist)
             {
                 _logger.Warn("DoubanCacheBuild - EnableDoubanAssist is off, task aborted");
                 progress.Report(100.0);

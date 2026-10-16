@@ -323,13 +323,13 @@ namespace StrmAssistant
             FfmpegPathOverride.Apply(mediaInfoOptions.CustomProbePath, mediaInfoOptions.CustomEncoderPath);
 
             var metadataCacheOptions = MetadataEnhanceStore.GetOptions();
-            if (metadataCacheOptions.IsMetadataCacheEnabled)
+            if (metadataCacheOptions.MetadataCache.IsMetadataCacheEnabled)
             {
                 var (cacheOk, cacheError) =
-                    LocalMetadataCache.ValidateAndInitialize(metadataCacheOptions.MetadataCacheRootFolder);
+                    LocalMetadataCache.ValidateAndInitialize(metadataCacheOptions.MetadataCache.MetadataCacheRootFolder);
                 Logger.Info(cacheOk
-                    ? $"MetadataCache - initialized at {LocalMetadataCache.Root} (mode={metadataCacheOptions.MetadataCacheMode})"
-                    : $"MetadataCache - root invalid ({cacheError}): {metadataCacheOptions.MetadataCacheRootFolder}");
+                    ? $"MetadataCache - initialized at {LocalMetadataCache.Root} (mode={metadataCacheOptions.MetadataCache.MetadataCacheMode})"
+                    : $"MetadataCache - root invalid ({cacheError}): {metadataCacheOptions.MetadataCache.MetadataCacheRootFolder}");
             }
 
             if (MainOptionsStore.GetOptions().GeneralOptions.CatchupMode) QueueManager.Initialize();
@@ -409,7 +409,7 @@ namespace StrmAssistant
                     mediaInfoOptions.ForcePortraitPoster, mediaInfoOptions.EnsureEpisode16x9));
             }
 
-            if (MetadataEnhanceStore.GetOptions().EnableDoubanAssist)
+            if (MetadataEnhanceStore.GetOptions().DoubanAssist.EnableDoubanAssist)
             {
                 if (e.Argument.Item is Movie doubanMovie)
                 {
@@ -583,7 +583,7 @@ namespace StrmAssistant
 
         private void OnItemUpdated(object sender, ItemChangeEventArgs e)
         {
-            if (MetadataEnhanceStore.GetOptions().EnhanceMovieDbPerson &&
+            if (MetadataEnhanceStore.GetOptions().PersonEnhance.EnhanceMovieDbPerson &&
                 (e.UpdateReason & (ItemUpdateType.MetadataDownload | ItemUpdateType.MetadataImport)) != 0)
             {
                 if (e.Item is Season season && season.IndexNumber > 0)

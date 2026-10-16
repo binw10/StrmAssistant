@@ -44,7 +44,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().EnhanceNfoMetadata)
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().PosterSort.EnhanceNfoMetadata)
             {
                 Patch();
             }

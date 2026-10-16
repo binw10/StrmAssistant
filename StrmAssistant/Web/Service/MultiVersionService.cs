@@ -7,6 +7,7 @@ using StrmAssistant.Web.Api;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static StrmAssistant.Options.MultipleVersionsOptions;
 
 namespace StrmAssistant.Web.Service
 {
@@ -116,10 +117,10 @@ namespace StrmAssistant.Web.Service
 
                     var label = uiOptions.MultiVersionDisplayOption switch
                     {
-                        "FileNameWithoutExtension" => string.IsNullOrEmpty(path)
+                        MultiVersionDisplayOption.FileNameWithoutExtension => string.IsNullOrEmpty(path)
                             ? null
                             : System.IO.Path.GetFileNameWithoutExtension(path),
-                        "SystemDefault" => null,
+                        MultiVersionDisplayOption.SystemDefault => null,
                         _ => GetQualityLabel(video?.Height) // MediaInfo（默认）
                     };
 
@@ -139,14 +140,14 @@ namespace StrmAssistant.Web.Service
 
             sources = uiOptions.MultiVersionSortOption switch
             {
-                "HighToLowQuality" => sources
+                MultiVersionSortOption.HighToLowQuality => sources
                     .OrderByDescending(s => QualityScore(s.Height, s.Hdr))
                     .ToList(),
-                "LowToHighQuality" => sources
+                MultiVersionSortOption.LowToHighQuality => sources
                     .OrderBy(s => QualityScore(s.Height, s.Hdr))
                     .ToList(),
-                "PathAscending" => sources.OrderBy(s => s.Path, StringComparer.OrdinalIgnoreCase).ToList(),
-                "PathDescending" => sources.OrderByDescending(s => s.Path, StringComparer.OrdinalIgnoreCase).ToList(),
+                MultiVersionSortOption.PathAscending => sources.OrderBy(s => s.Path, StringComparer.OrdinalIgnoreCase).ToList(),
+                MultiVersionSortOption.PathDescending => sources.OrderByDescending(s => s.Path, StringComparer.OrdinalIgnoreCase).ToList(),
                 _ => sources // SystemDefault：保持 Emby 原始顺序
             };
 

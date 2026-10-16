@@ -2,13 +2,13 @@ using Emby.Media.Common.Extensions;
 using Emby.Web.GenericEdit.PropertyDiff;
 using MediaBrowser.Common;
 using MediaBrowser.Model.Logging;
+using MediaBrowser.Model.Serialization;
 using StrmAssistant.Common;
 using StrmAssistant.Mod;
 using StrmAssistant.Options.UIBaseClasses.Store;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static StrmAssistant.Options.MetadataEnhanceOptions;
 
 namespace StrmAssistant.Options.Store
 {
@@ -21,6 +21,11 @@ namespace StrmAssistant.Options.Store
         {
             _logger= logger;
 
+            // 3.0.0.55：设置项由平铺改为 9 个分组嵌套。先把旧配置就地迁移为嵌套结构，
+            // 否则旧键会被反序列化忽略、用户设置静默回退为默认值。
+            MetadataEnhanceOptionsMigration.MigrateIfNeeded(OptionsFilePath,
+                applicationHost.Resolve<IJsonSerializer>(), logger);
+
             FileSaved += OnFileSaved;
             FileSaving += OnFileSaving;
         }
@@ -31,52 +36,52 @@ namespace StrmAssistant.Options.Store
         {
             if (e.Options is MetadataEnhanceOptions options)
             {
-                if (string.IsNullOrEmpty(options.FallbackLanguages))
+                if (string.IsNullOrEmpty(options.ChineseMetadata.FallbackLanguages))
                 {
-                    options.FallbackLanguages = "zh-sg";
+                    options.ChineseMetadata.FallbackLanguages = "zh-sg";
                 }
                 else
                 {
-                    var languages = options.FallbackLanguages.Split(',');
-                    options.FallbackLanguages = string.Join(",",
+                    var languages = options.ChineseMetadata.FallbackLanguages.Split(',');
+                    options.ChineseMetadata.FallbackLanguages = string.Join(",",
                         LanguageUtility.MovieDbFallbackLanguages
                             .Where(l => languages.Contains(l, StringComparer.OrdinalIgnoreCase))
                             .Select(l => l.ToLowerInvariant()));
                 }
 
-                if (string.IsNullOrEmpty(options.TvdbFallbackLanguages))
+                if (string.IsNullOrEmpty(options.ChineseMetadata.TvdbFallbackLanguages))
                 {
-                    options.TvdbFallbackLanguages = "zhtw";
+                    options.ChineseMetadata.TvdbFallbackLanguages = "zhtw";
                 }
                 else
                 {
-                    var languages = options.TvdbFallbackLanguages.Split(',');
-                    options.TvdbFallbackLanguages = string.Join(",",
+                    var languages = options.ChineseMetadata.TvdbFallbackLanguages.Split(',');
+                    options.ChineseMetadata.TvdbFallbackLanguages = string.Join(",",
                         LanguageUtility.TvdbFallbackLanguages
                             .Where(l => languages.Contains(l, StringComparer.OrdinalIgnoreCase)));
                 }
 
-                if (string.IsNullOrEmpty(options.EpisodeRefreshScope))
+                if (string.IsNullOrEmpty(options.MetadataRefresh.EpisodeRefreshScope))
                 {
-                    options.EpisodeRefreshScope = EpisodeRefreshOption.NoOverview.ToString();
+                    options.MetadataRefresh.EpisodeRefreshScope = EpisodeRefreshOption.NoOverview.ToString();
                 }
 
-                options.AltMovieDbApiUrl =
-                    !string.IsNullOrWhiteSpace(options.AltMovieDbApiUrl)
-                        ? options.AltMovieDbApiUrl.Trim().TrimEnd('/')
-                        : options.AltMovieDbApiUrl?.Trim();
+                options.AltMovieDb.AltMovieDbApiUrl =
+                    !string.IsNullOrWhiteSpace(options.AltMovieDb.AltMovieDbApiUrl)
+                        ? options.AltMovieDb.AltMovieDbApiUrl.Trim().TrimEnd('/')
+                        : options.AltMovieDb.AltMovieDbApiUrl?.Trim();
 
-                options.AltMovieDbImageUrl =
-                    !string.IsNullOrWhiteSpace(options.AltMovieDbImageUrl)
-                        ? options.AltMovieDbImageUrl.Trim().TrimEnd('/')
-                        : options.AltMovieDbImageUrl?.Trim();
+                options.AltMovieDb.AltMovieDbImageUrl =
+                    !string.IsNullOrWhiteSpace(options.AltMovieDb.AltMovieDbImageUrl)
+                        ? options.AltMovieDb.AltMovieDbImageUrl.Trim().TrimEnd('/')
+                        : options.AltMovieDb.AltMovieDbImageUrl?.Trim();
 
                 var changes = PropertyChangeDetector.DetectObjectPropertyChanges(MetadataEnhanceOptions, options);
                 var changedProperties = new HashSet<string>(changes.Select(c => c.PropertyName));
 
-                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.ChineseMovieDb)))
+                if (changedProperties.Contains(nameof(ChineseMetadataOptions.ChineseMovieDb)))
                 {
-                    if (options.ChineseMovieDb)
+                    if (options.ChineseMetadata.ChineseMovieDb)
                     {
                         PatchManager.ChineseMovieDb.Patch();
                     }
@@ -86,9 +91,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.ChineseTvdb)))
+                if (changedProperties.Contains(nameof(ChineseMetadataOptions.ChineseTvdb)))
                 {
-                    if (options.ChineseTvdb)
+                    if (options.ChineseMetadata.ChineseTvdb)
                     {
                         PatchManager.ChineseTvdb.Patch();
                     }
@@ -98,9 +103,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.MovieDbEpisodeGroup)))
+                if (changedProperties.Contains(nameof(EpisodeGroupOptions.MovieDbEpisodeGroup)))
                 {
-                    if (options.MovieDbEpisodeGroup)
+                    if (options.EpisodeGroup.MovieDbEpisodeGroup)
                     {
                         PatchManager.MovieDbEpisodeGroup.Patch();
                     }
@@ -110,10 +115,11 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.OptimizeMovieDbEpisodeScraping)) ||
-                    changedProperties.Contains(nameof(MetadataEnhanceOptions.DisableEpisodeImageScraping)))
+                if (changedProperties.Contains(nameof(ScrapeOptimizeOptions.OptimizeMovieDbEpisodeScraping)) ||
+                    changedProperties.Contains(nameof(ScrapeOptimizeOptions.DisableEpisodeImageScraping)))
                 {
-                    if (options.OptimizeMovieDbEpisodeScraping || options.DisableEpisodeImageScraping)
+                    if (options.ScrapeOptimize.OptimizeMovieDbEpisodeScraping ||
+                        options.ScrapeOptimize.DisableEpisodeImageScraping)
                     {
                         PatchManager.OptimizeMovieDbEpisodeScraping.Patch();
                     }
@@ -123,9 +129,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.EnhanceMovieDbPerson)))
+                if (changedProperties.Contains(nameof(PersonEnhanceOptions.EnhanceMovieDbPerson)))
                 {
-                    if (options.EnhanceMovieDbPerson)
+                    if (options.PersonEnhance.EnhanceMovieDbPerson)
                     {
                         PatchManager.EnhanceMovieDbPerson.Patch();
                     }
@@ -135,9 +141,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.ClearTagline)))
+                if (changedProperties.Contains(nameof(PosterSortOptions.ClearTagline)))
                 {
-                    if (options.ClearTagline && options.IsModSupported)
+                    if (options.PosterSort.ClearTagline && options.IsModSupported)
                     {
                         PatchManager.ClearTagline.Patch();
                     }
@@ -147,9 +153,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.PreferTraditionalChinese)))
+                if (changedProperties.Contains(nameof(ChineseMetadataOptions.PreferTraditionalChinese)))
                 {
-                    if (options.PreferTraditionalChinese && options.IsModSupported)
+                    if (options.ChineseMetadata.PreferTraditionalChinese && options.IsModSupported)
                     {
                         PatchManager.PreferTraditionalChinese.Patch();
                     }
@@ -159,9 +165,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.DefaultNewLibraryTmdb)))
+                if (changedProperties.Contains(nameof(ChineseMetadataOptions.DefaultNewLibraryTmdb)))
                 {
-                    if (options.DefaultNewLibraryTmdb && options.IsModSupported)
+                    if (options.ChineseMetadata.DefaultNewLibraryTmdb && options.IsModSupported)
                     {
                         PatchManager.DefaultTmdbLibrary.Patch();
                     }
@@ -171,25 +177,25 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.AltMovieDbConfig)))
+                if (changedProperties.Contains(nameof(AltMovieDbOptions.AltMovieDbConfig)))
                 {
-                    if (options.AltMovieDbConfig)
+                    if (options.AltMovieDb.AltMovieDbConfig)
                     {
                         PatchManager.AltMovieDbConfig.PatchApiUrl();
-                        if (!string.IsNullOrEmpty(options.AltMovieDbImageUrl))
+                        if (!string.IsNullOrEmpty(options.AltMovieDb.AltMovieDbImageUrl))
                             PatchManager.AltMovieDbConfig.PatchImageUrl();
                     }
                     else
                     {
                         PatchManager.AltMovieDbConfig.UnpatchApiUrl();
-                        if (!string.IsNullOrEmpty(MetadataEnhanceOptions.AltMovieDbImageUrl))
+                        if (!string.IsNullOrEmpty(MetadataEnhanceOptions.AltMovieDb.AltMovieDbImageUrl))
                             PatchManager.AltMovieDbConfig.UnpatchImageUrl();
                     }
                 }
 
-                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.AltMovieDbImageUrl)))
+                if (changedProperties.Contains(nameof(AltMovieDbOptions.AltMovieDbImageUrl)))
                 {
-                    if (!string.IsNullOrEmpty(options.AltMovieDbImageUrl))
+                    if (!string.IsNullOrEmpty(options.AltMovieDb.AltMovieDbImageUrl))
                     {
                         PatchManager.AltMovieDbConfig.PatchImageUrl();
                     }
@@ -199,9 +205,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.PreferOriginalPoster)))
+                if (changedProperties.Contains(nameof(PosterSortOptions.PreferOriginalPoster)))
                 {
-                    if (options.PreferOriginalPoster)
+                    if (options.PosterSort.PreferOriginalPoster)
                     {
                         PatchManager.PreferOriginalPoster.Patch();
                     }
@@ -211,9 +217,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.PinyinSortName)))
+                if (changedProperties.Contains(nameof(PosterSortOptions.PinyinSortName)))
                 {
-                    if (options.PinyinSortName)
+                    if (options.PosterSort.PinyinSortName)
                     {
                         PatchManager.PinyinSortName.Patch();
                     }
@@ -223,9 +229,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.EnhanceNfoMetadata)))
+                if (changedProperties.Contains(nameof(PosterSortOptions.EnhanceNfoMetadata)))
                 {
-                    if (options.EnhanceNfoMetadata)
+                    if (options.PosterSort.EnhanceNfoMetadata)
                     {
                         PatchManager.EnhanceNfoMetadata.Patch();
                     }
@@ -235,22 +241,23 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(MetadataEnhanceOptions.MetadataCacheMode)) ||
-                    changedProperties.Contains(nameof(MetadataEnhanceOptions.MetadataCacheRootFolder)))
+                if (changedProperties.Contains(nameof(MetadataCacheOptions.MetadataCacheMode)) ||
+                    changedProperties.Contains(nameof(MetadataCacheOptions.MetadataCacheRootFolder)))
                 {
-                    if (options.IsMetadataCacheEnabled)
+                    if (options.MetadataCache.IsMetadataCacheEnabled)
                     {
-                        var (ok, error) = LocalMetadataCache.ValidateAndInitialize(options.MetadataCacheRootFolder);
+                        var (ok, error) = LocalMetadataCache.ValidateAndInitialize(
+                            options.MetadataCache.MetadataCacheRootFolder);
                         if (ok)
                         {
                             _logger.Info("MetadataCache - root initialized: {0} (mode={1})",
-                                LocalMetadataCache.Root, options.MetadataCacheMode);
+                                LocalMetadataCache.Root, options.MetadataCache.MetadataCacheMode);
                             PatchManager.LocalTmdbCache.Patch();
                         }
                         else
                         {
                             _logger.Warn("MetadataCache - root invalid ({0}): {1}", error,
-                                options.MetadataCacheRootFolder);
+                                options.MetadataCache.MetadataCacheRootFolder);
                             PatchManager.LocalTmdbCache.Unpatch();
                         }
                     }
@@ -267,58 +274,61 @@ namespace StrmAssistant.Options.Store
         {
             if (e.Options is MetadataEnhanceOptions options)
             {
-                _logger.Info("ChineseMovieDb is set to {0}", options.ChineseMovieDb);
-                _logger.Info("MovieDbFallbackLanguages is set to {0}", options.FallbackLanguages);
-                _logger.Info("ChineseTvdb is set to {0}", options.ChineseTvdb);
-                _logger.Info("TvdbFallbackLanguages is set to {0}", options.TvdbFallbackLanguages);
-                _logger.Info("BlockNonFallbackLanguage is set to {0}", options.BlockNonFallbackLanguage);
-                _logger.Info("MovieDbEpisodeGroup is set to {0}", options.MovieDbEpisodeGroup);
-                _logger.Info("OptimizeMovieDbEpisodeScraping is set to {0}", options.OptimizeMovieDbEpisodeScraping);
-                _logger.Info("DisableMovieDbEpisodeScrapingFallback is set to {0}", options.DisableMovieDbEpisodeScrapingFallback);
-                _logger.Info("DisableEpisodeImageScraping is set to {0}", options.DisableEpisodeImageScraping);
-                _logger.Info("LocalEpisodeGroup is set to {0}", options.LocalEpisodeGroup);
-                _logger.Info("EnhanceMovieDbPerson is set to {0}", options.EnhanceMovieDbPerson);
-                _logger.Info("PreferOriginalPoster is set to {0}", options.PreferOriginalPoster);
-                _logger.Info("PinyinSortName is set to {0}", options.PinyinSortName);
-                _logger.Info("EnhanceNfoMetadata is set to {0}", options.EnhanceNfoMetadata);
+                _logger.Info("ChineseMovieDb is set to {0}", options.ChineseMetadata.ChineseMovieDb);
+                _logger.Info("MovieDbFallbackLanguages is set to {0}", options.ChineseMetadata.FallbackLanguages);
+                _logger.Info("ChineseTvdb is set to {0}", options.ChineseMetadata.ChineseTvdb);
+                _logger.Info("TvdbFallbackLanguages is set to {0}", options.ChineseMetadata.TvdbFallbackLanguages);
+                _logger.Info("BlockNonFallbackLanguage is set to {0}", options.ChineseMetadata.BlockNonFallbackLanguage);
+                _logger.Info("MovieDbEpisodeGroup is set to {0}", options.EpisodeGroup.MovieDbEpisodeGroup);
+                _logger.Info("OptimizeMovieDbEpisodeScraping is set to {0}",
+                    options.ScrapeOptimize.OptimizeMovieDbEpisodeScraping);
+                _logger.Info("DisableMovieDbEpisodeScrapingFallback is set to {0}",
+                    options.ScrapeOptimize.DisableMovieDbEpisodeScrapingFallback);
+                _logger.Info("DisableEpisodeImageScraping is set to {0}",
+                    options.ScrapeOptimize.DisableEpisodeImageScraping);
+                _logger.Info("LocalEpisodeGroup is set to {0}", options.EpisodeGroup.LocalEpisodeGroup);
+                _logger.Info("EnhanceMovieDbPerson is set to {0}", options.PersonEnhance.EnhanceMovieDbPerson);
+                _logger.Info("PreferOriginalPoster is set to {0}", options.PosterSort.PreferOriginalPoster);
+                _logger.Info("PinyinSortName is set to {0}", options.PosterSort.PinyinSortName);
+                _logger.Info("EnhanceNfoMetadata is set to {0}", options.PosterSort.EnhanceNfoMetadata);
                 var episodeRefreshScope = string.Join(", ",
-                    options.EpisodeRefreshScope?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    options.MetadataRefresh.EpisodeRefreshScope?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                         .Select(s =>
                             Enum.TryParse(s.Trim(), true, out EpisodeRefreshOption option)
                                 ? Utility.GetEnumDescription(option)
                                 : null)
                         .Where(d => d != null) ?? Enumerable.Empty<string>());
                 _logger.Info("EpisodeRefreshScope is set to {0}", episodeRefreshScope);
-                _logger.Info("EpisodeRefreshLookbackDays is set to {0}", options.EpisodeRefreshLookbackDays);
-                _logger.Info("AltMovieDbConfig is set to {0}", options.AltMovieDbConfig);
+                _logger.Info("EpisodeRefreshLookbackDays is set to {0}", options.MetadataRefresh.EpisodeRefreshLookbackDays);
+                _logger.Info("AltMovieDbConfig is set to {0}", options.AltMovieDb.AltMovieDbConfig);
                 _logger.Info("AltMovieDbApiUrl is set to {0}",
-                    !string.IsNullOrEmpty(options.AltMovieDbApiUrl)
-                        ? options.AltMovieDbApiUrl
+                    !string.IsNullOrEmpty(options.AltMovieDb.AltMovieDbApiUrl)
+                        ? options.AltMovieDb.AltMovieDbApiUrl
                         : "EMPTY");
                 _logger.Info("AltMovieDbImageUrl is set to {0}",
-                    !string.IsNullOrEmpty(options.AltMovieDbImageUrl)
-                        ? options.AltMovieDbImageUrl
+                    !string.IsNullOrEmpty(options.AltMovieDb.AltMovieDbImageUrl)
+                        ? options.AltMovieDb.AltMovieDbImageUrl
                         : "EMPTY");
                 _logger.Info("AltMovieDbApiKey is set to {0}",
-                    !string.IsNullOrEmpty(options.AltMovieDbApiKey)
-                        ? options.AltMovieDbApiKey
+                    !string.IsNullOrEmpty(options.AltMovieDb.AltMovieDbApiKey)
+                        ? options.AltMovieDb.AltMovieDbApiKey
                         : "EMPTY");
-                _logger.Info("EnableDoubanAssist is set to {0}", options.EnableDoubanAssist);
+                _logger.Info("EnableDoubanAssist is set to {0}", options.DoubanAssist.EnableDoubanAssist);
                 _logger.Info("DoubanCookie is set to {0}",
-                    !string.IsNullOrEmpty(options.DoubanCookie) ? "CONFIGURED" : "EMPTY");
+                    !string.IsNullOrEmpty(options.DoubanAssist.DoubanCookie) ? "CONFIGURED" : "EMPTY");
                 _logger.Info("DoubanAccessToken is set to {0}",
-                    !string.IsNullOrEmpty(options.DoubanAccessToken) ? "CONFIGURED" : "EMPTY");
-                _logger.Info("DoubanRatingOverride is set to {0}", options.DoubanRatingOverride);
-                _logger.Info("DoubanCastChinese is set to {0}", options.DoubanCastChinese);
-                _logger.Info("DoubanPosterFallback is set to {0}", options.DoubanPosterFallback);
+                    !string.IsNullOrEmpty(options.DoubanAssist.DoubanAccessToken) ? "CONFIGURED" : "EMPTY");
+                _logger.Info("DoubanRatingOverride is set to {0}", options.DoubanAssist.DoubanRatingOverride);
+                _logger.Info("DoubanCastChinese is set to {0}", options.DoubanAssist.DoubanCastChinese);
+                _logger.Info("DoubanPosterFallback is set to {0}", options.DoubanAssist.DoubanPosterFallback);
                 _logger.Info("EpisodeRefreshLibraryScope is set to {0}",
-                    !string.IsNullOrEmpty(options.EpisodeRefreshLibraryScope)
-                        ? options.EpisodeRefreshLibraryScope
+                    !string.IsNullOrEmpty(options.MetadataRefresh.EpisodeRefreshLibraryScope)
+                        ? options.MetadataRefresh.EpisodeRefreshLibraryScope
                         : "<all>");
-                _logger.Info("MetadataCacheMode is set to {0}", options.MetadataCacheMode);
+                _logger.Info("MetadataCacheMode is set to {0}", options.MetadataCache.MetadataCacheMode);
                 _logger.Info("MetadataCacheRootFolder is set to {0}",
-                    !string.IsNullOrEmpty(options.MetadataCacheRootFolder)
-                        ? options.MetadataCacheRootFolder
+                    !string.IsNullOrEmpty(options.MetadataCache.MetadataCacheRootFolder)
+                        ? options.MetadataCache.MetadataCacheRootFolder
                         : "EMPTY");
             }
         }

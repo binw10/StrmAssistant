@@ -30,7 +30,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().ChineseTvdb)
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().ChineseMetadata.ChineseTvdb)
             {
                 Patch();
             }

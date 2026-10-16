@@ -28,7 +28,7 @@ namespace StrmAssistant.Mod
             Initialize();
 
             var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();
-            if (options.OptimizeMovieDbEpisodeScraping || options.DisableEpisodeImageScraping)
+            if (options.ScrapeOptimize.OptimizeMovieDbEpisodeScraping || options.ScrapeOptimize.DisableEpisodeImageScraping)
             {
                 Patch();
             }
@@ -70,7 +70,7 @@ namespace StrmAssistant.Mod
         private static bool EpisodeGetMetadataPrefix(RemoteMetadataFetchOptions<EpisodeInfo> options,
             CancellationToken cancellationToken, ref Task<MetadataResult<Episode>> __result)
         {
-            if (!Plugin.Instance.MetadataEnhanceStore.GetOptions().OptimizeMovieDbEpisodeScraping)
+            if (!Plugin.Instance.MetadataEnhanceStore.GetOptions().ScrapeOptimize.OptimizeMovieDbEpisodeScraping)
             {
                 return true;
             }
@@ -100,13 +100,13 @@ namespace StrmAssistant.Mod
             var enhanceOptions = Plugin.Instance.MetadataEnhanceStore.GetOptions();
 
             // 一键忽略所有集图片：直接短路，跳过按季和逐集请求
-            if (enhanceOptions.DisableEpisodeImageScraping)
+            if (enhanceOptions.ScrapeOptimize.DisableEpisodeImageScraping)
             {
                 __result = Task.FromResult<IEnumerable<RemoteImageInfo>>(Array.Empty<RemoteImageInfo>());
                 return false;
             }
 
-            if (!enhanceOptions.OptimizeMovieDbEpisodeScraping)
+            if (!enhanceOptions.ScrapeOptimize.OptimizeMovieDbEpisodeScraping)
             {
                 return true;
             }
@@ -174,7 +174,7 @@ namespace StrmAssistant.Mod
             {
                 // 季数据已成功获取但未匹配到该集：按用户开关决定是否回退到逐集请求
                 if (seasonInfo != null &&
-                    Plugin.Instance.MetadataEnhanceStore.GetOptions().DisableMovieDbEpisodeScrapingFallback)
+                    Plugin.Instance.MetadataEnhanceStore.GetOptions().ScrapeOptimize.DisableMovieDbEpisodeScrapingFallback)
                 {
                     return PrefixOutcome<MetadataResult<Episode>>.Suppress;
                 }
@@ -228,7 +228,7 @@ namespace StrmAssistant.Mod
             {
                 // 季数据已成功获取但未匹配到该集图片：按用户开关决定是否回退到逐集请求
                 if (seasonInfo != null &&
-                    Plugin.Instance.MetadataEnhanceStore.GetOptions().DisableMovieDbEpisodeScrapingFallback)
+                    Plugin.Instance.MetadataEnhanceStore.GetOptions().ScrapeOptimize.DisableMovieDbEpisodeScrapingFallback)
                 {
                     return PrefixOutcome<IEnumerable<RemoteImageInfo>>.Suppress;
                 }

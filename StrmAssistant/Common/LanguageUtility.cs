@@ -165,7 +165,7 @@ namespace StrmAssistant.Common
 
         public static List<string> GetMovieDbFallbackLanguages()
         {
-            var currentFallbackLanguages = Plugin.Instance.MetadataEnhanceStore.GetOptions().FallbackLanguages;
+            var currentFallbackLanguages = Plugin.Instance.MetadataEnhanceStore.GetOptions().ChineseMetadata.FallbackLanguages;
 
             if (string.IsNullOrWhiteSpace(currentFallbackLanguages)) return new List<string>();
 
@@ -179,7 +179,7 @@ namespace StrmAssistant.Common
 
         public static bool HasMovieDbJapaneseFallback()
         {
-            var currentFallbackLanguages = Plugin.Instance.MetadataEnhanceStore.GetOptions().FallbackLanguages;
+            var currentFallbackLanguages = Plugin.Instance.MetadataEnhanceStore.GetOptions().ChineseMetadata.FallbackLanguages;
 
             return !string.IsNullOrWhiteSpace(currentFallbackLanguages) &&
                    currentFallbackLanguages.IndexOf("ja-jp", StringComparison.OrdinalIgnoreCase) >= 0;
@@ -188,13 +188,13 @@ namespace StrmAssistant.Common
         public static bool BlockMovieDbNonFallbackLanguage(string input)
         {
             return !string.IsNullOrEmpty(input) &&
-                   Plugin.Instance.MetadataEnhanceStore.GetOptions().BlockNonFallbackLanguage &&
+                   Plugin.Instance.MetadataEnhanceStore.GetOptions().ChineseMetadata.BlockNonFallbackLanguage &&
                    (!HasMovieDbJapaneseFallback() || !IsJapanese(input));
         }
 
         public static List<string> GetTvdbFallbackLanguages()
         {
-            var currentFallbackLanguages = Plugin.Instance.MetadataEnhanceStore.GetOptions().TvdbFallbackLanguages;
+            var currentFallbackLanguages = Plugin.Instance.MetadataEnhanceStore.GetOptions().ChineseMetadata.TvdbFallbackLanguages;
 
             if (string.IsNullOrWhiteSpace(currentFallbackLanguages)) return new List<string>();
 
@@ -207,7 +207,7 @@ namespace StrmAssistant.Common
 
         public static bool HasTvdbJapaneseFallback()
         {
-            var currentFallbackLanguages = Plugin.Instance.MetadataEnhanceStore.GetOptions().TvdbFallbackLanguages;
+            var currentFallbackLanguages = Plugin.Instance.MetadataEnhanceStore.GetOptions().ChineseMetadata.TvdbFallbackLanguages;
 
             return !string.IsNullOrWhiteSpace(currentFallbackLanguages) &&
                    currentFallbackLanguages.IndexOf("jpn", StringComparison.OrdinalIgnoreCase) >= 0;
@@ -216,7 +216,7 @@ namespace StrmAssistant.Common
         public static bool BlockTvdbNonFallbackLanguage(string input)
         {
             return !string.IsNullOrEmpty(input) &&
-                   Plugin.Instance.MetadataEnhanceStore.GetOptions().BlockNonFallbackLanguage &&
+                   Plugin.Instance.MetadataEnhanceStore.GetOptions().ChineseMetadata.BlockNonFallbackLanguage &&
                    (!HasTvdbJapaneseFallback() || !IsJapanese(input));
         }
     }

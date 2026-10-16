@@ -23,7 +23,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().ClearTagline)
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().PosterSort.ClearTagline)
             {
                 Patch();
             }

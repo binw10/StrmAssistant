@@ -1,366 +1,65 @@
-using Emby.Media.Common.Extensions;
 using Emby.Web.GenericEdit;
-using Emby.Web.GenericEdit.Common;
 using Emby.Web.GenericEdit.Validation;
-using MediaBrowser.Model.Attributes;
 using MediaBrowser.Model.LocalizationAttributes;
-using StrmAssistant.Common;
 using StrmAssistant.Properties;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
-using static StrmAssistant.Common.CommonUtility;
 
 namespace StrmAssistant.Options
 {
-    public enum RefreshPersonOption
-    {
-        [DescriptionL("RefreshPersonOption_Default_Default", typeof(Resources))]
-        Default,
-        [DescriptionL("RefreshPersonOption_FullRefresh_FullRefresh", typeof(Resources))]
-        FullRefresh,
-        [DescriptionL("RefreshPersonOption_NoAdult_NoAdult", typeof(Resources))]
-        NoAdult,
-        [DescriptionL("RefreshPersonOption_ExcludeIfChinese_ExcludeIfChinese", typeof(Resources))]
-        ExcludeIfChinese,
-        [DescriptionL("RefreshPersonOption_DownloadImagesInAdvance_DownloadImagesInAdvance", typeof(Resources))]
-        DownloadImagesInAdvance,
-        [DescriptionL("RefreshPersonOption_DefaultImageRefresh_DefaultImageRefresh", typeof(Resources))]
-        DefaultImageRefresh,
-        [DescriptionL("RefreshPersonOption_FullImageRefresh_FullImageRefresh", typeof(Resources))]
-        FullImageRefresh
-    }
-
+    /// <summary>
+    /// 元数据增强设置根节点。
+    /// 所有设置项按功能拆到 9 个分组类中，本类只负责：
+    /// ① 声明分组（嵌套 <see cref="EditableOptionsBase"/> 会被 Emby 渲染成带 &lt;h2&gt; 小标题的分区）；
+    /// ② 委派各分组的 <c>Initialize()</c>（框架不会自动调用嵌套对象）；
+    /// ③ 委派各分组的 <c>Validate()</c>（框架不会自动递归校验）。
+    /// 注意：分组的属性名与分组类名不同（避免实例成员遮蔽类型名导致初始化表达式无法解析）。
+    /// </summary>
     public class MetadataEnhanceOptions : EditableOptionsBase
     {
         [DisplayNameL("PluginOptions_MetadataEnhanceOptions_Metadata_Enhance", typeof(Resources))]
         public override string EditorTitle => Resources.PluginOptions_MetadataEnhanceOptions_Metadata_Enhance;
 
-        [DisplayNameL("ModOptions_ChineseMovieDb_Chinese_MovieDb", typeof(Resources))]
-        [DescriptionL("ModOptions_ChineseMovieDb_Optimize_MovieDb_for_Chinese_metadata__Default_is_OFF_", typeof(Resources))]
-        [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
-        [Required]
-        public bool ChineseMovieDb { get; set; } = false;
+        /// <summary>中文元数据：MovieDb / Tvdb 中文回退语言、非回退语言屏蔽等。</summary>
+        [DisplayNameL("MetadataEnhanceOptions_Group_ChineseMetadata", typeof(Resources))]
+        public ChineseMetadataOptions ChineseMetadata { get; set; } = new ChineseMetadataOptions();
+
+        /// <summary>剧集组：MovieDb Episode Group 刮削与扩展信息。</summary>
+        [DisplayNameL("MetadataEnhanceOptions_Group_EpisodeGroup", typeof(Resources))]
+        public EpisodeGroupOptions EpisodeGroup { get; set; } = new EpisodeGroupOptions();
+
+        /// <summary>刮削优化：按季批量取集信息、跳过逐集回退与剧集图片请求。</summary>
+        [DisplayNameL("MetadataEnhanceOptions_Group_ScrapeOptimize", typeof(Resources))]
+        public ScrapeOptimizeOptions ScrapeOptimize { get; set; } = new ScrapeOptimizeOptions();
+
+        /// <summary>人物增强：分季演员导入、人物刷新偏好。</summary>
+        [DisplayNameL("MetadataEnhanceOptions_Group_PersonEnhance", typeof(Resources))]
+        public PersonEnhanceOptions PersonEnhance { get; set; } = new PersonEnhanceOptions();
+
+        /// <summary>豆瓣辅助：评分 / 演员 / 简介补全，MdbList 影评人评分。</summary>
+        [DisplayNameL("MetadataEnhanceOptions_Group_DoubanAssist", typeof(Resources))]
+        public DoubanAssistOptions DoubanAssist { get; set; } = new DoubanAssistOptions();
+
+        /// <summary>海报与排序：原语言海报、拼音排序名、NFO 增强导入、清除宣传语。</summary>
+        [DisplayNameL("MetadataEnhanceOptions_Group_PosterSort", typeof(Resources))]
+        public PosterSortOptions PosterSort { get; set; } = new PosterSortOptions();
+
+        /// <summary>元数据刷新：剧集刷新范围 / 回溯天数 / 生效媒体库。</summary>
+        [DisplayNameL("MetadataEnhanceOptions_Group_MetadataRefresh", typeof(Resources))]
+        public MetadataRefreshOptions MetadataRefresh { get; set; } = new MetadataRefreshOptions();
+
+        /// <summary>本地元数据缓存：缓存模式与缓存根目录。</summary>
+        [DisplayNameL("MetadataEnhanceOptions_Group_MetadataCache", typeof(Resources))]
+        public MetadataCacheOptions MetadataCache { get; set; } = new MetadataCacheOptions();
+
+        /// <summary>备用 MovieDb 接口：自定义 TMDB API / 图片地址与 API Key。</summary>
+        [DisplayNameL("MetadataEnhanceOptions_Group_AltMovieDb", typeof(Resources))]
+        public AltMovieDbOptions AltMovieDb { get; set; } = new AltMovieDbOptions();
 
         [Browsable(false)]
-        public List<EditorSelectOption> LanguageList { get; set; } = new List<EditorSelectOption>();
-
-        [DisplayNameL("ModOptions_FallbackLanguages_Fallback_Languages", typeof(Resources))]
-        [DescriptionL("ModOptions_FallbackLanguages_Fallback_languages__Default_is_zh_SG_", typeof(Resources))]
-        [EditMultilSelect]
-        [SelectItemsSource(nameof(LanguageList))]
-        [VisibleCondition(nameof(ChineseMovieDb), SimpleCondition.IsTrue)]
-        [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
-        public string FallbackLanguages { get; set; } = "zh-sg";
-
-        [DisplayNameL("MetadataEnhanceOptions_ChineseTvdb_Customize_Tvdb_Fallback_Language", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_ChineseTvdb_Try_to_get_Chinese_or_Japanese_metadata_from_Tvdb__Default_is_OFF_", typeof(Resources))]
-        [EnabledCondition(nameof(IsTvdbPluginLoaded), SimpleCondition.IsTrue)]
-        [Required]
-        public bool ChineseTvdb { get; set; } = false;
-        
-        [Browsable(false)]
-        public List<EditorSelectOption> TvdbLanguageList { get; set; } = new List<EditorSelectOption>();
-
-        [DisplayNameL("ModOptions_FallbackLanguages_Fallback_Languages", typeof(Resources))]
-        [DescriptionL("ModOptions_FallbackLanguages_Fallback_languages__Default_is_zh_SG_", typeof(Resources))]
-        [EditMultilSelect]
-        [SelectItemsSource(nameof(TvdbLanguageList))]
-        [VisibleCondition(nameof(ChineseTvdb), SimpleCondition.IsTrue)]
-        [EnabledCondition(nameof(IsTvdbPluginLoaded), SimpleCondition.IsTrue)]
-        public string TvdbFallbackLanguages { get; set; } = "zhtw,yue";
-
-        [DisplayNameL("MetadataEnhanceOptions_BlockNonFallbackLanguage_Block_Non_Fallback_Language", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_BlockNonFallbackLanguage_Block_English_such_non_fallback_language_in_overview__Default_is_OFF_", typeof(Resources))]
-        [Required]
-        [VisibleCondition(nameof(ShowBlockNonFallbackLanguage), SimpleCondition.IsTrue)]
-        public bool BlockNonFallbackLanguage { get; set; } = false;
-
-        [Browsable(false)]
-        public bool ShowBlockNonFallbackLanguage =>
-            ChineseMovieDb && IsMovieDbPluginLoaded || ChineseTvdb && IsTvdbPluginLoaded;
-
-        [DisplayNameL("MetadataEnhanceOptions_MovieDbEpisodeGroup_Support_MovieDb_Episode_Group", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_MovieDbEpisodeGroup_Support_MovieDb_episode_group_scrapping_for_TV_shows__Default_is_OFF_", typeof(Resources))]
-        [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
-        [Required]
-        public bool MovieDbEpisodeGroup { get; set; } = false;
-
-        [DisplayNameL("MetadataEnhanceOptions_LocalEpisodeGroup_Local_Episode_Group", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_LocalEpisodeGroup_Store_or_load_episode_group_info_to_from_JSON_file__Default_is_OFF_", typeof(Resources))]
-        [VisibleCondition(nameof(MovieDbEpisodeGroup), SimpleCondition.IsTrue)]
-        [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
-        public bool LocalEpisodeGroup { get; set; } = false;
-
-        [DisplayNameL("MetadataEnhanceOptions_EnableMovieDbEpisodeGroupExtendedInfo_Episode_Group_Extended_Info", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_EnableMovieDbEpisodeGroupExtendedInfo_Apply_custom_season_overview_and_air_date_fields_from_the_episode_group_json__Default_is_OFF_", typeof(Resources))]
-        [VisibleCondition(nameof(MovieDbEpisodeGroup), SimpleCondition.IsTrue)]
-        [Required]
-        public bool EnableMovieDbEpisodeGroupExtendedInfo { get; set; } = false;
-
-        [DisplayNameL("MetadataEnhanceOptions_OptimizeMovieDbEpisodeScraping_Optimize_MovieDb_Episode_Scraping", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_OptimizeMovieDbEpisodeScraping_Fetch_episode_metadata_by_season_to_reduce_TMDB_requests__Default_is_OFF_", typeof(Resources))]
-        [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
-        [Required]
-        public bool OptimizeMovieDbEpisodeScraping { get; set; } = false;
-
-        [DisplayNameL("MetadataEnhanceOptions_EnableDoubanAssist_Douban_Assist_Scraping", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_EnableDoubanAssist_After_movie_refresh_fill_missing_Chinese_overview_genres_locations_from_Douban__Default_is_OFF_", typeof(Resources))]
-        [Required]
-        public bool EnableDoubanAssist { get; set; } = false;
-
-        [DisplayNameL("MetadataEnhanceOptions_DoubanCookie_Douban_Cookie", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_DoubanCookie_Optional_Douban_cookie_for_anti_crawler_verification__Default_is_empty_", typeof(Resources))]
-        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
-        public string DoubanCookie { get; set; } = string.Empty;
-
-        [DisplayNameL("MetadataEnhanceOptions_DoubanAccessToken_Douban_Access_Token", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_DoubanAccessToken_Used_to_assist_in_retrieving_Douban_info__Default_is_BLANK_", typeof(Resources))]
-        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
-        public string DoubanAccessToken { get; set; } = string.Empty;
-
-        [DisplayNameL("MetadataEnhanceOptions_DoubanRatingOverride_Override_Rating_With_Douban", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_DoubanRatingOverride_Overwrite_CommunityRating_with_Douban_rating__Default_is_OFF_", typeof(Resources))]
-        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
-        [Required]
-        public bool DoubanRatingOverride { get; set; } = false;
-
-        /// <summary>
-        /// 豆瓣辅助可改写的字段（与 PRO 的 DoubanAssistScrapeOption 一致）。
-        /// </summary>
-        public enum DoubanAssistScrapeOption
-        {
-            [DescriptionL("DoubanAssistScrapeOption_Rating_Rating", typeof(Resources))]
-            Rating,
-            [DescriptionL("DoubanAssistScrapeOption_Cast_Cast", typeof(Resources))]
-            CastCharacter,
-            [DescriptionL("DoubanAssistScrapeOption_NameOverview_NameOverview", typeof(Resources))]
-            NameOverview,
-            [DescriptionL("DoubanAssistScrapeOption_Poster_Poster", typeof(Resources))]
-            Poster
-        }
-
-        [Browsable(false)]
-        public List<EditorSelectOption> DoubanAssistScrapeOptionList { get; set; } = new List<EditorSelectOption>();
-
-        [DisplayNameL("MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_Assist_Scope", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_DoubanAssistScrapeScope_Douban_assist_scope__Default_is_ALL_", typeof(Resources))]
-        [EditMultilSelect]
-        [SelectItemsSource(nameof(DoubanAssistScrapeOptionList))]
-        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
-        public string DoubanAssistScrapeScope { get; set; } =
-            string.Join(",", Enum.GetNames(typeof(DoubanAssistScrapeOption)));
-
-        [DisplayNameL("MetadataEnhanceOptions_MdbListApiKey_MdbList_Api_Key", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_MdbListApiKey_Optional_MdbList_API_key_used_to_refresh_critic_ratings_Rotten_Tomatoes_Metacritic_alongside_Douban_rating_updates__Default_is_empty_", typeof(Resources))]
-        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
-        public string MdbListApiKey { get; set; } = string.Empty;
-
-        [DisplayNameL("MetadataEnhanceOptions_RatingUpdateLookbackDays_Rating_Update_Lookback_Days", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_RatingUpdateLookbackDays_Douban_rating_update_lookback_days_based_on_premiere_date__0_disables_the_limit__Default_is_365_days_", typeof(Resources))]
-        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
-        [Required, MinValue(0)]
-        public int RatingUpdateLookbackDays { get; set; } = 365;
-
-        [DisplayNameL("MetadataEnhanceOptions_ClearTagline_Clear_Tagline", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_ClearTagline_Clear_taglines_populated_by_the_MovieDb_provider_on_refresh__Default_is_OFF_", typeof(Resources))]
-        [Required]
-        [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
-        public bool ClearTagline { get; set; } = false;
-
-        [DisplayNameL("MetadataEnhanceOptions_PreferTraditionalChinese_Prefer_Traditional_Chinese", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_PreferTraditionalChinese_Convert_simplified_Chinese_overviews_from_the_MovieDb_provider_to_traditional_on_refresh__Default_is_OFF_", typeof(Resources))]
-        [Required]
-        [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
-        public bool PreferTraditionalChinese { get; set; } = false;
-
-        [DisplayNameL("MetadataEnhanceOptions_DefaultNewLibraryTmdb_Default_New_Library_Tmdb", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_DefaultNewLibraryTmdb_Prefer_TheMovieDb_over_Tvdb_as_the_default_fetcher_when_creating_new_libraries__Default_is_OFF_", typeof(Resources))]
-        [Required]
-        [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
-        public bool DefaultNewLibraryTmdb { get; set; } = false;
-
-        [DisplayNameL("MetadataEnhanceOptions_DoubanCastChinese_Douban_Cast_Chinese_Names", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_DoubanCastChinese_Replace_English_actor_names_with_Douban_Chinese_names_for_matched_items__Default_is_OFF_", typeof(Resources))]
-        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
-        [Required]
-        public bool DoubanCastChinese { get; set; } = false;
-
-        [DisplayNameL("MetadataEnhanceOptions_DoubanPosterFallback_Douban_Poster_Fallback", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_DoubanPosterFallback_Set_Douban_poster_as_primary_image_when_the_movie_has_none__Default_is_OFF_", typeof(Resources))]
-        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
-        [Required]
-        public bool DoubanPosterFallback { get; set; } = false;
-
-        [DisplayNameL("MetadataEnhanceOptions_DisableMovieDbEpisodeScrapingFallback_Disable_Per_Episode_Fallback", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_DisableMovieDbEpisodeScrapingFallback_Skip_per_episode_requests_when_season_data_is_empty__Default_is_OFF_", typeof(Resources))]
-        [VisibleCondition(nameof(OptimizeMovieDbEpisodeScraping), SimpleCondition.IsTrue)]
-        [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
-        [Required]
-        public bool DisableMovieDbEpisodeScrapingFallback { get; set; } = false;
-
-        [DisplayNameL("MetadataEnhanceOptions_DisableEpisodeImageScraping_Disable_Episode_Image_Scraping", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_DisableEpisodeImageScraping_Skip_all_episode_image_requests_to_speed_up_library_import__Default_is_OFF_", typeof(Resources))]
-        [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
-        [Required]
-        public bool DisableEpisodeImageScraping { get; set; } = false;
-
-        [DisplayNameL("MetadataEnhanceOptions_EnhanceMovieDbPerson_Enhance_MovieDb_Person", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_EnhanceMovieDbPerson_Import_season_cast_and_update_series_people__Default_is_OFF_", typeof(Resources))]
-        [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
-        [Required]
-        public bool EnhanceMovieDbPerson { get; set; } = false;
-        
-        [Browsable(false)]
-        public List<EditorSelectOption> RefreshPersonOptionList { get; set; } = new List<EditorSelectOption>();
-
-        [DisplayNameL("MetadataEnhanceOptions_RefreshPersonMode_Refresh_Person_Preferences", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_RefreshPersonMode_By_default__refresh_metadata__30_days_old__excluding_adults_and_those_with_an_avatar_", typeof(Resources))]
-        [EditMultilSelect]
-        [SelectItemsSource(nameof(RefreshPersonOptionList))]
-        [VisibleCondition(nameof(EnhanceMovieDbPerson), SimpleCondition.IsTrue)]
-        public string RefreshPersonMode { get; set; } = RefreshPersonOption.Default.ToString();
-
-        [DisplayNameL("ModOptions_OriginalPoster_Original_Poster", typeof(Resources))]
-        [DescriptionL("ModOptions_OriginalPoster_Show_original_poster_based_on_original_language__Default_is_OFF_", typeof(Resources))]
-        [Required]
-        [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
-        public bool PreferOriginalPoster { get; set; } = false;
-
-        [DisplayNameL("ModOptions_PinyinSortName_Pinyin_Sort_Title", typeof(Resources))]
-        [DescriptionL("ModOptions_PinyinSortName_Auto_generate_pinyin_initials_as_sort_title", typeof(Resources))]
-        [EnabledCondition(nameof(IsModSupported), SimpleCondition.IsTrue)]
-        public bool PinyinSortName { get; set; } = false;
-
-        [DisplayNameL("MetadataEnhanceOptions_EnhanceNfoMetadata_Nfo_Metadata_Import_Enhanced", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_EnhanceNfoMetadata_Add_support_to_import_actor_image_url__Default_is_OFF_", typeof(Resources))]
-        [EnabledCondition(nameof(IsNfoMetadataPluginLoaded), SimpleCondition.IsTrue)]
-        [Required]
-        public bool EnhanceNfoMetadata { get; set; } = false;
-        
-        public enum EpisodeRefreshOption
-        {
-            [DescriptionL("EpisodeRefreshOption_NoOverview_No_Overview", typeof(Resources))]
-            NoOverview,
-            [DescriptionL("EpisodeRefreshOption_NoImage_No_Image", typeof(Resources))]
-            NoImage,
-            [DescriptionL("EpisodeRefreshOption_NonChineseOverview_Non_Chinese_Overview", typeof(Resources))]
-            NonChineseOverview,
-            [DescriptionL("EpisodeRefreshOption_DefaultEpisodeName_Default_Episode_Name", typeof(Resources))]
-            DefaultEpisodeName,
-            [DescriptionL("EpisodeRefreshOption_DefaultSeasonName_Default_Season_Name", typeof(Resources))]
-            DefaultSeasonName,
-            [DescriptionL("EpisodeRefreshOption_ReplaceCapturedImage_Replace_Captured_Image", typeof(Resources))]
-            ReplaceCapturedImage
-        }
-
-        [Browsable(false)]
-        public List<EditorSelectOption> EpisodeRefreshOptionList { get; set; } = new List<EditorSelectOption>();
-
-        [DisplayNameL("MetadataEnhanceOptions_EpisodeRefreshScope_Episode_Metadata_Refresh_Scope", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_EpisodeRefreshScope_Episode_refresh_scope_for_scheduled_task_and_catch_up__Default_is_no_overview_and_no_image_", typeof(Resources))]
-        [EditMultilSelect]
-        [SelectItemsSource(nameof(EpisodeRefreshOptionList))]
-        public string EpisodeRefreshScope { get; set; } = string.Join(",", EpisodeRefreshOption.NoOverview.ToString(),
-            EpisodeRefreshOption.NoImage.ToString());
-
-        [DisplayNameL("MetadataEnhanceOptions_EpisodeRefreshLookBackDays_Episode_Refresh_Lookback_Days", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_EpisodeRefreshLookbackDays_Episode_metadata_refresh_lookback_days__Default_is_365_", typeof(Resources))]
-        [Required, MinValue(1)]
-        public int EpisodeRefreshLookbackDays { get; set; } = 365;
-
-        [Browsable(false)]
-        public List<EditorSelectOption> EpisodeRefreshLibraryList { get; set; } = new List<EditorSelectOption>();
-
-        [DisplayNameL("MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_Refresh_Library_Scope", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_EpisodeRefreshLibraryScope_Episode_refresh_library_scope__Blank_includes_all_TV_shows_libraries_", typeof(Resources))]
-        [EditMultilSelect]
-        [SelectItemsSource(nameof(EpisodeRefreshLibraryList))]
-        public string EpisodeRefreshLibraryScope { get; set; } = string.Empty;
-
-        public enum MetadataCacheOption
-        {
-            [DescriptionL("MetadataCacheOption_None_None", typeof(Resources))]
-            None,
-            [DescriptionL("MetadataCacheOption_PreferCacheThenOnline_PreferCacheThenOnline", typeof(Resources))]
-            PreferCacheThenOnline,
-            [DescriptionL("MetadataCacheOption_PreferOnlineWithCache_PreferOnlineWithCache", typeof(Resources))]
-            PreferOnlineWithCache,
-            [DescriptionL("MetadataCacheOption_UseOverrideCacheOnly_UseOverrideCacheOnly", typeof(Resources))]
-            UseOverrideCacheOnly
-        }
-
-        [Browsable(false)]
-        public List<EditorRadioOption> MetadataCacheModeList { get; set; } = new List<EditorRadioOption>();
-
-        [DisplayNameL("MetadataEnhanceOptions_MetadataCacheMode_Build_Local_Metadata_Cache", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_MetadataCacheMode_Description", typeof(Resources))]
-        [SelectItemsSource(nameof(MetadataCacheModeList))]
-        [SelectShowRadioGroup]
-        public string MetadataCacheMode { get; set; } = MetadataCacheOption.None.ToString();
-
-        [DisplayNameL("MetadataEnhanceOptions_MetadataCacheRootFolder_Metadata_Cache_Root_Folder", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_MetadataCacheRootFolder_Description", typeof(Resources))]
-        [EditFolderPicker]
-        [VisibleCondition(nameof(MetadataCacheMode), ValueCondition.IsNotEqual, MetadataCacheOption.None)]
-        public string MetadataCacheRootFolder { get; set; } = string.Empty;
-
-        /// <summary>
-        /// 图像缺失时可跳过的图像类型（逗号分隔，如 Logo,Backdrop）：只要提供了主海报就不再请求图像 API。
-        /// </summary>
-        [Browsable(false)]
-        public string MetadataCacheOptionalImageTypes { get; set; } = string.Empty;
-
-        private MetadataCacheOption ParsedMetadataCacheMode =>
-            Enum.TryParse<MetadataCacheOption>(MetadataCacheMode, true, out var m) ? m : MetadataCacheOption.None;
-
-        /// <summary>缓存总开关：模式非 None 且已指定根目录。</summary>
-        [Browsable(false)]
-        public bool IsMetadataCacheEnabled =>
-            ParsedMetadataCacheMode != MetadataCacheOption.None && !string.IsNullOrWhiteSpace(MetadataCacheRootFolder);
-
-        /// <summary>是否允许从缓存读取（缓存优先 / 仅用缓存）。</summary>
-        [Browsable(false)]
-        public bool IsMetadataCacheReadEnabled =>
-            IsMetadataCacheEnabled &&
-            (ParsedMetadataCacheMode == MetadataCacheOption.PreferCacheThenOnline ||
-             ParsedMetadataCacheMode == MetadataCacheOption.UseOverrideCacheOnly);
-
-        /// <summary>命中未缓存时是否写回缓存（缓存优先 / 在线并缓存）。</summary>
-        [Browsable(false)]
-        public bool IsMetadataCacheWriteEnabled =>
-            IsMetadataCacheEnabled &&
-            (ParsedMetadataCacheMode == MetadataCacheOption.PreferCacheThenOnline ||
-             ParsedMetadataCacheMode == MetadataCacheOption.PreferOnlineWithCache);
-
-        [DisplayNameL("MetadataEnhanceOptions_EnableAltMovieDbUrl", typeof(Resources))]
-        [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
-        [Required]
-        public bool AltMovieDbConfig { get; set; } = false;
-
-        [DisplayNameL("MetadataEnhanceOptions_AltMovieDbApiUrl_Alternative_MovieDb_Api_Url", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_AltMovieDbApiUrl_Default_alternative_is_https___api_tmdb_org", typeof(Resources))]
-        [VisibleCondition(nameof(AltMovieDbConfig), SimpleCondition.IsTrue)]
-        [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
-        public string AltMovieDbApiUrl { get; set; } = "https://api.tmdb.org";
-
-        [DisplayNameL("MetadataEnhanceOptions_AltMovieDbImageUrl_Alternative_MovieDb_Image_Url", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_AltMovieDbImageUrl_No_default_alternative__Provide_by_yourself_", typeof(Resources))]
-        [VisibleCondition(nameof(AltMovieDbConfig), SimpleCondition.IsTrue)]
-        [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
-        public string AltMovieDbImageUrl { get; set; } = string.Empty;
-
-        [DisplayNameL("MetadataEnhanceOptions_AltMovieDbApiKey_Alternative_MovieDb_Api_Key", typeof(Resources))]
-        [DescriptionL("MetadataEnhanceOptions_AltMovieDbApiKey_Provide_your_own_MovieDb_Api_Key__Blank_uses_system_default_", typeof(Resources))]
-        [VisibleCondition(nameof(AltMovieDbConfig), SimpleCondition.IsTrue)]
-        [EnabledCondition(nameof(IsMovieDbPluginLoaded), SimpleCondition.IsTrue)]
-        public string AltMovieDbApiKey { get; set; } = string.Empty;
-
-        [Browsable(false)]
-        public bool IsMovieDbPluginLoaded =>
-            AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "MovieDb") && IsModSupported;
+        public bool IsModSupported => RuntimeInformation.ProcessArchitecture == Architecture.X64 || RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
 
         /// <summary>
         /// MovieDb 插件版本（诊断用：内部 API 变动时据此判断 patch 兼容性）。
@@ -416,203 +115,19 @@ namespace StrmAssistant.Options
             }
         }
 
-        [Browsable(false)]
-        public bool IsTvdbPluginLoaded =>
-            AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "Tvdb") && IsModSupported;
-
-        [Browsable(false)]
-        public bool IsNfoMetadataPluginLoaded =>
-            AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "NfoMetadata") && IsModSupported;
-
-        [Browsable(false)]
-        public bool IsModSupported => RuntimeInformation.ProcessArchitecture == Architecture.X64 || RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
-
         public void Initialize()
         {
-            LanguageList.Clear();
-
-            // 剧集刷新媒体库范围选项（影片库 / 剧集库 / 混合内容库，即 CollectionType 为 movies、tvshows 或空）。
-            // 消费端 LibraryApi.IsItemLibraryInScope 用 GetCollectionFolders(item).Id 匹配，故 Value 取 VirtualFolderInfo.ItemId。
-            EpisodeRefreshLibraryList.Clear();
-
-            try
-            {
-                var libraries = Plugin.LibraryManager?.GetVirtualFolders();
-
-                if (libraries != null)
-                {
-                    foreach (var library in libraries)
-                    {
-                        var collectionType = library.CollectionType;
-
-                        if (!string.IsNullOrEmpty(collectionType) &&
-                            !string.Equals(collectionType, "movies", StringComparison.OrdinalIgnoreCase) &&
-                            !string.Equals(collectionType, "tvshows", StringComparison.OrdinalIgnoreCase))
-                        {
-                            continue;
-                        }
-
-                        EpisodeRefreshLibraryList.Add(new EditorSelectOption
-                        {
-                            Value = library.ItemId,
-                            Name = library.Name,
-                            IsEnabled = true,
-                        });
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Plugin.Instance.Logger.Warn("EpisodeRefreshLibraryList init failed: " + e.Message);
-            }
-
-            // 豆瓣辅助生效范围 = 字段多选（与 PRO 的 DoubanAssistScrapeOption 一致）
-            DoubanAssistScrapeOptionList.Clear();
-
-            foreach (Enum item in Enum.GetValues(typeof(DoubanAssistScrapeOption)))
-            {
-                DoubanAssistScrapeOptionList.Add(new EditorSelectOption
-                {
-                    Value = item.ToString(),
-                    Name = Utility.GetEnumDescription(item),
-                    IsEnabled = true,
-                });
-            }
-
-            Plugin.Instance.Logger.Info("EpisodeRefreshLibraryList: " + EpisodeRefreshLibraryList.Count +
-                                        " library(ies) - " +
-                                        (EpisodeRefreshLibraryList.Count > 0
-                                            ? string.Join(", ", EpisodeRefreshLibraryList.Select(o => o.Name))
-                                            : "none"));
-
-            foreach (var language in LanguageUtility.MovieDbFallbackLanguages)
-            {
-                LanguageList.Add(new EditorSelectOption
-                {
-                    Value = language.ToLowerInvariant(),
-                    Name = language,
-                    IsEnabled = true
-                });
-            }
-
-            TvdbLanguageList.Clear();
-
-            foreach (var language in LanguageUtility.TvdbFallbackLanguages)
-            {
-                TvdbLanguageList.Add(new EditorSelectOption
-                {
-                    Value = language,
-                    Name = language,
-                    IsEnabled = true
-                });
-            }
-
-            EpisodeRefreshOptionList.Clear();
-
-            foreach (Enum item in Enum.GetValues(typeof(EpisodeRefreshOption)))
-            {
-                var selectOption = new EditorSelectOption
-                {
-                    Value = item.ToString(),
-                    Name = Utility.GetEnumDescription(item),
-                    IsEnabled = true,
-                };
-
-                EpisodeRefreshOptionList.Add(selectOption);
-            }
-
-            RefreshPersonOptionList.Clear();
-
-            foreach (Enum item in Enum.GetValues(typeof(RefreshPersonOption)))
-            {
-                var selectOption = new EditorSelectOption
-                {
-                    Value = item.ToString(),
-                    Name = Utility.GetEnumDescription(item),
-                    IsEnabled = true,
-                };
-
-                RefreshPersonOptionList.Add(selectOption);
-            }
-
-            MetadataCacheModeList.Clear();
-            MetadataCacheModeList = new List<EditorRadioOption>
-            {
-                new EditorRadioOption
-                {
-                    Value = MetadataCacheOption.None,
-                    PrimaryText = Utility.GetEnumDescription(MetadataCacheOption.None)
-                },
-                new EditorRadioOption
-                {
-                    Value = MetadataCacheOption.PreferCacheThenOnline,
-                    PrimaryText = Utility.GetEnumDescription(MetadataCacheOption.PreferCacheThenOnline)
-                },
-                new EditorRadioOption
-                {
-                    Value = MetadataCacheOption.PreferOnlineWithCache,
-                    PrimaryText = Utility.GetEnumDescription(MetadataCacheOption.PreferOnlineWithCache)
-                },
-                new EditorRadioOption
-                {
-                    Value = MetadataCacheOption.UseOverrideCacheOnly,
-                    PrimaryText = Utility.GetEnumDescription(MetadataCacheOption.UseOverrideCacheOnly)
-                }
-            };
+            ChineseMetadata.Initialize();
+            PersonEnhance.Initialize();
+            DoubanAssist.Initialize();
+            MetadataRefresh.Initialize();
+            MetadataCache.Initialize();
         }
 
         protected override void Validate(ValidationContext context)
         {
-            string metadataOptionsErrors = null;
-
-            foreach (var (value, isValid, errorResource) in new (string, Func<string, bool>, string)[]
-                     {
-                         (AltMovieDbApiUrl, IsValidHttpUrl,
-                             Resources.InvalidAltMovieDbApiUrl),
-                         (AltMovieDbImageUrl, IsValidHttpUrl,
-                             Resources.InvalidAltMovieDbImageUrl),
-                         (AltMovieDbApiKey, IsValidMovieDbApiKey,
-                             Resources.InvalidAltMovieDbApiKey)
-                     })
-            {
-                if (!string.IsNullOrWhiteSpace(value) && !isValid(value))
-                {
-                    metadataOptionsErrors = metadataOptionsErrors == null ? errorResource : $"{metadataOptionsErrors}; {errorResource}";
-                }
-            }
-
-            if (!string.Equals(MetadataCacheMode, MetadataCacheOption.None.ToString(), StringComparison.OrdinalIgnoreCase))
-            {
-                string cacheError = null;
-
-                if (string.IsNullOrWhiteSpace(MetadataCacheRootFolder))
-                {
-                    // 场景：选了缓存模式但还没指定目录 —— 给出「必填」提示，而非误导性的「不存在或不可写」
-                    cacheError = Resources.MetadataCacheRootFolderRequired;
-                }
-                else
-                {
-                    var (ok, code) = LocalMetadataCache.Validate(MetadataCacheRootFolder);
-                    if (!ok)
-                    {
-                        cacheError = code == "ROOT_NOT_ALLOWED"
-                            ? Resources.MetadataCacheRootFolderNotAllowed
-                            : Resources.MetadataCacheRootFolderNotExist;
-                    }
-                }
-
-                if (cacheError != null)
-                {
-                    metadataOptionsErrors = metadataOptionsErrors == null
-                        ? cacheError
-                        : $"{metadataOptionsErrors}; {cacheError}";
-                }
-            }
-
-            if (!string.IsNullOrEmpty(metadataOptionsErrors))
-            {
-                context.AddValidationError(metadataOptionsErrors);
-            }
+            ValidateChildGroup(context, nameof(MetadataCache));
+            ValidateChildGroup(context, nameof(AltMovieDb));
         }
     }
 }

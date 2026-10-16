@@ -19,7 +19,7 @@ namespace StrmAssistant.Web.Service
         {
             var response = new DoubanRatingsResponse();
 
-            if (!Plugin.Instance.MetadataEnhanceStore.GetOptions().EnableDoubanAssist)
+            if (!Plugin.Instance.MetadataEnhanceStore.GetOptions().DoubanAssist.EnableDoubanAssist)
             {
                 return response;
             }

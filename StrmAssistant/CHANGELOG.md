@@ -1,5 +1,17 @@
 # 更新日志 / Changelog
 
+## [3.0.0.55] - 2026-10-16
+
+### ✨ 界面优化
+- **版本号显示修正**：不再拼接 git commit hash，直接显示 `3.0.0.55`（程序集/文件/信息版本统一为 4 段式，与 Releases tag 体系一致）。
+- **体验增强 · 版本显示方式 / 版本排序方式**：由自由文本改为**中文下拉框**（默认 / 画质 / 文件名；默认 / 画质降序 / 画质升序 / 路径升序 / 路径降序）。属性由 `string` 改为枚举，旧配置值（`MediaInfo`、`SystemDefault` 等）与枚举成员同名，可原样反序列化。
+- **元数据增强 · 设置分组**：原来约 40 项平铺设置，改为 **9 个带小标题的分组**——中文元数据 / 剧集组 / 刮削优化 / 人物增强 / 豆瓣辅助 / 海报与排序 / 元数据刷新 / 本地元数据缓存 / 备用 MovieDb 接口。
+  - 老版本平铺 JSON 配置会**自动迁移**为嵌套结构，原文件备份为 `StrmAssistant_MetadataEnhanceOptions.json.legacy.bak`。
+
+### 🐛 修复
+- **体验增强页 500 错误**：`Resources.Designer.cs` 缺少 8 个枚举标签属性（`MultiVersionDisplayOption_*` / `MultiVersionSortOption_*`），而 Emby 的 `[DescriptionL]` / `[DisplayNameL]` 是通过**反射查找 `Resources` 的公共静态属性**解析的（不是走 `ResourceManager`），因此仅把键写进 `.resx` 不够。已补齐 8 个属性，页面恢复正常。
+  - 说明：`Resources.Designer.cs` 由 `PublicResXFileCodeGenerator` 生成，但 **`dotnet build`（命令行 MSBuild）不会运行该设计期生成器**，新增资源键后必须手工同步该文件。
+
 ## [26.3.25] - 2026-03-25
 
 ### 🔧 修复与调整

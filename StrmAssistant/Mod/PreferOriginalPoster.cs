@@ -62,7 +62,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().PreferOriginalPoster)
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().PosterSort.PreferOriginalPoster)
             {
                 Patch();
             }

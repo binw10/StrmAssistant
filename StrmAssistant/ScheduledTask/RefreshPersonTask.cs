@@ -123,7 +123,7 @@ namespace StrmAssistant.ScheduledTask
 
             IsRunning = true;
 
-            var refreshPersonMode = Plugin.Instance.MetadataEnhanceStore.GetOptions().RefreshPersonMode;
+            var refreshPersonMode = Plugin.Instance.MetadataEnhanceStore.GetOptions().PersonEnhance.RefreshPersonMode;
             var refreshPersonOptions = Enum.GetValues<RefreshPersonOption>()
                 .Where(o => refreshPersonMode?.Contains(o.ToString(), StringComparison.OrdinalIgnoreCase) is true)
                 .ToHashSet();

@@ -56,7 +56,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().MovieDbEpisodeGroup)
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().EpisodeGroup.MovieDbEpisodeGroup)
             {
                 Patch();
             }
@@ -129,7 +129,7 @@ namespace StrmAssistant.Mod
             if (item.Parent is null && item.ExtraType is null) return;
 
             if (provider is IRemoteMetadataProvider && provider.Name == "TheMovieDb" &&
-                Plugin.Instance.MetadataEnhanceStore.GetOptions().LocalEpisodeGroup)
+                Plugin.Instance.MetadataEnhanceStore.GetOptions().EpisodeGroup.LocalEpisodeGroup)
             {
                 var providerName = provider.GetType().FullName;
 
@@ -154,7 +154,7 @@ namespace StrmAssistant.Mod
         {
             __state = null;
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().LocalEpisodeGroup &&
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().EpisodeGroup.LocalEpisodeGroup &&
                 CurrentSeries.Value?.ContainingFolderPath != null)
             {
                 var series = CurrentSeries.Value;
@@ -207,7 +207,7 @@ namespace StrmAssistant.Mod
             EpisodeGroupResponse episodeGroupInfo = null;
             string localEpisodeGroupPath = null;
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().LocalEpisodeGroup &&
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().EpisodeGroup.LocalEpisodeGroup &&
                 CurrentSeries.Value?.ContainingFolderPath != null)
             {
                 var series = CurrentSeries.Value;
@@ -270,7 +270,7 @@ namespace StrmAssistant.Mod
             if (metadataResult is null) return;
 
             var isZh = __state.LookupLanguage.StartsWith("zh", StringComparison.OrdinalIgnoreCase);
-            var isJapaneseFallback = Plugin.Instance.MetadataEnhanceStore.GetOptions().ChineseMovieDb &&
+            var isJapaneseFallback = Plugin.Instance.MetadataEnhanceStore.GetOptions().ChineseMetadata.ChineseMovieDb &&
                                      HasMovieDbJapaneseFallback();
 
             var shouldAssignSeasonName = !isZh ||
@@ -293,7 +293,7 @@ namespace StrmAssistant.Mod
             metadataResult.Item.ProductionYear = null;
 
             // 剧集组 json 扩展：自定义季简介与首播日期
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().EnableMovieDbEpisodeGroupExtendedInfo)
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().EpisodeGroup.EnableMovieDbEpisodeGroupExtendedInfo)
             {
                 if (!string.IsNullOrWhiteSpace(__state.CustomOverview))
                 {
@@ -320,7 +320,7 @@ namespace StrmAssistant.Mod
             string localEpisodeGroupPath = null;
             Series series = null;
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().LocalEpisodeGroup &&
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().EpisodeGroup.LocalEpisodeGroup &&
                 CurrentSeries.Value?.ContainingFolderPath != null)
             {
                 series = CurrentSeries.Value;
@@ -390,7 +390,7 @@ namespace StrmAssistant.Mod
             {
                 var seriesTmdbId = season.Series.GetProviderId(MetadataProviders.Tmdb);
                 var episodeGroupId = season.Series.GetProviderId(MovieDbEpisodeGroupExternalId.StaticName)?.Trim();
-                var localEpisodeGroupPath = Plugin.Instance.MetadataEnhanceStore.GetOptions().LocalEpisodeGroup
+                var localEpisodeGroupPath = Plugin.Instance.MetadataEnhanceStore.GetOptions().EpisodeGroup.LocalEpisodeGroup
                     ? Path.Combine(season.Series.ContainingFolderPath, LocalEpisodeGroupFileName)
                     : null;
 
@@ -445,7 +445,7 @@ namespace StrmAssistant.Mod
             if (options.Item is Episode episode)
             {
                 var seriesTmdbId = episode.Series.GetProviderId(MetadataProviders.Tmdb);
-                var localEpisodeGroupPath = Plugin.Instance.MetadataEnhanceStore.GetOptions().LocalEpisodeGroup
+                var localEpisodeGroupPath = Plugin.Instance.MetadataEnhanceStore.GetOptions().EpisodeGroup.LocalEpisodeGroup
                     ? Path.Combine(episode.Series.ContainingFolderPath, LocalEpisodeGroupFileName)
                     : null;
 
@@ -488,7 +488,7 @@ namespace StrmAssistant.Mod
 
             EpisodeGroupResponse episodeGroupInfo = null;
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().LocalEpisodeGroup &&
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().EpisodeGroup.LocalEpisodeGroup &&
                 !string.IsNullOrEmpty(localEpisodeGroupPath))
             {
                 episodeGroupInfo = await Plugin.MetadataApi.FetchLocalEpisodeGroup(localEpisodeGroupPath)

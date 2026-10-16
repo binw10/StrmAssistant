@@ -22,7 +22,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().PinyinSortName)
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().PosterSort.PinyinSortName)
             {
                 Patch();
             }

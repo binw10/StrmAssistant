@@ -25,7 +25,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().PreferTraditionalChinese)
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().ChineseMetadata.PreferTraditionalChinese)
             {
                 Patch();
             }

@@ -42,7 +42,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
             PatchCacheTime();
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().ChineseMovieDb) Patch();
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().ChineseMetadata.ChineseMovieDb) Patch();
         }
 
         protected override void OnInitialize()

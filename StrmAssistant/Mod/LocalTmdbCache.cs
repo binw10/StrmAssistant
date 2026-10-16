@@ -33,7 +33,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().IsMetadataCacheEnabled)
+            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().MetadataCache.IsMetadataCacheEnabled)
             {
                 Patch();
             }
@@ -85,7 +85,7 @@ namespace StrmAssistant.Mod
             try
             {
                 if (options?.Url is not { Length: > 0 } url) return true;
-                if (!Plugin.Instance.MetadataEnhanceStore.GetOptions().IsMetadataCacheReadEnabled) return true;
+                if (!Plugin.Instance.MetadataEnhanceStore.GetOptions().MetadataCache.IsMetadataCacheReadEnabled) return true;
                 if (!LocalMetadataCache.TryParseEntity(url, out var entry)) return true;
 
                 byte[] bytes;
@@ -129,7 +129,7 @@ namespace StrmAssistant.Mod
             try
             {
                 if (__result == null || options?.Url is not { Length: > 0 } url) return;
-                if (!Plugin.Instance.MetadataEnhanceStore.GetOptions().IsMetadataCacheWriteEnabled) return;
+                if (!Plugin.Instance.MetadataEnhanceStore.GetOptions().MetadataCache.IsMetadataCacheWriteEnabled) return;
                 if (!LocalMetadataCache.TryParseEntity(url, out var entry)) return;
 
                 __result = CacheAndReturn(__result, entry);
