@@ -52,6 +52,7 @@ namespace StrmAssistant.Mod
         public static EnforceUserPreferences EnforceUserPreferences;
         public static CustomLocalDiscovery CustomLocalDiscovery;
         public static IsoExtraction IsoExtraction;
+        public static DolbyVisionProfile DolbyVisionProfile;
 
         private static readonly ConcurrentDictionary<Tuple<Type, string>, HarmonyMethod> HarmonyMethodCache 
             = new ConcurrentDictionary<Tuple<Type, string>, HarmonyMethod>();
@@ -119,6 +120,7 @@ namespace StrmAssistant.Mod
             EnforceUserPreferences = new EnforceUserPreferences();
             CustomLocalDiscovery = new CustomLocalDiscovery();
             IsoExtraction = new IsoExtraction();
+            DolbyVisionProfile = new DolbyVisionProfile();
 
             // ★ 总览日志：遍历所有 PatchTracker，打印每个模块的最终状态（Info 级别，无需开启 DebugMode）
             try

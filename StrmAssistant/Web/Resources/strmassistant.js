@@ -351,8 +351,8 @@
             }
 
             // 与后端 MultiVersionService.QualityScore/GetHdrLabel 保持一致的档位顺序（前=最优）。
-            // 注意：顺序必须含 "HDR Vivid"（对应后端 350 分），且未识别的取值应归入最低档，
-            // 不能因为 indexOf 返回 -1 被 Math.max(0, ...) 误判为最高档。
+            // 注意：顺序必须含 DV 细分档（P7/P8/P9/P5，对应后端 520/515/510/505）与 "HDR Vivid"（350 分），
+            // 且未识别的取值应归入最低档，不能因为 indexOf 返回 -1 被 Math.max(0, ...) 误判为最高档。
             function rankOf(list, value) {
                 if (!value) return list.length;
                 const idx = list.indexOf(value);
@@ -362,7 +362,7 @@
             function scoreOf(info) {
                 if (!info) return -1;
                 const labels = ['8K', '4K', '1440p', '1080p', '720p', 'SD'];
-                const hdrs = ['DV', 'HDR10+', 'HDR Vivid', 'HDR'];
+                const hdrs = ['DV P7', 'DV P8', 'DV P9', 'DV P5', 'DV', 'HDR10+', 'HDR Vivid', 'HDR'];
                 const label = info.Label || info.label;
                 const hdr = info.Hdr || info.hdr;
                 const lr = rankOf(labels, label);

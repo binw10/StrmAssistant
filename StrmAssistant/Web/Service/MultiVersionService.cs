@@ -130,7 +130,7 @@ namespace StrmAssistant.Web.Service
                         Width = video?.Width,
                         Height = video?.Height,
                         Label = label,
-                        Hdr = GetHdrLabel(video?.VideoRange),
+                        Hdr = GetHdrLabel(source.MediaStreams),
                         Bitrate = source.Bitrate,
                         Path = path
                     };
@@ -155,13 +155,19 @@ namespace StrmAssistant.Web.Service
 
         /// <summary>
         /// 画质评分：分辨率为主，HDR/DV 加成（用于排序比较）。
+        /// 档位顺序须与 <c>strmassistant.js</c> 的 <c>hdrs</c> 列表保持一致（前 = 最优）。
+        /// DV 细分档：原盘双层 P7 &gt; 单层 P8 &gt; P9 &gt; 流媒体 P5 &gt; 未识别 DV。
         /// </summary>
         private static int QualityScore(int? height, string hdr)
         {
             var score = height ?? 0;
             if (string.IsNullOrEmpty(hdr)) return score;
 
-            if (hdr == "DV") score += 500;
+            if (hdr == "DV P7") score += 520;
+            else if (hdr == "DV P8") score += 515;
+            else if (hdr == "DV P9") score += 510;
+            else if (hdr == "DV P5") score += 505;
+            else if (hdr == "DV") score += 500;
             else if (hdr == "HDR10+") score += 400;
             else if (hdr == "HDR Vivid") score += 350;
             else if (hdr == "HDR") score += 300;
@@ -182,8 +188,28 @@ namespace StrmAssistant.Web.Service
             return "SD";
         }
 
-        private static string GetHdrLabel(string videoRange)
+        /// <summary>
+        /// HDR 标签。优先按 DV Profile 细分档：
+        /// 双层 DV Profile 7 原盘的**增强层**会被 <c>DolbyVisionProfile</c> 标注为
+        /// <c>ExtendedVideoSubType = DoviProfile76</c>，而基础层仍是 HDR10，
+        /// 因此这里需要扫描**全部视频流**取最优档位，只看主视频流会漏掉 DV 信息。
+        /// 档位顺序须与 <c>strmassistant.js</c> 的 <c>hdrs</c> 列表保持一致（前 = 最优）。
+        /// </summary>
+        private static string GetHdrLabel(IEnumerable<MediaStream> streams)
         {
+            var videos = streams?
+                .Where(s => s != null && s.Type == MediaStreamType.Video)
+                .ToList();
+
+            if (videos == null || videos.Count == 0) return null;
+
+            foreach (var video in videos)
+            {
+                var dvLabel = GetDvProfileLabel(video.ExtendedVideoSubType);
+                if (dvLabel != null) return dvLabel;
+            }
+
+            var videoRange = videos[0].VideoRange;
             if (string.IsNullOrEmpty(videoRange)) return null;
 
             if (videoRange.IndexOf("DoVi", StringComparison.OrdinalIgnoreCase) >= 0 ||
@@ -209,6 +235,32 @@ namespace StrmAssistant.Web.Service
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Emby 的 <c>ExtendedVideoSubTypes</c> 命名规则为「profile × 10 + level」，
+        /// 例如 <c>DoviProfile76</c> = Profile 7。此处按 Profile 归并出对外标签。
+        /// 其余 Dolby Vision 取值（如 Profile 4/6）返回 null，回落为笼统的 "DV"。
+        /// </summary>
+        private static string GetDvProfileLabel(ExtendedVideoSubTypes subType)
+        {
+            switch (subType)
+            {
+                case ExtendedVideoSubTypes.DoviProfile76:
+                    return "DV P7";
+                case ExtendedVideoSubTypes.DoviProfile81:
+                case ExtendedVideoSubTypes.DoviProfile82:
+                case ExtendedVideoSubTypes.DoviProfile83:
+                case ExtendedVideoSubTypes.DoviProfile84:
+                case ExtendedVideoSubTypes.DoviProfile85:
+                    return "DV P8";
+                case ExtendedVideoSubTypes.DoviProfile92:
+                    return "DV P9";
+                case ExtendedVideoSubTypes.DoviProfile50:
+                    return "DV P5";
+                default:
+                    return null;
+            }
         }
     }
 }
