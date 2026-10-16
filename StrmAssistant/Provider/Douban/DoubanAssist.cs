@@ -616,7 +616,8 @@ namespace StrmAssistant.Provider.Douban
         }
 
         /// <summary>
-        /// 豆瓣演员中文名：仅替换当前为纯英文名的演员（匹配豆瓣外文名），已中文名的演员不动。
+        /// 豆瓣演员中文名：覆盖主演（<see cref="PersonType.Actor"/>）与客串（<see cref="PersonType.GuestStar"/>），
+        /// 仅替换当前为纯英文名的演员（匹配豆瓣外文名），已中文名的演员不动。
         /// </summary>
         private async Task<bool> ApplyCastChineseNamesAsync(BaseItem item, string subjectId,
             CancellationToken cancellationToken)
@@ -632,7 +633,8 @@ namespace StrmAssistant.Provider.Douban
             var changed = false;
 
             foreach (var person in people.Where(p =>
-                         p.Type == PersonType.Actor && !string.IsNullOrWhiteSpace(p.Name)))
+                         (p.Type == PersonType.Actor || p.Type == PersonType.GuestStar) &&
+                         !string.IsNullOrWhiteSpace(p.Name)))
             {
                 if (person.Name.Any(c => c > 0x7F)) continue;
 

@@ -3028,6 +3028,15 @@ namespace StrmAssistant.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Quality + Size.
+        /// </summary>
+        public static string MultiVersionDisplayOption_MediaInfoExtended_MediaInfoExtended {
+            get {
+                return ResourceManager.GetString("MultiVersionDisplayOption_MediaInfoExtended_MediaInfoExtended", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to File Name.
         /// </summary>
         public static string MultiVersionDisplayOption_FileNameWithoutExtension_FileNameWithoutExtension {

@@ -12,7 +12,7 @@ namespace StrmAssistant.Options
     public static class MultipleVersionsOptions
     {
         /// <summary>
-        /// 版本标签来源：默认（保持 Emby 原始标签）/ 画质（分辨率）/ 文件名。
+        /// 版本标签来源：默认（保持 Emby 原始标签）/ 画质（分辨率）/ 画质+体积（分辨率 + 编码 + 码率 + 体积）/ 文件名。
         /// </summary>
         public enum MultiVersionDisplayOption
         {
@@ -21,6 +21,9 @@ namespace StrmAssistant.Options
 
             [DescriptionL("MultiVersionDisplayOption_MediaInfo_MediaInfo", typeof(Resources))]
             MediaInfo,
+
+            [DescriptionL("MultiVersionDisplayOption_MediaInfoExtended_MediaInfoExtended", typeof(Resources))]
+            MediaInfoExtended,
 
             [DescriptionL("MultiVersionDisplayOption_FileNameWithoutExtension_FileNameWithoutExtension", typeof(Resources))]
             FileNameWithoutExtension

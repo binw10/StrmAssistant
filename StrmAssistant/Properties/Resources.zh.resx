@@ -864,7 +864,7 @@
     <value>版本显示方式</value>
   </data>
   <data name="ExperienceEnhanceOptions_MultiVersionDisplayOption_Version_label_source__SystemDefault_MediaInfo_or_FileNameWithoutExtension__Default_is_MediaInfo_" xml:space="preserve">
-    <value>版本标签来源：默认 / 画质 / 文件名。默认「画质」。</value>
+    <value>版本标签来源：默认 / 画质 / 画质+体积 / 文件名。默认「画质」。</value>
   </data>
   <data name="ExperienceEnhanceOptions_MultiVersionSortOption_Version_Sort_Option" xml:space="preserve">
     <value>版本排序方式</value>
@@ -877,6 +877,9 @@
   </data>
   <data name="MultiVersionDisplayOption_MediaInfo_MediaInfo" xml:space="preserve">
     <value>画质</value>
+  </data>
+  <data name="MultiVersionDisplayOption_MediaInfoExtended_MediaInfoExtended" xml:space="preserve">
+    <value>画质+体积</value>
   </data>
   <data name="MultiVersionDisplayOption_SystemDefault_SystemDefault" xml:space="preserve">
     <value>默认</value>

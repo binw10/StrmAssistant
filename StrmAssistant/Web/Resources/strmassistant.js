@@ -363,7 +363,10 @@
                 if (!info) return -1;
                 const labels = ['8K', '4K', '1440p', '1080p', '720p', 'SD'];
                 const hdrs = ['DV P7', 'DV P8', 'DV P9', 'DV P5', 'DV', 'HDR10+', 'HDR Vivid', 'HDR'];
-                const label = info.Label || info.label;
+                const rawLabel = info.Label || info.label;
+                // 复合标签（如 "4K HEVC 20.4Mbps 45.2GB"）取首个空格分词作为画质档位参与排序，
+                // 否则整串匹配不到 labels 会被误判为最低档（MediaInfoExtended 模式）。
+                const label = rawLabel ? String(rawLabel).split(' ')[0] : rawLabel;
                 const hdr = info.Hdr || info.hdr;
                 const lr = rankOf(labels, label);
                 const hr = rankOf(hdrs, hdr);

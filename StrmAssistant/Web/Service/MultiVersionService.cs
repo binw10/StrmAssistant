@@ -121,6 +121,8 @@ namespace StrmAssistant.Web.Service
                             ? null
                             : System.IO.Path.GetFileNameWithoutExtension(path),
                         MultiVersionDisplayOption.SystemDefault => null,
+                        MultiVersionDisplayOption.MediaInfoExtended =>
+                            BuildMediaInfoLabel(video, source.Bitrate, source.Size),
                         _ => GetQualityLabel(video?.Height) // MediaInfo（默认）
                     };
 
@@ -187,6 +189,74 @@ namespace StrmAssistant.Web.Service
             if (height >= 700) return "720p";
 
             return "SD";
+        }
+
+        /// <summary>
+        /// 「画质+体积」标签：画质档位 + 视频编码 + 码率 + 文件体积，
+        /// 形如 <c>4K HEVC 20.4Mbps 45.2GB</c>。任一缺项自动省略，全缺则返回 null。
+        /// 注意：档位词必须留在**首位**，前端 <c>strmassistant.js</c> 的排序按首个空格分词取档位。
+        /// </summary>
+        private static string BuildMediaInfoLabel(MediaStream video, long? bitrate, long? size)
+        {
+            var parts = new List<string>();
+
+            var quality = GetQualityLabel(video?.Height);
+            if (quality != null) parts.Add(quality);
+
+            var codec = FormatCodec(video?.Codec);
+            if (codec != null) parts.Add(codec);
+
+            var bitRate = bitrate ?? video?.BitRate;
+            if (bitRate.HasValue && bitRate.Value > 0) parts.Add(FormatBitrate(bitRate.Value));
+
+            if (size.HasValue && size.Value > 0) parts.Add(FormatSize(size.Value));
+
+            return parts.Count > 0 ? string.Join(" ", parts) : null;
+        }
+
+        /// <summary>把 Emby 的编码短名转成常见写法（hevc→HEVC、h264→H.264…）。</summary>
+        private static string FormatCodec(string codec)
+        {
+            if (string.IsNullOrWhiteSpace(codec)) return null;
+
+            switch (codec.Trim().ToLowerInvariant())
+            {
+                case "hevc":
+                case "h265":
+                    return "HEVC";
+                case "h264":
+                case "avc":
+                    return "H.264";
+                case "av1":
+                    return "AV1";
+                case "mpeg2video":
+                    return "MPEG-2";
+                case "vc1":
+                    return "VC-1";
+                case "vp9":
+                    return "VP9";
+                default:
+                    return codec.Trim().ToUpperInvariant();
+            }
+        }
+
+        /// <summary>码率（bit/s → Mbps），整数不留小数点（20.4 → <c>20.4Mbps</c>、20.0 → <c>20Mbps</c>）。</summary>
+        private static string FormatBitrate(long bitsPerSecond)
+        {
+            var mbps = bitsPerSecond / 1000000.0;
+            return mbps >= 100 ? $"{mbps:0}Mbps" : $"{mbps:0.#}Mbps";
+        }
+
+        /// <summary>文件体积（字节 → 人类可读），1024 进制。</summary>
+        private static string FormatSize(long bytes)
+        {
+            const double kb = 1024.0;
+            var gb = bytes / (kb * kb * kb);
+
+            if (gb >= 1024) return $"{gb / 1024:0.##}TB";
+            if (gb >= 1) return $"{gb:0.#}GB";
+
+            return $"{bytes / (kb * kb):0.#}MB";
         }
 
         /// <summary>
