@@ -268,6 +268,12 @@ namespace StrmAssistant.Common
             public string Name;
             public double Duration;
 
+            /// <summary>
+            /// 该 PlayItem 的 IN_time（45kHz → 秒，**绝对值**，含 m2ts 自身的 PTS 基址）。
+            /// 章节时间戳同为绝对值，需减去本值才是标题内偏移。
+            /// </summary>
+            public double InTime;
+
             /// <summary>该 PlayItem 在 MPLS 文件内的绝对起始偏移（指向 itemLength 字段）。</summary>
             public int ItemStart;
         }
@@ -330,6 +336,7 @@ namespace StrmAssistant.Common
                 {
                     Name = clipName,
                     Duration = duration,
+                    InTime = inTime,
                     ItemStart = itemStart
                 });
                 entry.TotalSeconds += duration;
@@ -526,20 +533,32 @@ namespace StrmAssistant.Common
         // ================= PlayListMark（章节） =================
 
         /// <summary>
-        /// 解析 PlayListMark：长度4 + 保留1 + mark 数2，之后每条 mark 16 字节：
-        /// 保留1 + 标志1 + mark_type1 + PlayItem_ref2 + timestamp4 + duration4 + entry_ES_PID2。
+        /// 解析 PlayListMark（BD-ROM MPLS）：
+        /// <c>长度4 + mark 数2 + 每条 mark 14 字节</c>；
+        /// 每条 mark = <c>保留1 + mark_type1 + PlayItem_ref2 + timestamp4 + duration4 + entry_ES_PID2</c>。
         /// mark_type = 1 为章节标记（entry mark）。其余（如 0=PlayList mark / link point）不计入章节。
-        /// 时间戳 45kHz → 秒。
+        ///
+        /// ⚠️ 易错点：PlayListMark **没有** PlayList() 那样的「长度后的保留字段」——紧跟长度的 2 字节
+        /// 就是 mark 数（保留字节在**每条 mark 内部**）。实测样本 <c>00000.mpls</c>：
+        /// <c>190:00 00 00 10 | 194:00 01 | 196:00 01 0000 0b43e940 ...</c> →
+        /// 长度=16(=2+14×1)、mark 数=1、唯一 mark 为 entry mark@4200s。长度字段可作一致性校验
+        /// （应满足 <c>length == 2 + 14×count</c>），不符则放弃解析，避免读到越界垃圾。
+        ///
+        /// 时间戳为 45kHz 的**绝对 PTS**（含 m2ts 自身 PTS 基址，实测样本基址 4200s），
+        /// 故须按 <c>PlayItem_ref</c> 减去对应 PlayItem 的 IN_time，再加上其前面各 PlayItem 的累计时长，
+        /// 才是 Emby 需要的「标题内偏移秒」。
         /// </summary>
         private static void ParsePlayListMark(byte[] data, int markStart, PlaylistEntry entry)
         {
             if (markStart <= 0 || markStart + 6 > data.Length) return;
 
             var pos = markStart;
-            ReadUInt32(data, ref pos);              // PlayListMark 长度
-            pos += 1;                               // 保留
+            var sectionLength = ReadUInt32(data, ref pos);   // PlayListMark 长度（= 2 + 14×mark 数）
             if (pos + 2 > data.Length) return;
-            var markCount = ReadUInt16(data, ref pos);
+            var markCount = ReadUInt16(data, ref pos);       // mark 数（紧跟长度，无保留字节）
+
+            // 一致性校验：长度字段必须与「2 + 14×count」吻合，否则视为结构不符，宁可不解析
+            if (sectionLength != (uint)(2 + 14 * markCount)) return;
 
             var marks = new List<double>(markCount);
 
@@ -547,20 +566,48 @@ namespace StrmAssistant.Common
             {
                 if (pos + 14 > data.Length) break;
 
-                pos += 1;                            // 保留
-                var flags = data[pos++];             // 标志
+                pos += 1;                            // 保留（每条 mark 内部）
                 var markType = data[pos++];          // mark_type
-                ReadUInt16(data, ref pos);           // PlayItem_ref
-                var timestamp = ReadUInt32(data, ref pos) / TicksPerSecond;
+                var playItemRef = ReadUInt16(data, ref pos);
+                var timestamp = ReadUInt32(data, ref pos) / TicksPerSecond;  // 绝对 PTS
                 ReadUInt32(data, ref pos);           // duration
                 ReadUInt16(data, ref pos);           // entry_ES_PID
 
                 // mark_type: 1 = entry mark（章节）
-                if (markType == 1) marks.Add(timestamp);
+                if (markType != 1) continue;
+
+                var relative = ToTitleRelativeSeconds(entry, playItemRef, timestamp);
+                if (relative >= 0) marks.Add(relative);
             }
 
             marks.Sort();
-            entry.Chapters = marks;
+
+            // 去重：相邻 <1ms 视为同一章节（多 PlayItem 时首尾相接可能产生重复点）
+            var deduped = new List<double>(marks.Count);
+            foreach (var mark in marks)
+            {
+                if (deduped.Count == 0 || mark - deduped[deduped.Count - 1] > 0.001) deduped.Add(mark);
+            }
+
+            entry.Chapters = deduped;
+        }
+
+        /// <summary>
+        /// 把 PlayListMark 的绝对 PTS 换算为「标题内偏移秒」：
+        /// 前面各 PlayItem 的累计时长 + (mark 绝对时间 − 本 PlayItem 的 IN_time)。
+        /// </summary>
+        private static double ToTitleRelativeSeconds(PlaylistEntry entry, int playItemRef, double absoluteSeconds)
+        {
+            if (entry.Clips.Count == 0) return -1;
+
+            // PlayItem_ref 越界时回退到第一个 PlayItem（单 PlayItem 盘最常见，ref 恒为 0）
+            var index = playItemRef >= 0 && playItemRef < entry.Clips.Count ? playItemRef : 0;
+
+            var cumulative = 0.0;
+            for (var i = 0; i < index; i++) cumulative += entry.Clips[i].Duration;
+
+            var relative = cumulative + (absoluteSeconds - entry.Clips[index].InTime);
+            return relative < 0 ? 0 : relative;
         }
 
         // ================= 语言与属性映射 =================

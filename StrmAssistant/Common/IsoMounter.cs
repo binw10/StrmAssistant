@@ -69,6 +69,14 @@ namespace StrmAssistant.Common
         private static readonly ConcurrentDictionary<string, MountEntry> Mounts =
             new ConcurrentDictionary<string, MountEntry>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// 按 ISO 路径缓存 MPLS PlayListMark 解析出的章节（标题内偏移秒）。
+        /// 由 <see cref="ResolveMountedTitle"/> / <see cref="ResolveInProcessTitle"/> 写入，
+        /// 供 <c>IsoExtraction</c> 在 ffprobe 结果上补写章节（Emby 对 m2ts 无法从 ffprobe 得到章节）。
+        /// </summary>
+        private static readonly ConcurrentDictionary<string, List<double>> TitleChapters =
+            new ConcurrentDictionary<string, List<double>>(StringComparer.OrdinalIgnoreCase);
+
         private static Timer _sweeper;
         private static bool? _supported;
 
@@ -430,6 +438,8 @@ namespace StrmAssistant.Common
         {
             var info = UdfTitleResolver.ResolveFromMount(driveRoot);
 
+            RememberChapters(isoPath, info);
+
             if (!string.IsNullOrEmpty(info?.RelativePath))
             {
                 var path = Path.Combine(driveRoot, info.RelativePath);
@@ -467,6 +477,8 @@ namespace StrmAssistant.Common
             var logger = Plugin.Instance?.Logger;
             if (logger == null) return;
 
+            RememberChapters(isoPath, info);
+
             if (info == null)
             {
                 logger.Debug($"IsoExtraction - UDF title resolution found nothing in {isoPath}");
@@ -476,6 +488,57 @@ namespace StrmAssistant.Common
             logger.Info(
                 $"IsoExtraction - UDF resolved {(info.IsBluray ? "bluray" : "dvd")} title {info.RelativePath} " +
                 $"(playlist {info.SourceName}, {info.DurationSeconds:F1}s) in {isoPath}; probing the iso directly");
+        }
+
+        /// <summary>
+        /// 记录一次解析得到的章节（仅当有内容时覆盖；解析失败/为空时不覆盖既有缓存）。
+        /// </summary>
+        private static void RememberChapters(string isoPath, UdfTitleResolver.TitleInfo info)
+        {
+            if (string.IsNullOrEmpty(isoPath) || info?.Chapters == null || info.Chapters.Count == 0) return;
+
+            try
+            {
+                TitleChapters[isoPath] = new List<double>(info.Chapters);
+
+                Plugin.Instance?.Logger?.Info(
+                    $"IsoExtraction - playlist chapters resolved for {isoPath}: {info.Chapters.Count} " +
+                    $"(first={info.Chapters[0]:F3}s, last={info.Chapters[info.Chapters.Count - 1]:F3}s)");
+            }
+            catch
+            {
+                // 记录失败不影响探测
+            }
+        }
+
+        /// <summary>
+        /// 取该 ISO 最近一次解析出的章节（标题内偏移秒）。
+        /// Emby 对 m2ts 走 ffprobe <c>-show_chapters</c> 永远拿不到章节（m2ts 无章节原子），
+        /// 需由调用方把这里的 MPLS 章节补写进探测结果。
+        /// </summary>
+        public static bool TryGetTitleChapters(string isoPath, out List<double> chapters)
+        {
+            chapters = null;
+            if (string.IsNullOrEmpty(isoPath)) return false;
+            if (!TitleChapters.TryGetValue(isoPath, out var cached) || cached == null || cached.Count == 0)
+                return false;
+
+            chapters = cached;
+            return true;
+        }
+
+        /// <summary>
+        /// 该路径是否为「本地 ISO 挂载出的正片」——即 <c>&lt;盘符&gt;:\BDMV\STREAM\*.m2ts</c>。
+        ///
+        /// 用途：抽帧时为这类输入追加 <c>-skip_frame nokey</c>（规避 mpegts input seek 花屏）。
+        /// **不包含**远程 ISO 头部窗口临时文件：窗口通常只有数百 ms 的视频，<c>-ss</c> 落点之后
+        /// 未必还有关键帧，追加该参数反而可能抽不出帧（远程窗口的 <c>-ss</c> 很小、原本不花屏）。
+        /// </summary>
+        public static bool IsMountedIsoTitle(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+
+            return path.IndexOf(@"\BDMV\STREAM\", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static MountEntry Mount(string isoPath)

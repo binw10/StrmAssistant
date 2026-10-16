@@ -25,6 +25,7 @@ namespace StrmAssistant.Mod
         private static MethodInfo _supportsAudioEmbeddedImages;
         private static MethodInfo _getImage;
         private static MethodInfo _runExtraction;
+        private static MethodInfo _getExtraInputArguments;
         private static Type _singleImageExtractor;
         private static MethodInfo _supportsThumbnailsGetter;
         private static MethodInfo _logThumbnailImageExtractionFailure;
@@ -91,6 +92,13 @@ namespace StrmAssistant.Mod
             _runExtraction =
                 imageExtractorBaseType.GetMethod("RunExtraction", BindingFlags.Instance | BindingFlags.Public);
 
+            // IMG-6：抽帧输入参数注入点。GetExtraInputArguments 是命令列表中**唯一落在 -i 之前**、
+            // 且允许派生类自定义的槽位（-ss/-f/探测参数之后，-i 之前）。
+            // 基类返回 null；MultiImageExtractor 覆写为 "-copyts -start_at_zero"（覆写不经过基类，
+            // 因此对基类打 Postfix 不会命中 MultiImageExtractor 的 BIF 路径）。
+            _getExtraInputArguments = imageExtractorBaseType.GetMethod("GetExtraInputArguments",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
             // IMG-2：4.10 起单帧抽取器由 QuickSingleImageExtractor 更名为 SingleImageExtractor。
             // 优先取新名、回退旧名（两者取第一个非 null），使「截图位置」覆盖在 4.9/4.10 上均能命中。
             const string imageExtractionNs = "Emby.Server.MediaEncoding.ImageExtraction.";
@@ -134,6 +142,7 @@ namespace StrmAssistant.Mod
             PatchUnpatch(PatchTracker, apply, _supportsThumbnailsGetter,
                 prefix: nameof(SupportsThumbnailsGetterPrefix), postfix: nameof(SupportsThumbnailsGetterPostfix));
             PatchUnpatch(PatchTracker, apply, _runExtraction, prefix: nameof(RunExtractionPrefix));
+            PatchUnpatch(PatchTracker, apply, _getExtraInputArguments, postfix: nameof(GetExtraInputArgumentsPostfix));
             PatchUnpatch(PatchTracker, apply, _logThumbnailImageExtractionFailure,
                 prefix: nameof(LogThumbnailImageExtractionFailurePrefix));
             PatchUnpatch(PatchTracker, apply, _baseOptionsConstructor, prefix: nameof(BaseOptionsConstructorPrefix));
@@ -526,6 +535,47 @@ namespace StrmAssistant.Mod
             if (string.IsNullOrEmpty(url)) return url;
             var q = url.IndexOf('?');
             return q > 0 ? url.Substring(0, q) + "?..." : url;
+        }
+
+        /// <summary>
+        /// IMG-6：为「由 ISO 改写而来」的海报抽帧追加 <c>-skip_frame nokey</c>，规避 mpegts 输入定位花屏。
+        ///
+        /// 根因（第 4 阶段遗留项 B 定论）：mpegts/m2ts 无索引，ffmpeg 的 **input seek**（<c>-ss</c> 在 <c>-i</c> 前）
+        /// 只能按码率估算字节落点，落在非 IDR 附近时解码器需重同步，导致 seek 点后最初约 0.3~0.5s 的画面损坏
+        /// （DV P7 FEL 盘尤甚，实测第 1~6 帧块状伪影，用户可见为「海报花屏」）。
+        /// <c>-skip_frame nokey</c> 只解码关键帧：画面干净、落点误差 ≤1 GOP（本样本 1.0s），且不引入新失败面
+        /// （普通 input seek 在片尾同样可能无帧）。
+        ///
+        /// **作用域严格限定**（双重闸门，确保非 ISO 条目零副作用）：
+        /// 1. <see cref="IsoMounter.IsMountedIsoTitle"/> —— 仅命中本地 ISO 挂载出的正片
+        ///    <c>…\BDMV\STREAM\*.m2ts</c>（远程 ISO 头部窗口**不**加，见该方法注释）；
+        /// 2. 抽取器类型为单帧抽取器（海报）—— 只有海报路径带非零 <c>-ss</c>；
+        ///    BIF/章节图路径（<c>ImageSeriesExtractor</c> 区间抽帧 <c>startOffset=null</c>、
+        ///    <c>MultiImageExtractor</c> 走 <c>-skip_list</c>）**不需要也不应**加该参数。
+        /// </summary>
+        [HarmonyPostfix]
+        private static void GetExtraInputArgumentsPostfix(object __instance, string inputPath, ref string __result)
+        {
+            try
+            {
+                if (__instance == null || __instance.GetType() != _singleImageExtractor) return;
+                if (!IsoMounter.IsMountedIsoTitle(inputPath)) return;
+
+                __result = string.IsNullOrEmpty(__result)
+                    ? "-skip_frame nokey"
+                    : __result + " -skip_frame nokey";
+
+                if (Plugin.Instance.DebugMode)
+                {
+                    Plugin.Instance.Logger.Debug(
+                        $"EnableImageCapture - skip_frame nokey added for mounted iso title poster input: {inputPath}");
+                }
+            }
+            catch (Exception e)
+            {
+                // 任何异常一律放行原参数，确保非 ISO 条目零副作用
+                Plugin.Instance.Logger.Debug("EnableImageCapture - skip_frame injection skipped: " + e.Message);
+            }
         }
 
         [HarmonyPrefix]

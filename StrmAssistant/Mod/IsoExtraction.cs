@@ -1,11 +1,15 @@
 using HarmonyLib;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.MediaInfo;
 using StrmAssistant.Common;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using static StrmAssistant.Mod.PatchManager;
+using ProbeMediaInfo = MediaBrowser.Model.MediaInfo.MediaInfo;
 
 namespace StrmAssistant.Mod
 {
@@ -28,6 +32,12 @@ namespace StrmAssistant.Mod
     ///    ffprobe 能稳定读取的本地路径：
     ///    - 本地 .iso → Windows 挂载取正片；失败退回进程内 UDF 选片（不改输入，交由 ffprobe 直读）。
     ///    - 远程 http(s) ISO → HTTP Range 拉取头部窗口到本地临时文件再探测。
+    ///
+    /// 3. **补写章节**（Postfix 同方法，**仅本地 .iso**）：m2ts 没有章节原子，ffprobe 即使带
+    ///    <c>-show_chapters</c> 也拿不到章节，导致 ISO 条目章节恒为空（进而章节图/BIF 永不生成）。
+    ///    这里把 <see cref="UdfTitleResolver"/> 从 MPLS <c>PlayListMark</c> 解析出的章节注入探测结果，
+    ///    由 Emby 的 <c>BaseMediaInfoProber</c> 搬进 <c>metadataResult.Chapters</c> 并落库。
+    ///    远程（strm→HTTP）ISO 因头部窗口被截断、DiscUtils 无法构造 UDF 读取器，故不补写。
     ///
     /// 关键安全性：
     /// - 只替换 `inputPath`（仅用于 ffprobe 参数），**不改** `MediaSourceInfo.Path`，
@@ -96,7 +106,8 @@ namespace StrmAssistant.Mod
         {
             if (_getMediaInfoInternal != null)
             {
-                PatchUnpatch(PatchTracker, apply, _getMediaInfoInternal, prefix: nameof(GetMediaInfoInternalPrefix));
+                PatchUnpatch(PatchTracker, apply, _getMediaInfoInternal,
+                    prefix: nameof(GetMediaInfoInternalPrefix), postfix: nameof(GetMediaInfoInternalPostfix));
             }
 
             if (_isSupported != null)
@@ -130,8 +141,10 @@ namespace StrmAssistant.Mod
         }
 
         [HarmonyPrefix]
-        private static void GetMediaInfoInternalPrefix(ref string inputPath)
+        private static void GetMediaInfoInternalPrefix(ref string inputPath, out List<ChapterInfo> __state)
         {
+            __state = null;
+
             try
             {
                 if (string.IsNullOrWhiteSpace(inputPath)) return;
@@ -139,6 +152,11 @@ namespace StrmAssistant.Mod
                 var logger = Plugin.Instance.Logger;
 
                 // ① 远程/流式 ISO（strm → http/https）：拉取头部窗口到本地临时文件
+                //
+                // 注意：**远程 ISO 不补写章节**。窗口只有头部若干 MB（且 strm 代理常限流），
+                // DiscUtils.Udf 会因「分区长度超出流长度」直接拒绝构造（实测 ArgumentException:
+                // Substream extends beyond end of parent stream），且实测样本的 .mpls 内容
+                // 也不在头部窗口内 → 无法解析 PlayListMark。章节仅对本地 .iso（可完整读取）生效。
                 if (IsoMounter.TryNormalizeRemoteIso(inputPath, out var isoUrl))
                 {
                     var tempPath = IsoMounter.GetRemoteProbePath(isoUrl);
@@ -163,6 +181,11 @@ namespace StrmAssistant.Mod
                     {
                         inputPath = probePath;
                         logger.Info($"IsoExtraction - probing mounted title for {isoPath} -> {probePath}");
+
+                        // ★ 章节补写（本地）：m2ts 无章节原子，ffprobe 即便带 -show_chapters 也取不到；
+                        //   这里把 MPLS PlayListMark 解析出的章节带出，由 postfix 注入探测结果，
+                        //   使 Emby 能把它落库到 Chapters3（BaseMediaInfoProber → metadataResult.Chapters）。
+                        __state = BuildChapterState(isoPath);
                     }
 
                     return;
@@ -177,7 +200,68 @@ namespace StrmAssistant.Mod
             catch
             {
                 // 保持原路径，不影响常规探测
+                __state = null;
             }
+        }
+
+        /// <summary>
+        /// 取该 ISO（以本地 <c>.iso</c> 路径为键）解析出的 MPLS 章节，转换为 Emby <see cref="ChapterInfo"/> 列表。
+        /// 无缓存 / 为空时返回 null（postfix 据此跳过注入）。
+        /// </summary>
+        private static List<ChapterInfo> BuildChapterState(string isoKey)
+        {
+            if (!IsoMounter.TryGetTitleChapters(isoKey, out var chapterSeconds) ||
+                chapterSeconds == null || chapterSeconds.Count == 0)
+            {
+                return null;
+            }
+
+            return chapterSeconds
+                .Where(seconds => seconds >= 0)
+                .Select(seconds => new ChapterInfo
+                {
+                    StartPositionTicks = (long)(seconds * TimeSpan.TicksPerSecond)
+                })
+                .ToList();
+        }
+
+        /// <summary>
+        /// 把 MPLS 章节补写进 ffprobe 探测结果。
+        ///
+        /// <c>GetMediaInfoInternal</c> 返回 <c>Task&lt;MediaInfo&gt;</c>，Harmony 的 <c>__result</c>
+        /// 是 Task 本身（不会自动解包），因此这里**换包**成一个先 await 原任务、再写入
+        /// <c>Chapters</c> 的新任务返回，调用方 await 到即是补写后的结果。
+        /// </summary>
+        [HarmonyPostfix]
+        private static void GetMediaInfoInternalPostfix(ref Task<ProbeMediaInfo> __result,
+            List<ChapterInfo> __state)
+        {
+            if (__state == null || __state.Count == 0 || __result == null) return;
+
+            __result = InjectChaptersAsync(__result, __state);
+        }
+
+        private static async Task<ProbeMediaInfo> InjectChaptersAsync(Task<ProbeMediaInfo> probeTask,
+            List<ChapterInfo> chapters)
+        {
+            var mediaInfo = await probeTask.ConfigureAwait(false);
+
+            try
+            {
+                if (mediaInfo != null)
+                {
+                    mediaInfo.Chapters = chapters.ToArray();
+
+                    Plugin.Instance.Logger.Info(
+                        $"IsoExtraction - injected {chapters.Count} playlist chapter(s) into probe result");
+                }
+            }
+            catch (Exception e)
+            {
+                Plugin.Instance.Logger.Debug("IsoExtraction - chapter injection failed: " + e.Message);
+            }
+
+            return mediaInfo;
         }
     }
 }

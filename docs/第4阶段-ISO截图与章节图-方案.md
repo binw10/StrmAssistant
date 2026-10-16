@@ -2,6 +2,7 @@
 
 > **日期**：2026-10-16　**状态**：✅ 已实现并实机验证通过（IMG-1/IMG-2/IMG-4/IMG-5；决策 D1=a / D2=a / D3=b）
 > **遗留项收尾（2026-10-16 补）**：§十一 = DV P7 FEL input-seek 花屏**定论**（ffmpeg 固有 + 量化修复方案）；§十三 = IMG-5 端到端被**「MPLS 章节未消费」上游缺口阻塞**的定论。
+> **遗留项已闭环（2026-10-16 二次补）**：§十四 = ① **MPLS 章节消费链路已补齐**（含 `ParsePlayListMark` 结构性 bug 修复）+ ② **`-skip_frame nokey` 修复抽帧花屏**，两者均**实机验证通过**（本地 ISO）；并记录**远程 ISO 章节仍不可行**的实证结论。
 > **基线**：`docs/PRO功能差异全量梳理与移植计划-v8.md`（第 4 阶段）
 > **上游**：第 1 阶段（ISO-1~4）✅ `1741f6d`、第 2 阶段（MPLS 语言/章节）✅ `170cd45`、第 3 阶段（DV P7）✅ `c5dc966`、ISO 挂载释放修复 ✅ `9bd8f4e`
 > **调研环境**：Emby 4.10.1.0，库「混合内容」(`D:\视频\小号`)，样本 item 428 = `原盘\杜比视界测试：双层 FEL.iso.strm`（无海报，唯一会被截图触发的条目）
@@ -270,6 +271,116 @@ Emby 抽帧实际使用 `-vf "thumbnail=24,format=p010,supertonemap=tonemap=habl
 - **后果**：ISO 条目永远没有章节 → **ISO 的章节图/BIF 永远不会生成**；`TitleInfo` 里解析出的音轨/字幕语言同样未被使用。
 - **对第 4 阶段的影响**：IMG-5 的「端到端」验收**被此缺口阻塞**（不是配置问题：本环境库 `EnableChapterImageExtraction=False`，且即便开启，ISO 条目仍无章节可取）。静态证明（§十 #7）依然成立且已足够。
 - **建议**：先补齐「把 MPLS 章节写入条目」的消费链路（属**第 2 阶段收尾**，价值高于第 5 阶段的 G2/G4），再回头做 IMG-5 端到端。
+
+---
+
+## 十四、遗留项收尾实施记录（2026-10-16，① 章节消费链路 + ② 抽帧花屏修复）
+
+> 状态：**① 已实施并实机验证（本地 ISO 通过）**；**② 已实施并实机验证（画面从花屏变为干净）**。
+
+### 14.1 ① MPLS 章节消费链路（第 2 阶段收尾）
+
+改动 3 个文件：
+
+| 文件 | 改动 |
+|---|---|
+| `Common/UdfTitleResolver.cs` | ① `ClipEntry` 新增 `InTime`（PlayItem IN_time，45kHz→秒）；② **修复 `ParsePlayListMark` 结构性 bug**（见 14.2）；③ 新增 `ToTitleRelativeSeconds` 把 mark 的绝对 PTS 换算为标题内偏移；④ 相邻 <1ms 去重 |
+| `Common/IsoMounter.cs` | 新增 `TitleChapters` 缓存 + `RememberChapters` / `TryGetTitleChapters` / `IsMountedIsoTitle`；`ResolveMountedTitle` / `ResolveInProcessTitle` 解析后写入缓存 |
+| `Mod/IsoExtraction.cs` | `GetMediaInfoInternal` 增挂 **Postfix**（`GetMediaInfoInternalPostfix` + `InjectChaptersAsync`）；本地 ISO 分支用 `BuildChapterState` 取章节 → 换包注入 `MediaInfo.Chapters` |
+
+链路：`UdfTitleResolver`（MPLS PlayListMark）→ `IsoMounter.TitleChapters` 缓存 → `IsoExtraction` postfix 注入 `MediaInfo.Chapters`
+→ `BaseMediaInfoProber.Probe`（`mediaInfoResult.Chapters → metadataResult.Chapters`）→ `SaveChapters` → **`Chapters3`**。
+
+> Postfix 必须**换包**：`GetMediaInfoInternal` 返回 `Task<MediaInfo>`，Harmony 的 `__result` 是 Task 本身（不自动解包），
+> 故返回一个「先 await 原任务、再写入 `Chapters`」的新 Task。
+
+### 14.2 关键发现：`ParsePlayListMark` 结构解析错误（真 bug）
+
+原实现按「长度4 + **保留1** + mark 数2」读，导致 **mark 数被读成 0x0100 = 256**，循环随即读到越界垃圾，章节恒为空。
+
+实测样本 `BDMV\PLAYLIST\00000.mpls`（270 B）字节：
+
+```
+190: 00 00 00 10 | 194: 00 01 | 196: 00 01 0000 0b43e940 ffff0000 0000
+     └ 长度=16   └ mark数=1  └ 保留 mark_type=1 ref=0 ts=4200s dur pid
+```
+
+- **PlayListMark 没有** PlayList() 那样的「长度后的保留字段」——紧跟长度的 2 字节就是 mark 数；
+  保留字节在**每条 mark 内部**（`reserved1 + mark_type1 + ref2 + ts4 + dur4 + pid2` = 14 B）。
+- 长度字段自洽：`length == 2 + 14 × count`（16 = 2 + 14×1）——已加为**一致性校验**，不符即放弃解析。
+- mark 的 `timestamp` 是 **45kHz 绝对 PTS**（含 m2ts 自身 PTS 基址，本样本 4200s），需减去该 PlayItem 的 `IN_time`
+  再加上前面各 PlayItem 的累计时长，才是 Emby 要的「标题内偏移」。
+
+### 14.3 ② 抽帧花屏修复（`-skip_frame nokey`）
+
+改动 1 个文件 `Mod/EnableImageCapture.cs`：新增 `GetExtraInputArguments` 的 **Postfix**（IMG-6）。
+
+- `ImageExtractorBase.GetExtraInputArguments(inputPath, videoStream)` 是命令列表中**唯一落在 `-i` 之前**且允许派生类自定义的槽位。
+- 基类返回 null；只有 `MultiImageExtractor` 覆写（`"-copyts -start_at_zero"`）——覆写不经过基类，故 **BIF 路径天然不受影响**。
+- **双重闸门**：① `IsoMounter.IsMountedIsoTitle(inputPath)`（仅本地挂载正片 `…\BDMV\STREAM\*.m2ts`）；
+  ② 抽取器为单帧抽取器（海报）。区间抽帧（`ImageSeriesExtractor`，`startOffset=null`）与 `MultiImageExtractor` 都不加。
+- 远程 ISO 头部窗口**刻意不加**：窗口只有数百 ms 视频，`-ss` 落点之后未必还有关键帧，加了反而可能抽不出帧
+  （且远程窗口 `-ss` 很小，原本不花屏）。
+
+### 14.4 实机验证结果（Emby 4.10.1.0，全部有日志实证）
+
+**① 本地 ISO（item 424 = `杜比视界测试：双层 FEL2.iso`）**
+
+```
+IsoExtraction - mounted …FEL2.iso -> E:\
+IsoExtraction - playlist chapters resolved for …FEL2.iso: 1 (first=0.000s, last=0.000s)
+IsoExtraction - probing mounted title for …FEL2.iso -> E:\BDMV\STREAM\00000.m2ts
+IsoExtraction - injected 1 playlist chapter(s) into probe result
+MediaInfoPersist - Serialization Success (Save Chapters): …FEL2-mediainfo.json
+```
+
+- `library.db` → `Chapters3`：`(424, 0, 0, 'Chapter 1')` ✅（改动前为 0 行）
+- 持久化 JSON：`"Chapters":[{"StartPositionTicks":0,"Name":"Chapter 1",...}]` ✅
+
+**② 本地 ISO 海报抽帧（临时开 `EnableImageCapture`）**
+
+实际 ffmpeg 命令行（日志实证，`-skip_frame nokey` 位于 `-ss` 之后、`-i` 之前）：
+
+```
+ffmpeg.exe -ss 00:00:15.333  -threads 1 -skip_frame nokey -i file:"E:\BDMV\STREAM\00000.m2ts"
+           -an -sn -threads 0 -vf "thumbnail=24,format=p010,supertonemap=tonemap=hable" -f image2 -b:v 100M "…jpg"
+```
+
+| 项 | 结果 |
+|---|---|
+| 带 `-skip_frame nokey` 输出 | **133990 B**，md5 `d79d888b24ce0e5ceae18913c2cd0056`，画面**干净无伪影** ✅ |
+| 插件实际落盘海报 | md5 **相同**（`d79d888b…`，133990 B）→ 即 skip_frame 的输出 ✅ |
+| 不带该参数的基线 | 183528 B，md5 `7836fd8b1ee2fba20e6c7937f82ca2e1`，**块状花屏** ❌ |
+
+> 说明：`extract-image` 进程 **exit code 1 是既有行为**，与本改动无关 —— Emby 的 `-vf thumbnail=24,…`
+> 会向**单一输出文件名**写出多帧，`image2` 报 `Cannot write more than one file with the same name`；
+> 无论是否加 `-skip_frame nokey` 都如此（基线同样 exit 1）。Emby 只看输出文件是否存在且非空，故视为成功。
+
+### 14.5 已知限制：远程（strm→HTTP）ISO 仍无章节
+
+已尝试并**放弃**（不留死代码）：窗口文件虽是本地 `.iso`，但**只有头部若干 MB 且常被代理限流**，
+`DiscUtils.Udf` 会因「分区长度超出流长度」直接拒绝构造 —— 独立测试实证：
+
+```
+== DiscUtils.Udf probe of rwin.iso (8388608 bytes) ==
+UdfReader FAILED: ArgumentException: Substream extends beyond end of parent stream
+```
+
+且实测样本的 `.mpls` **内容**也不在 8 MB 窗口内（窗口内有 `BDMV`/`PLAYLIST`/`CLIPINF`/`STREAM` 目录项与
+`00000.mpls` 文件名，但全窗口搜不到 `MPLS0300` 魔数）。→ **远程 ISO 的章节/章节图仍需另想办法**
+（可行方向：解析 UDF File Entry 拿到 mpls extent，再按 Range 精确拉取该文件；属独立课题）。
+
+另：`.strm` 条目在 Emby 中属 **shortcut**，`BaseMediaInfoProber.Probe` 的
+`if (!item.IsShortcut || refreshOptions.EnableRemoteContentProbe)` 会**跳过探测**——
+只有插件自己的提取流程（`GetMediaInfoRefreshOptions()` 里 `EnableRemoteContentProbe=true`）才会探测，
+故远程 ISO 的章节/探测必须走插件任务，普通 REST 刷新不生效。
+
+### 14.6 环境还原
+
+- 插件配置已还原：`EnableImageCapture=false`、`ImageCapturePosition=10`、`EnableIsoExtraction=true`。
+- item 424 / 428 海报已按原图回写（md5 与操作前一致）。
+- **保留**：item 424 的 `Chapters3` 章节行与 `-mediainfo.json` 中的章节（这是本功能的正常产物）。
+- 仓库内两个反编译临时目录已移出（`_emby_tmp\moved_from_repo\`）。
 
 ---
 
