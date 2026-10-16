@@ -3,6 +3,7 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.MediaInfo;
+using StrmAssistant.Common;
 using StrmAssistant.ScheduledTask;
 using System;
 using System.Collections.Generic;
@@ -24,7 +25,7 @@ namespace StrmAssistant.Mod
         private static MethodInfo _supportsAudioEmbeddedImages;
         private static MethodInfo _getImage;
         private static MethodInfo _runExtraction;
-        private static Type _quickSingleImageExtractor;
+        private static Type _singleImageExtractor;
         private static MethodInfo _supportsThumbnailsGetter;
         private static MethodInfo _logThumbnailImageExtractionFailure;
         private static ConstructorInfo _baseOptionsConstructor;
@@ -89,8 +90,24 @@ namespace StrmAssistant.Mod
             _supportsThumbnailsGetter = supportsThumbnailsProperty?.GetGetMethod();
             _runExtraction =
                 imageExtractorBaseType.GetMethod("RunExtraction", BindingFlags.Instance | BindingFlags.Public);
-            _quickSingleImageExtractor =
-                mediaEncodingAssembly.GetType("Emby.Server.MediaEncoding.ImageExtraction.QuickSingleImageExtractor");
+
+            // IMG-2：4.10 起单帧抽取器由 QuickSingleImageExtractor 更名为 SingleImageExtractor。
+            // 优先取新名、回退旧名（两者取第一个非 null），使「截图位置」覆盖在 4.9/4.10 上均能命中。
+            const string imageExtractionNs = "Emby.Server.MediaEncoding.ImageExtraction.";
+            _singleImageExtractor =
+                mediaEncodingAssembly.GetType(imageExtractionNs + "SingleImageExtractor") ??
+                mediaEncodingAssembly.GetType(imageExtractionNs + "QuickSingleImageExtractor");
+
+            if (_singleImageExtractor == null)
+            {
+                Plugin.Instance.Logger.Warn(
+                    "EnableImageCapture - SingleImageExtractor not found; image capture position override disabled");
+            }
+            else if (Plugin.Instance.DebugMode)
+            {
+                Plugin.Instance.Logger.Debug(
+                    "EnableImageCapture - resolved single-image extractor type: " + _singleImageExtractor.FullName);
+            }
 
             var embyServerImplementationsAssembly = Assembly.Load("Emby.Server.Implementations");
             var sqliteItemRepository =
@@ -400,15 +417,15 @@ namespace StrmAssistant.Mod
         }
 
         [HarmonyPrefix]
-        // ★ 4.9/4.10 兼容修复：只声明 prefix 实际使用的参数（__instance + ref startOffset）
+        // ★ 4.9/4.10 兼容修复：只声明 prefix 实际使用的参数（__instance + ref inputPath + ref startOffset）
         //   4.9.5.0:  RunExtraction(string inputPath, IDictionary requestHeaders, MediaContainers? container, MediaStream videoStream,
         //              Nullable<MediaProtocol> protocol, int? streamIndex, Video3DFormat? threedFormat, TimeSpan? startOffset, ...)
         //   4.10.0.29: RunExtraction(MediaSourceInfo mediaSource, string inputPath, MediaContainers? container, MediaStream videoStream,
         //              MediaProtocol protocol (非 Nullable!), int? streamIndex, Video3DFormat? threedFormat, TimeSpan? startOffset, ...)
         //   两版本差异：4.9 首参=inputPath，4.10 首参=mediaSource 且 protocol 由 Nullable 改为非 Nullable。
         //   若 prefix 声明完整签名（尤其 MediaProtocol? protocol），4.10 会因参数类型不匹配生成非法 IL → CLR invalid program。
-        //   解决：只声明实际用到的 __instance 与 ref startOffset（两者在 4.9/4.10 类型一致），Harmony 按名匹配其余参数。
-        private static void RunExtractionPrefix(object __instance, ref TimeSpan? startOffset)
+        //   解决：只声明 4.9/4.10 类型一致的 __instance / inputPath / startOffset，Harmony 按名匹配其余参数。
+        private static void RunExtractionPrefix(object __instance, ref string inputPath, ref TimeSpan? startOffset)
         {
             var timeoutProperty = Traverse.Create(__instance).Property("TotalTimeoutMs");
             var origTimeout = timeoutProperty.GetValue<int>();
@@ -420,7 +437,12 @@ namespace StrmAssistant.Mod
                 timeoutProperty.SetValue(newTimeout);
             }
 
-            if (ImageCaptureItem.Value != null && __instance.GetType() == _quickSingleImageExtractor)
+            // IMG-1：把 ISO 输入改写为 ffmpeg 可稳定读取的本地路径。
+            // 抽帧的 -i 原先直接用 item.Path（ISO 路径 / strm 代理 URL）——远程直连会挂死、本地 .iso 无法定位；
+            // 这里复用第 1 阶段的挂载/头部窗口基建改写 inputPath。非 ISO 输入原样放行。
+            RewriteIsoInput(ref inputPath);
+
+            if (ImageCaptureItem.Value != null && __instance.GetType() == _singleImageExtractor)
             {
                 timeoutProperty.SetValue(newTimeout);
 
@@ -437,6 +459,73 @@ namespace StrmAssistant.Mod
 
                 ImageCaptureItem.Value = null;
             }
+        }
+
+        /// <summary>
+        /// IMG-1：ISO 抽帧输入改写。
+        ///
+        /// - 本地 <c>.iso</c> → <see cref="IsoMounter.GetProbePath"/>（挂载正片，可 seek 到任意位置）；
+        /// - 远程 http(s) ISO（strm 代理）→ <see cref="IsoMounter.GetRemoteProbePath"/>（HTTP Range 头部窗口临时文件）；
+        /// - 取不到可用路径 → **保持原输入**（保守放行，绝不影响非 ISO 条目）。
+        ///
+        /// 只改写 ffmpeg 的 <c>inputPath</c> 参数，**不改** <c>MediaSourceInfo.Path</c>，因此条目身份与播放路径不受影响。
+        /// </summary>
+        private static void RewriteIsoInput(ref string inputPath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(inputPath)) return;
+                if (!IsoMounter.LooksLikeIsoPath(inputPath)) return;
+
+                var logger = Plugin.Instance.Logger;
+
+                // ① 远程/流式 ISO（strm → http/https）：下载头部窗口到本地临时文件再抽帧
+                if (IsoMounter.TryNormalizeRemoteIso(inputPath, out var isoUrl))
+                {
+                    var tempPath = IsoMounter.GetRemoteProbePath(isoUrl);
+                    if (!string.IsNullOrEmpty(tempPath))
+                    {
+                        logger.Info(
+                            $"EnableImageCapture - iso input rewritten (remote window) {ShortenUrl(isoUrl)} -> {tempPath}");
+                        inputPath = tempPath;
+                    }
+                    else
+                    {
+                        logger.Info(
+                            $"EnableImageCapture - remote iso window unavailable; keeping original input: {ShortenUrl(isoUrl)}");
+                    }
+
+                    return;
+                }
+
+                // ② 本地 .iso：挂载取正片（可 seek）
+                if (IsoMounter.TryNormalizeIsoPath(inputPath, out var isoPath))
+                {
+                    var probePath = IsoMounter.GetProbePath(isoPath);
+                    if (!string.IsNullOrEmpty(probePath))
+                    {
+                        logger.Info($"EnableImageCapture - iso input rewritten (mounted title) {isoPath} -> {probePath}");
+                        inputPath = probePath;
+                    }
+                    else
+                    {
+                        logger.Info($"EnableImageCapture - no mounted title for {isoPath}; keeping original input");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                // 任何异常一律放行原输入，确保非 ISO 条目零副作用
+                Plugin.Instance.Logger.Debug("EnableImageCapture - iso input rewrite skipped: " + e.Message);
+            }
+        }
+
+        /// <summary>日志用：剥离 URL 查询串，避免把 account/pickcode 等写进日志。</summary>
+        private static string ShortenUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return url;
+            var q = url.IndexOf('?');
+            return q > 0 ? url.Substring(0, q) + "?..." : url;
         }
 
         [HarmonyPrefix]
