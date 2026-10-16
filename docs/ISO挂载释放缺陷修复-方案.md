@@ -1,6 +1,6 @@
 # ISO 挂载释放缺陷修复方案（方案 1~5）
 
-> **日期**：2026-10-16　**状态**：✅ **方案 4A/4B 已实现并实机验证通过**（4/4 项；编译 0 error，DLL 已部署）；方案 1/2/3/5 待批
+> **日期**：2026-10-16　**状态**：✅ **方案 1/2/3/4/5 全部已实现**（4A/4B 已实机验证通过；方案 1/2/3/5 编译 0 error、DLL 已部署，实机验证步骤见 §8）
 > **对象文件**：`StrmAssistant/Common/IsoMounter.cs`、`StrmAssistant/Common/IsoMountEntryPoint.cs`（新增）、`Plugin.cs`
 > **基线**：`docs/PRO功能差异全量梳理与移植计划-v8.md`；`docs/第3阶段-双层杜比P7标注-方案.md`（§9.4「遗留观察」记录的本问题）
 > **范围**：覆盖前次排查列出的**全部五项**缺陷——① 跨重启孤儿（方案 4）、② 卸载假成功（方案 1）、③ Failed 条目留孤儿（方案 3）、④ PowerShell 吞错（方案 2）、⑤ 复用缓存盘符不校验（方案 5）。
@@ -473,8 +473,61 @@ if (!entry.Failed && !string.IsNullOrEmpty(entry.DriveRoot))
 
 ---
 
-## 十一、后续（待用户决定）
+## 十一、后续
 
 1. ~~是否采纳 **方案 4B**~~ → **已采纳、已落地、已实机验证通过**（Emby 确认注册 entry point，`Run`/`Dispose` 均被调用，正常关闭即真实释放）。方案 4A/4B 四项验证见 §8.1。
-2. 方案 5 的校验强度：默认「镜像身份校验」，是否需要加严到「含卷标签比对」，或放宽为「目录存在性快速判断」？
-3. 获批后按 **2 → 1 → 3 → 5** 顺序执行（**4A/4B 已完成并实机验证**），逐项编译 + 实机验证。
+2. ~~获批后按 **2 → 1 → 3 → 5** 顺序执行~~ → **已执行完毕**，见 §十二。
+3. 方案 5 的校验强度：默认「镜像身份校验」（已落地），如需加严到「含卷标签比对」或放宽为「目录存在性快速判断」，可作为后续微调。
+
+---
+
+## 十二、方案 1/2/3/5 实施记录（2026-10-16）
+
+**决策**：用户批准「按方案 2 → 1 → 3 → 5 顺序开工」。全部落码于 `StrmAssistant/Common/IsoMounter.cs` 单文件（无其他文件改动）。
+
+### 12.1 落地清单
+
+| 方案 | 改动 | 位置（行号为改动后） |
+|---|---|---|
+| **2** | 新增 `PsResult` 私有类 + `WaitString` 助手；`RunPowerShell` 返回类型 `string → PsResult`，并发 `ReadToEndAsync` 读双管道（消除顺序读死锁风险），超时 `Kill(true)` 并置 `TimedOut` | `IsoMounter.cs` 尾部 |
+| **2** | `IsSupported` 适配：判定 `?.StdOut?.Trim() == "yes"` | `IsSupported` |
+| **1** | `Dismount` 重写：先 `Get-DiskImage` 探测 `Attached` → 仅确挂时卸载 → 二次探测确认；按 `dismounted`/`not-attached`/其他 三分支据实返回与日志 | `Dismount` |
+| **3** | `Mount` 失败分支：判定 `res==null \|\| TimedOut \|\| ExitCode!=0 \|\| 输出异常`，记录 exit/err 并**回滚 `Dismount`** | `Mount` |
+| **3** | `SweepIdle`：`Failed` 条目改为「先 `Dismount`，成功才移除；失败保留并刷新 `LastUsedUtc` 延后重试」 | `SweepIdle` |
+| **5** | 新增 `IsVolumeStillMounted`（`Get-DiskImage` 反查实际盘符与缓存比对）；`GetProbePath` 缓存命中前校验，失效则 `Mount` 重挂并覆盖 `Mounts[isoPath]` | `GetProbePath` |
+| **2** | `IsAttached` 适配 `PsResult` | `IsAttached` |
+
+**签名影响面**：`RunPowerShell` 为 `private`，全部调用点（5 处）均在本文件内，已同步适配；对外公开方法签名**零变更**，`IsoExtraction.cs` / `Plugin.cs` / `MediaInfoExtractOptionsStore.cs` / `IsoMountEntryPoint.cs` 无需改动。
+
+### 12.2 验证状态
+
+| 项 | 状态 |
+|---|---|
+| `dotnet build -c Debug` | ✅ **0 错误**、1 条历史 warning（`SubtitleApi.cs` CS1998，与本次无关） |
+| ILRepack 合并 | ✅ 成功（`bin/Debug/net6.0/StrmAssistant.dll`） |
+| 部署 DLL | ✅ `D:\下载\embyserver-win-x64-4.10.1.0\programdata\plugins\StrmAssistant.dll`，与构建产物 **MD5 一致**（`58a8ae7a…`） |
+| 实机验证（步骤 3/4/8 + 空闲清扫） | ✅ 见 §12.3 |
+| 提交 | ⬜ 待提交 |
+
+### 12.3 实机验证记录（2026-10-16，真实实例 4.10.1.0）
+
+**环境**：Emby 4.10.1.0 于 14:15:21 重启加载新版 DLL；36 个模块 Initialized、0 error；`IsoMountEntryPoint.Run invoked` 出现。
+
+| §8 步骤 | 方案 | 结果 | 日志实证（时间 / 内容） |
+|---|---|---|---|
+| **4** 无效 ISO → 挂载失败+回滚 | 2、3、1 | ✅ | 14:18:09.682 `Mount-DiskImage failed for …ZZZ-无效挂载测试.iso: exit=1, out='', err='Mount-DiskImage : 文件或目录损坏且无法读取。…HRESULT 0x80070570'` → 14:18:11.831 `…not attached, nothing to dismount`（回滚已执行，且**未误报** `dismounted`） |
+| **8** 缓存盘符失效重挂 | 5 | ✅ | 14:18:59 `mounted … -> E:\` →（手工 `Dismount-DiskImage`）→ 14:19:46.727 `cached mount E:\ for … is stale, remounting` → 14:19:48.681 `mounted … -> E:\` + 选片 `BDMV\STREAM\00000.m2ts` 正确 |
+| **3** 反证方案 1 | 1、4B | ✅ | 14:20:35.067 `IsoMountEntryPoint.Dispose invoked, releasing all ISO mounts` → 14:20:37.233 `杜比视界测试：双层 FEL2.iso not attached, nothing to dismount`；**无** `dismounted` 误报 |
+| **1/2** 空闲清扫真实释放 | 1 | ✅ | 14:30:49.187 `mounted … -> E:\`（清单文件写入，55 bytes）→ 14:41:49.459 清扫 `dismounted`（空闲满 10 min 后的首个整分点），清单文件自动删除；`Get-DiskImage` 复核 `Attached=False`、系统无残留映像 |
+| **10** 关闭开关 / 回归 | 全部 | ✅ | 条目 424/428 流均完好：`(2160x3840, Hdr10=100/100)` + `(1080x1920, DolbyVision=130/13076)`；**远程 ISO 路径方法（`GetRemoteProbePath`/`DownloadRange`/`TryNormalizeRemoteIso`/`LooksLikeIsoPath`）diff 零改动** |
+
+**额外独立复现（新进程内、经插件自带「提取媒体信息」任务，14:26:51）**：
+`Mount-DiskImage failed … exit=1, err='…文件或目录损坏…'` → 14:26:54 `not attached, nothing to dismount`。即方案 2/3/1 在同一次会话中经**两条不同入口**（库扫描探测 / 插件提取任务）各验证一次。
+
+**方法学注意**：
+- 挂载状态读数以 **Emby 日志 + PowerShell 工具**双源交叉确认（`Get-DiskImage … .Attached`）。
+- **`SweepIdle` 计时**：清扫器首次触发在 `EnsureSweeper` 后 `IdleTimeout`(10 min)，其后每 1 min 一次；故「空闲满 10 min」的实际释放时刻会落在首个整分点（实测 14:30:49 挂载 → 14:41:49 释放，间隔 11 min）。
+- **步骤 6（启动期对账）本次未触发**：本会话每次关闭均经 4B 正常释放并清空清单，故启动时无孤儿可对账；该分支已于 §8.1（14:02 实测）单独验证过。
+- **副作用记录（非本方案引入）**：对 `.strm` 文件执行 `touch`（改 mtime）+ 库扫描时，Emby 会重置该条目的 `MediaStreams2` 行（元数据 `Container/RunTimeTicks/Size` 保留），需经插件「提取媒体信息」任务由 JSON 反序列化恢复。此行为由 Emby 的 strm 处理触发，与 `IsoMounter` 改动无关（该条目探测全程无 `IsoExtraction` 日志）。
+
+> **行为闭环**：方案 1 使 `Dismount` 不再假成功，`SweepIdle` / `DismountAll` / `ReconcileOnStartup` 的「返回 true 才移除跟踪」约定由此真正可信——这是 4A/4B 生效的前提；方案 3 进一步保证「OS 层已挂载、插件却已放弃跟踪」的孤儿不再产生。

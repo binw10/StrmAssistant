@@ -82,8 +82,9 @@ namespace StrmAssistant.Common
                 try
                 {
                     _supported = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
-                                 !string.IsNullOrEmpty(RunPowerShell(
-                                     $"if (Get-Command {MountCmdlet} -ErrorAction SilentlyContinue) {{ 'yes' }}"));
+                                 (RunPowerShell(
+                                     $"if (Get-Command {MountCmdlet} -ErrorAction SilentlyContinue) {{ 'yes' }}")
+                                     ?.StdOut?.Trim() == "yes");
                 }
                 catch
                 {
@@ -392,6 +393,17 @@ namespace StrmAssistant.Common
                     var entry = Mounts.GetOrAdd(isoPath, k => Mount(k));
                     entry.LastUsedUtc = DateTime.UtcNow;
 
+                    // 缓存盘符失效（被外部卸载 / 盘符被其它卷复用）→ 重置并重新挂载（方案 5）
+                    if (!entry.Failed && !string.IsNullOrEmpty(entry.DriveRoot) &&
+                        !IsVolumeStillMounted(isoPath, entry.DriveRoot))
+                    {
+                        Plugin.Instance?.Logger?.Info(
+                            $"IsoExtraction - cached mount {entry.DriveRoot} for {isoPath} is stale, remounting");
+                        entry = Mount(isoPath);
+                        entry.LastUsedUtc = DateTime.UtcNow;
+                        Mounts[isoPath] = entry;      // 覆盖失效条目
+                    }
+
                     if (!entry.Failed && !string.IsNullOrEmpty(entry.DriveRoot))
                     {
                         var title = ResolveMountedTitle(isoPath, entry.DriveRoot);
@@ -479,13 +491,20 @@ namespace StrmAssistant.Common
                     $"$img = Mount-DiskImage -ImagePath '{EscapePs(isoPath)}' -PassThru; " +
                     "($img | Get-Volume).DriveLetter";
 
-                var output = RunPowerShell(script)?.Trim();
+                var res = RunPowerShell(script);
+                var output = res?.StdOut?.Trim();
 
-                if (string.IsNullOrEmpty(output) || output.Length > 3)
+                if (res == null || res.TimedOut || res.ExitCode != 0 ||
+                    string.IsNullOrEmpty(output) || output.Length > 3)
                 {
                     entry.Failed = true;
                     Plugin.Instance?.Logger?.Warn(
-                        $"IsoExtraction - Mount-DiskImage returned unexpected output '{output}' for {isoPath}");
+                        $"IsoExtraction - Mount-DiskImage failed for {isoPath}: " +
+                        $"exit={res?.ExitCode}, out='{output}', err='{res?.StdErr?.Trim()}'" +
+                        (res?.TimedOut == true ? ", timed out" : ""));
+
+                    // 回滚：镜像可能已挂载但取盘符失败，立即尝试释放，避免孤儿挂载
+                    Dismount(isoPath);
                     return entry;
                 }
 
@@ -577,9 +596,15 @@ namespace StrmAssistant.Common
             {
                 foreach (var kv in Mounts.ToArray())
                 {
-                    if (kv.Value.Failed) { Mounts.TryRemove(kv.Key, out _); continue; }
-                    if (DateTime.UtcNow - kv.Value.LastUsedUtc < IdleTimeout) continue;
+                    if (kv.Value.Failed)
+                    {
+                        // 挂载失败 ≠ OS 层未挂上：先尝试卸载，成功才移除；失败则保留并延后重试
+                        if (Dismount(kv.Key)) Mounts.TryRemove(kv.Key, out _);
+                        else kv.Value.LastUsedUtc = DateTime.UtcNow;
+                        continue;
+                    }
 
+                    if (DateTime.UtcNow - kv.Value.LastUsedUtc < IdleTimeout) continue;
                     if (Dismount(kv.Key)) Mounts.TryRemove(kv.Key, out _);
                 }
 
@@ -625,19 +650,38 @@ namespace StrmAssistant.Common
 
         private static bool Dismount(string isoPath)
         {
-            try
-            {
-                RunPowerShell(
-                    $"$ErrorActionPreference='SilentlyContinue'; Dismount-DiskImage -ImagePath '{EscapePs(isoPath)}'");
+            // 先探测真实挂载状态：仅在确实 Attached 时才卸载，并据实返回结果（杜绝"假成功"）
+            var script =
+                "$ErrorActionPreference='SilentlyContinue'; " +
+                $"$img = Get-DiskImage -ImagePath '{EscapePs(isoPath)}'; " +
+                "if ($null -eq $img -or -not $img.Attached) { 'not-attached' } " +
+                "else { " +
+                    $"Dismount-DiskImage -ImagePath '{EscapePs(isoPath)}' | Out-Null; " +
+                    $"$img = Get-DiskImage -ImagePath '{EscapePs(isoPath)}'; " +
+                    "if ($null -ne $img -and $img.Attached) { 'still-attached' } else { 'dismounted' } }";
 
-                Plugin.Instance?.Logger?.Info($"IsoExtraction - dismounted {isoPath}");
-                ManifestRemove(isoPath);
-                return true;
-            }
-            catch (Exception e)
+            var res = RunPowerShell(script);
+            var token = res?.StdOut?.Trim();
+
+            switch (token)
             {
-                Plugin.Instance?.Logger?.Debug($"IsoExtraction - dismount failed for {isoPath}: {e.Message}");
-                return false;
+                case "dismounted":
+                    Plugin.Instance?.Logger?.Info($"IsoExtraction - dismounted {isoPath}");
+                    ManifestRemove(isoPath);                 // 方案 4A：同步挂载清单
+                    return true;
+
+                case "not-attached":
+                    // 本就没有挂载：视为"已释放"，调用方安全移除跟踪
+                    Plugin.Instance?.Logger?.Info($"IsoExtraction - {isoPath} not attached, nothing to dismount");
+                    ManifestRemove(isoPath);                 // 方案 4A
+                    return true;
+
+                default:
+                    Plugin.Instance?.Logger?.Warn(
+                        $"IsoExtraction - dismount failed for {isoPath}: " +
+                        $"exit={res?.ExitCode}, out='{token}', err='{res?.StdErr?.Trim()}'" +
+                        (res?.TimedOut == true ? ", timed out" : ""));
+                    return false;
             }
         }
 
@@ -709,7 +753,23 @@ namespace StrmAssistant.Common
                 $"$img = Get-DiskImage -ImagePath '{EscapePs(isoPath)}'; " +
                 "if ($null -ne $img -and $img.Attached) { 'attached' } else { 'detached' }";
 
-            return string.Equals(RunPowerShell(script)?.Trim(), "attached", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(RunPowerShell(script)?.StdOut?.Trim(), "attached", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 校验缓存盘符是否仍是该 ISO 的挂载点（方案 5）：
+        /// 用 <c>Get-DiskImage</c> 反查该 ISO 当前实际挂载盘符，与缓存比对；不一致或已卸载即视为失效。
+        /// </summary>
+        private static bool IsVolumeStillMounted(string isoPath, string driveRoot)
+        {
+            var script =
+                "$ErrorActionPreference='SilentlyContinue'; " +
+                $"$img = Get-DiskImage -ImagePath '{EscapePs(isoPath)}'; " +
+                $"if ($null -ne $img -and $img.Attached) {{ ((Get-DiskImage -ImagePath '{EscapePs(isoPath)}' | Get-Volume).DriveLetter) }}";
+
+            var outv = RunPowerShell(script)?.StdOut?.Trim();
+            return !string.IsNullOrEmpty(outv) &&
+                   string.Equals(outv.TrimEnd(':') + ":\\", driveRoot, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -756,7 +816,22 @@ namespace StrmAssistant.Common
 
         private static string EscapePs(string value) => value.Replace("'", "''");
 
-        private static string RunPowerShell(string script)
+        /// <summary>PowerShell 调用的结构化结果（方案 2）：暴露退出码 / stderr / 超时，供上层据实判定。</summary>
+        private sealed class PsResult
+        {
+            public string StdOut;
+            public string StdErr;
+            public int ExitCode = -1;   // -1：进程未能启动
+            public bool TimedOut;
+        }
+
+        private static string WaitString(Task<string> task)
+        {
+            try { return task.Wait(2000) ? task.Result : string.Empty; }
+            catch { return string.Empty; }
+        }
+
+        private static PsResult RunPowerShell(string script)
         {
             var psi = new ProcessStartInfo
             {
@@ -769,19 +844,32 @@ namespace StrmAssistant.Common
                 CreateNoWindow = true
             };
 
-            using var process = Process.Start(psi);
-            if (process == null) return null;
-
-            var stdout = process.StandardOutput.ReadToEnd();
-            process.StandardError.ReadToEnd();
-
-            if (!process.WaitForExit(30000))
+            var result = new PsResult();
+            try
             {
-                try { process.Kill(true); } catch { /* 忽略 */ }
-                return null;
+                using var process = Process.Start(psi);
+                if (process == null) return result;
+
+                // 并发读取两条管道，避免其中一条写满导致另一条阻塞（原先顺序读取存在死锁风险）
+                var stdout = process.StandardOutput.ReadToEndAsync();
+                var stderr = process.StandardError.ReadToEndAsync();
+
+                if (!process.WaitForExit(30000))
+                {
+                    try { process.Kill(true); } catch { /* 忽略 */ }
+                    result.TimedOut = true;
+                }
+
+                result.StdOut = WaitString(stdout);
+                result.StdErr = WaitString(stderr);
+                if (!result.TimedOut) result.ExitCode = process.ExitCode;
+            }
+            catch (Exception e)
+            {
+                result.StdErr = e.Message;
             }
 
-            return stdout;
+            return result;
         }
     }
 }
