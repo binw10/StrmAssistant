@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -489,6 +490,7 @@ namespace StrmAssistant.Common
                 }
 
                 entry.DriveRoot = output.TrimEnd(':') + ":\\";
+                ManifestAdd(isoPath);
                 Plugin.Instance?.Logger?.Info($"IsoExtraction - mounted {isoPath} -> {entry.DriveRoot}");
             }
             catch (Exception e)
@@ -629,6 +631,7 @@ namespace StrmAssistant.Common
                     $"$ErrorActionPreference='SilentlyContinue'; Dismount-DiskImage -ImagePath '{EscapePs(isoPath)}'");
 
                 Plugin.Instance?.Logger?.Info($"IsoExtraction - dismounted {isoPath}");
+                ManifestRemove(isoPath);
                 return true;
             }
             catch (Exception e)
@@ -636,6 +639,119 @@ namespace StrmAssistant.Common
                 Plugin.Instance?.Logger?.Debug($"IsoExtraction - dismount failed for {isoPath}: {e.Message}");
                 return false;
             }
+        }
+
+        // ===== 方案 4A：挂载清单持久化 + 启动期对账 =====
+
+        private const string ManifestFileName = "StrmAssistant_iso_mounts.txt";
+
+        private static string ManifestFilePath()
+        {
+            var dir = Plugin.Instance?.ApplicationPaths?.PluginConfigurationsPath;
+            return string.IsNullOrEmpty(dir) ? null : Path.Combine(dir, ManifestFileName);
+        }
+
+        private static void ManifestAdd(string isoPath)
+        {
+            var file = ManifestFilePath();
+            if (file == null) return;
+
+            try
+            {
+                lock (_lock)
+                {
+                    var lines = File.Exists(file)
+                        ? File.ReadAllLines(file).ToList()
+                        : new List<string>();
+
+                    if (!lines.Any(l => string.Equals(l.Trim(), isoPath, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        lines.Add(isoPath);
+                        File.WriteAllLines(file, lines);
+                    }
+                }
+            }
+            catch
+            {
+                // 忽略：清单写入失败不影响挂载主流程
+            }
+        }
+
+        private static void ManifestRemove(string isoPath)
+        {
+            var file = ManifestFilePath();
+            if (file == null) return;
+
+            try
+            {
+                lock (_lock)
+                {
+                    if (!File.Exists(file)) return;
+
+                    var lines = File.ReadAllLines(file)
+                        .Where(l => !string.Equals(l.Trim(), isoPath, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+
+                    if (lines.Count == 0) File.Delete(file);
+                    else File.WriteAllLines(file, lines);
+                }
+            }
+            catch
+            {
+                // 忽略
+            }
+        }
+
+        private static bool IsAttached(string isoPath)
+        {
+            var script =
+                "$ErrorActionPreference='SilentlyContinue'; " +
+                $"$img = Get-DiskImage -ImagePath '{EscapePs(isoPath)}'; " +
+                "if ($null -ne $img -and $img.Attached) { 'attached' } else { 'detached' }";
+
+            return string.Equals(RunPowerShell(script)?.Trim(), "attached", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 启动期对账：释放上一次进程遗留的孤儿挂载（跨 Emby 重启泄漏的唯一兜底）。
+        /// 依赖挂载清单文件；无清单或清单为空时直接返回。
+        /// </summary>
+        public static void ReconcileOnStartup()
+        {
+            var file = ManifestFilePath();
+            if (file == null || !File.Exists(file)) return;
+
+            string[] paths;
+            try
+            {
+                paths = File.ReadAllLines(file)
+                    .Where(l => !string.IsNullOrWhiteSpace(l))
+                    .ToArray();
+            }
+            catch
+            {
+                return;
+            }
+
+            var logger = Plugin.Instance?.Logger;
+
+            foreach (var p in paths)
+            {
+                try
+                {
+                    if (IsAttached(p))
+                    {
+                        logger?.Info($"IsoExtraction - reconciling orphan mount from previous run: {p}");
+                        Dismount(p);
+                    }
+                }
+                catch
+                {
+                    // 忽略单条失败
+                }
+            }
+
+            try { File.Delete(file); } catch { /* 忽略 */ }
         }
 
         private static string EscapePs(string value) => value.Replace("'", "''");

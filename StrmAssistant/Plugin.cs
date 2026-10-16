@@ -168,6 +168,16 @@ namespace StrmAssistant
             MigrateChineseSearchOptions();
             InitializeOptionCache();
 
+            // 方案 4A：对账并释放上一次进程遗留的 ISO 孤儿挂载（跨 Emby 重启泄漏的兜底）
+            try
+            {
+                Common.IsoMounter.ReconcileOnStartup();
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"ISO mount reconcile on startup failed: {ex.Message}");
+            }
+
             if (MainOptionsStore.GetOptions().AboutOptions.DebugMode)
             {
                 DebugMode = true;
