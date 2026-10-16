@@ -736,6 +736,21 @@ namespace StrmAssistant
             base.OnUninstalling();
         }
 
+        /// <summary>
+        /// 版本标记文件的格式版本。
+        /// <para>
+        /// 1（旧，隐式）：文件内只写版本号。历史编号方案并不统一——日期式 <c>26.3.25</c>、
+        /// 三段式 <c>3.0.55</c>（实为 <c>3.0.0.55</c> 的截断写法）、四段式 <c>3.0.0.55</c>。
+        /// </para>
+        /// <para>
+        /// 2：<c>格式号|版本号</c>，版本号与 Releases tag 一致为 4 段式（如 <c>2|3.0.0.55</c>）。
+        /// 格式号不同即说明编号方案已变更，此时两个版本号<b>不可比</b>
+        /// （按 <see cref="Version"/> 语义 <c>3.0.0.55 &lt; 3.0.55</c>，会得出「降级」的假结论），
+        /// 因此只重置基线，既不判升级也不判降级。
+        /// </para>
+        /// </summary>
+        private const int VersionMarkerFormat = 2;
+
         private void MigrateChineseSearchOptions()
         {
             try
@@ -754,7 +769,21 @@ namespace StrmAssistant
 
                 var hasLegacyMarker = File.Exists(legacyMarkerPath);
                 var hasVersionMarker = File.Exists(versionMarkerPath);
-                var previousVersionText = hasVersionMarker ? File.ReadAllText(versionMarkerPath).Trim() : string.Empty;
+
+                // 标记文件格式：<格式号>|<版本号>。旧文件没有分隔符，视为格式 1。
+                var markerText = hasVersionMarker ? File.ReadAllText(versionMarkerPath).Trim() : string.Empty;
+                var markerFormat = 1;
+                var previousVersionText = markerText;
+                var separatorIndex = markerText.IndexOf('|');
+                if (separatorIndex >= 0)
+                {
+                    if (int.TryParse(markerText.Substring(0, separatorIndex), out var parsedFormat))
+                    {
+                        markerFormat = parsedFormat;
+                    }
+
+                    previousVersionText = markerText.Substring(separatorIndex + 1).Trim();
+                }
 
                 Version previousVersion = null;
                 if (!string.IsNullOrWhiteSpace(previousVersionText) && Version.TryParse(previousVersionText, out var parsedPrevious))
@@ -762,20 +791,30 @@ namespace StrmAssistant
                     previousVersion = parsedPrevious;
                 }
 
-                Logger.Info(
-                    $"EnhanceChineseSearch upgrade-check: current={currentVersion}, previous={(previousVersion?.ToString() ?? "<none>")}, legacyMarker={hasLegacyMarker}, versionMarker={hasVersionMarker}");
+                // 编号方案变更 → 两数不可比，只重置基线（既不判升级也不判降级，也不告警）。
+                var schemeChanged = hasVersionMarker && markerFormat != VersionMarkerFormat;
 
-                // 首次安装/首次引入版本比较策略：仅记录版本，不执行自动禁用。
-                if (previousVersion is null)
+                void WriteVersionMarker()
                 {
-                    File.WriteAllText(versionMarkerPath, currentVersion.ToString());
+                    File.WriteAllText(versionMarkerPath, $"{VersionMarkerFormat}|{currentVersion}");
+                }
+
+                Logger.Info(
+                    $"EnhanceChineseSearch upgrade-check: current={currentVersion}, previous={(previousVersion?.ToString() ?? "<none>")}, markerFormat={markerFormat}, schemeChanged={schemeChanged}, legacyMarker={hasLegacyMarker}, versionMarker={hasVersionMarker}");
+
+                // 首次安装 / 编号方案变更：仅记录版本，不执行自动禁用。
+                if (previousVersion is null || schemeChanged)
+                {
+                    WriteVersionMarker();
 
                     if (!hasLegacyMarker)
                     {
                         File.WriteAllText(legacyMarkerPath, DateTime.UtcNow.ToString("O"));
                     }
 
-                    Logger.Info("EnhanceChineseSearch upgrade-check: baseline initialized, no auto-disable on first run.");
+                    Logger.Info(schemeChanged
+                        ? $"EnhanceChineseSearch upgrade-check: version numbering scheme changed (marker format {markerFormat} -> {VersionMarkerFormat}, previous={previousVersion}); baseline reset, no upgrade/downgrade decision."
+                        : "EnhanceChineseSearch upgrade-check: baseline initialized, no auto-disable on first run.");
                     return;
                 }
 
@@ -787,7 +826,7 @@ namespace StrmAssistant
                         Logger.Warn($"EnhanceChineseSearch upgrade-check: detected downgrade {previousVersion} -> {currentVersion}; keep current option state.");
                     }
 
-                    File.WriteAllText(versionMarkerPath, currentVersion.ToString());
+                    WriteVersionMarker();
                     return;
                 }
 
@@ -817,7 +856,8 @@ namespace StrmAssistant
                     Logger.Info($"EnhanceChineseSearch upgrade-check: no disable needed for upgrade {previousVersion} -> {currentVersion}.");
                 }
 
-                File.WriteAllText(versionMarkerPath, currentVersion.ToString());
+                WriteVersionMarker();
+
                 if (!hasLegacyMarker)
                 {
                     File.WriteAllText(legacyMarkerPath, DateTime.UtcNow.ToString("O"));
