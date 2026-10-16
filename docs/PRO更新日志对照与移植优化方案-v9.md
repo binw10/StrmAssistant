@@ -303,6 +303,10 @@ PRO 有 / 社区无 = 67        社区有 / PRO 无 = 93
 
 ### 阶段 0 —— 本轮立即可做（预计半天，零风险）
 
+> **状态（2026-10-16）**：0-A、0-B **已实施并实机验证**（提交 `eaf5955`，详见 `阶段0-实施记录.md`）。
+> 偏差：0-A 的配套 `CelebrityRoleRegex` 未改（`DoubanCelebrity.Role` 全仓只写不读，改之无功能影响）；
+> 0-B 额外修正了前端排序对复合标签的档位识别。0-C 未做。
+
 **0-A 豆瓣客串演员中文化**（P0-A）
 
 - 落点：`StrmAssistant/Provider/Douban/DoubanAssist.cs:635`
