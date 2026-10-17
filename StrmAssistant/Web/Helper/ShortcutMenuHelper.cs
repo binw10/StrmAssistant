@@ -233,6 +233,9 @@ setTimeout(() => {
 
             const string injectDoubanBadgeBootstrap = @"
 // StrmAssistant Douban badge bootstrap
+// 版本日志：前端排障用——浏览器 console 里能直接确认加载的是哪次构建的脚本，
+// 避免「部署了新 DLL 但页面仍驻留旧模块」时误判为功能失效。
+console.log('[StrmAssistant] web ui script v' + 'SA_SCRIPT_VERSION');
 window.__saUI = { replaceUnplayedWithTotal: REPLACE_UNPLAYED_TOTAL, showLibraryItemCount: SHOW_LIB_COUNT, reverseLogLines: REVERSE_LOGS, blockSearchRecommend: BLOCK_SEARCH_RECS, showMediaInfo: SHOW_MEDIA_INFO };
 require(['components/strmassistant/strmassistant']).then(function (mods) {
     var mod = mods && mods[0];
@@ -243,7 +246,9 @@ require(['components/strmassistant/strmassistant']).then(function (mods) {
 }).catch(function (e) { console.error('StrmAssistant: module load failed', e); });
 ";
             var uiOptions = Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions;
+            var scriptVersion = typeof(ShortcutMenuHelper).Assembly.GetName().Version?.ToString() ?? "unknown";
             var uiConfig = injectDoubanBadgeBootstrap
+                .Replace("SA_SCRIPT_VERSION", scriptVersion)
                 .Replace("REPLACE_UNPLAYED_TOTAL", uiOptions.ReplaceUnplayedWithTotal ? "true" : "false")
                 .Replace("SHOW_LIB_COUNT", uiOptions.ShowLibraryItemCount ? "true" : "false")
                 .Replace("REVERSE_LOGS", uiOptions.ReverseLogLines ? "true" : "false")

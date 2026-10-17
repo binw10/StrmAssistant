@@ -46,10 +46,180 @@ define([
 
     function startSharedObserver() {
         if (sharedObserverStarted || !window.MutationObserver) return;
+
+        // 模块可能在 body 尚未就绪时加载（设置页搜索框在顶层立即注册），延迟重试避免抛错
+        if (!document.body) {
+            setTimeout(startSharedObserver, 100);
+            return;
+        }
+
         sharedObserverStarted = true;
         new MutationObserver(scheduleSharedScan).observe(document.body,
             { childList: true, subtree: true });
     }
+
+    // ===== 全局：UI 命令 500 友好提示 =====
+    // Emby 的插件设置页依赖「页面会话（setup stage）」。服务器重启/插件更新后，
+    // 旧页面点保存或按钮会返回 500 "No active setup stage"，界面只显示英文错误，
+    // 用户不知道要刷新。这里拦截该响应并给出中文提示。
+    (function hookUiCommandErrors() {
+        if (window.__saUiCommandHooked || !window.fetch) return;
+        window.__saUiCommandHooked = true;
+
+        const origFetch = window.fetch;
+
+        window.fetch = function (input) {
+            const url = typeof input === 'string' ? input : (input && input.url) || '';
+            const result = origFetch.apply(this, arguments);
+
+            if (url.indexOf('/UI/Command') < 0) return result;
+
+            return result.then(function (res) {
+                if (!res || res.status !== 500) return res;
+                try {
+                    res.clone().text().then(function (text) {
+                        if (text && text.indexOf('No active setup stage') >= 0) showStalePageHint();
+                    }).catch(function () { });
+                } catch (e) {
+                    // ignore
+                }
+                return res;
+            });
+        };
+
+        function showStalePageHint() {
+            if (document.querySelector('.sa-stale-hint')) return;
+
+            const bar = document.createElement('div');
+            bar.className = 'sa-stale-hint';
+            bar.textContent = '服务器已重启或插件已更新，当前页面状态已失效，请刷新页面（Ctrl+F5）后重试。';
+            bar.setAttribute('style', 'position:fixed;top:0;left:0;right:0;z-index:99999;' +
+                'background:#b3261e;color:#fff;font-size:13px;padding:8px 12px;text-align:center;' +
+                'box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer;');
+            bar.title = '点击刷新页面';
+            bar.addEventListener('click', function () { location.reload(); });
+            document.body.appendChild(bar);
+
+            setTimeout(function () {
+                if (bar.parentNode) bar.parentNode.removeChild(bar);
+            }, 20000);
+        }
+    })();
+
+    // ===== 插件设置页：选项搜索 =====
+    // 设置页有 6 个 Tab、30+ 分组，选项多且分散。这里提供一个浮动搜索框：
+    // 输入关键词后按选项文本过滤，DOM 重渲染后自动重新应用过滤。
+    (function setupOptionsSearch() {
+        if (window.__saOptionsSearchHooked) return;
+        window.__saOptionsSearchHooked = true;
+
+        const CONTAINER_SELECTORS = ['.fieldset-field', '.inputContainer', '.emby-input-container'];
+        const PAGE_HINT = 'configurationpage';
+
+        let box = null;
+        let keyword = '';
+
+        function isSettingsPage() {
+            return (location.hash || '').toLowerCase().indexOf(PAGE_HINT) >= 0;
+        }
+
+        function optionContainers() {
+            for (let i = 0; i < CONTAINER_SELECTORS.length; i++) {
+                const els = document.querySelectorAll(CONTAINER_SELECTORS[i]);
+                if (els.length >= 3) return Array.prototype.slice.call(els);
+            }
+            return [];
+        }
+
+        function applyFilter(value) {
+            const items = optionContainers();
+            if (!items.length) return 0;
+
+            const q = (value || '').trim().toLowerCase();
+            let hits = 0;
+
+            items.forEach(function (el) {
+                if (!q) {
+                    el.style.display = '';
+                    return;
+                }
+
+                const match = (el.textContent || '').toLowerCase().indexOf(q) >= 0;
+                el.style.display = match ? '' : 'none';
+                if (match) hits++;
+            });
+
+            return hits;
+        }
+
+        function removeBox() {
+            applyFilter('');
+            if (box && box.parentNode) box.parentNode.removeChild(box);
+            box = null;
+            keyword = '';
+        }
+
+        function ensureBox() {
+            if (box && document.body.contains(box)) return box;
+            if (!optionContainers().length) return null;
+
+            box = document.createElement('div');
+            box.className = 'sa-options-search';
+            box.setAttribute('style', 'position:fixed;right:18px;top:88px;z-index:9999;' +
+                'background:rgba(28,28,30,.96);border:1px solid rgba(255,255,255,.15);' +
+                'border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;' +
+                'box-shadow:0 4px 14px rgba(0,0,0,.35);');
+
+            const input = document.createElement('input');
+            input.type = 'search';
+            input.placeholder = '搜索设置项…';
+            input.setAttribute('style', 'width:200px;background:transparent;border:none;' +
+                'outline:none;color:#fff;font-size:13px;');
+            input.value = keyword;
+
+            const hint = document.createElement('span');
+            hint.setAttribute('style', 'color:rgba(255,255,255,.6);font-size:12px;min-width:30px;');
+
+            input.addEventListener('input', function () {
+                keyword = input.value;
+                const hits = applyFilter(keyword);
+                hint.textContent = keyword ? hits + ' 项' : '';
+            });
+
+            const close = document.createElement('span');
+            close.textContent = '×';
+            close.title = '关闭搜索';
+            close.setAttribute('style', 'cursor:pointer;color:rgba(255,255,255,.6);' +
+                'font-size:16px;line-height:1;');
+            close.addEventListener('click', removeBox);
+
+            box.appendChild(input);
+            box.appendChild(hint);
+            box.appendChild(close);
+            document.body.appendChild(box);
+
+            return box;
+        }
+
+        function tick() {
+            try {
+                if (!isSettingsPage()) {
+                    if (box) removeBox();
+                    return;
+                }
+
+                ensureBox();
+
+                // Emby 的 GenericUI 会整块重渲染选项，过滤状态会被重置 → 每次扫描重新应用
+                if (keyword) applyFilter(keyword);
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        registerScan(tick);
+        startSharedObserver();
+    })();
 
     return {
         copy: function (libraryId) {
@@ -778,6 +948,7 @@ define([
             return { init: init };
         })()
     };
+
 
     function batchClear(itemIds, endpoint, commandName) {
         const ids = Array.isArray(itemIds) ? itemIds : [itemIds];
