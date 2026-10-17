@@ -1575,7 +1575,17 @@ namespace StrmAssistant.Provider.Douban
             var key = "subject:" + subjectId;
 
             var cached = GetCache<DoubanSubject>(key);
-            if (cached != null) return cached;
+            if (cached != null)
+            {
+                // 快照文件与缓存文件生命周期独立，缓存命中时补记一次，
+                // 避免快照被删/生成晚于缓存时 7 天内徽章一直缺失（RecordRatingSnapshot 自身幂等）。
+                if (cached.Rating.HasValue)
+                {
+                    RecordRatingSnapshot(subjectId, cached.Rating.Value, cached.Votes);
+                }
+
+                return cached;
+            }
 
             if (IsBreakerEngaged()) return null;
 
