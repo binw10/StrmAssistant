@@ -1,0 +1,35 @@
+# === 换行符统一策略 ===
+# 仓库内一律以 LF 存储文本文件，检出时由平台决定：
+#   Windows 下 core.autocrlf=true 会自动检出为 CRLF，不影响本地编辑体验。
+# 目的：消除「本机 CRLF / 仓库 CRLF 混用」导致每次改动都产生整文件级 diff 噪声。
+* text=auto
+
+# 源码与资源显式声明为文本，避免二进制探测误判而跳过换行规范化
+*.cs       text
+*.hpp      text
+*.csproj   text
+*.props    text
+*.targets  text
+*.resx     text
+*.js       text
+*.css      text
+*.html     text
+*.json     text
+*.xml      text
+*.md       text
+*.yml      text
+*.yaml     text
+*.txt      text
+
+# Shell 脚本必须为 LF，否则在 Linux / Docker 中执行会因 \r 报错
+*.sh       text eol=lf
+
+# Visual Studio 解决方案保持 CRLF
+*.sln      text eol=crlf
+
+# 二进制文件不参与换行转换
+*.png      binary
+*.jpg      binary
+*.so       binary
+*.dll      binary
+*.exe      binary
