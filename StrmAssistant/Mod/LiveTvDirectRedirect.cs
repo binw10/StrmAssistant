@@ -44,7 +44,7 @@ namespace StrmAssistant.Mod
         }
 
         private static bool IsEnabled =>
-            Plugin.Instance?.MainOptionsStore?.GetOptions()?.ModOptions?.DirectLinkOptions?.EnableLiveTvDirectRedirect ?? false;
+            Plugin.Instance?.NetworkProxyStore?.GetOptions()?.DirectLink?.EnableLiveTvDirectRedirect ?? false;
 
         protected override void OnInitialize()
         {

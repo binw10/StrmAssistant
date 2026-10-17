@@ -22,6 +22,7 @@ namespace StrmAssistant.Options.View
             PluginOptionsStore mainOptionsStore, MediaInfoExtractOptionsStore mediaInfoExtractOptionsStore,
             MetadataEnhanceOptionsStore metadataEnhanceOptionsStore,
             IntroSkipOptionsStore introSkipOptionsStore, ExperienceEnhanceOptionsStore experienceEnhanceOptionsStore,
+            NetworkProxyOptionsStore networkProxyOptionsStore,
             MediaBrowser.Model.Tasks.ITaskManager taskManager,
             MediaBrowser.Controller.Session.ISessionManager sessionManager)
             : base(pluginInfo.Id)
@@ -35,12 +36,17 @@ namespace StrmAssistant.Options.View
             {
                 Name = "Settings",
                 EnableInMainMenu = true,
-                DisplayName = Resources.ResourceManager.GetString("PluginOptions_EditorTitle_Strm_Assistant",
+                DisplayName = Resources.ResourceManager.GetString("PluginOptions_EditorTitle_Basic_Settings",
                     Plugin.Instance.DefaultUICulture),
                 MenuIcon = "video_settings",
                 IsMainConfigPage = false,
             };
 
+            // Tab 顺序按使用频率排列：高级功能紧跟基础设置，其后是三大日常功能。
+            _tabPages.Add(new TabPageController(pluginInfo, nameof(ExperienceEnhancePageView),
+                Resources.ResourceManager.GetString("ExperienceEnhanceOptions_EditorTitle_Experience_Enhance",
+                    Plugin.Instance.DefaultUICulture),
+                e => new ExperienceEnhancePageView(pluginInfo, libraryManager, experienceEnhanceOptionsStore)));
             _tabPages.Add(new TabPageController(pluginInfo, nameof(MediaInfoExtractPageView),
                 Resources.ResourceManager.GetString("PluginOptions_EditorTitle_Strm_Extract",
                     Plugin.Instance.DefaultUICulture),
@@ -53,10 +59,10 @@ namespace StrmAssistant.Options.View
                 Resources.ResourceManager.GetString("PluginOptions_IntroSkipOptions_Intro_Credits_Detection",
                     Plugin.Instance.DefaultUICulture),
                 e => new IntroSkipPageView(pluginInfo, libraryManager, introSkipOptionsStore)));
-            _tabPages.Add(new TabPageController(pluginInfo, nameof(ExperienceEnhancePageView),
-                Resources.ResourceManager.GetString("ExperienceEnhanceOptions_EditorTitle_Experience_Enhance",
+            _tabPages.Add(new TabPageController(pluginInfo, nameof(NetworkProxyPageView),
+                Resources.ResourceManager.GetString("NetworkProxyOptions_EditorTitle_Network_Direct_Link",
                     Plugin.Instance.DefaultUICulture),
-                e => new ExperienceEnhancePageView(pluginInfo, libraryManager, experienceEnhanceOptionsStore)));
+                e => new NetworkProxyPageView(pluginInfo, networkProxyOptionsStore)));
         }
 
         public override PluginPageInfo PageInfo { get; }

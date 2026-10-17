@@ -20,13 +20,25 @@ namespace StrmAssistant.Web.Service
 
         public object Get(GetStrmAssistantJs request)
         {
+            if (!Plugin.IsPluginEnabled) return null;
+
             return _resultFactory.GetResult(Request,
                 (ReadOnlyMemory<byte>)ShortcutMenuHelper.StrmAssistantJs.GetBuffer(), "application/x-javascript");
         }
 
         public object Get(GetShortcutMenu request)
         {
+            if (!Plugin.IsPluginEnabled) return null;
+
             return _resultFactory.GetResult(ShortcutMenuHelper.ModifiedShortcutsString.AsSpan(),
+                "application/x-javascript");
+        }
+
+        public object Get(GetMediaInfoJs request)
+        {
+            if (!Plugin.IsPluginEnabled) return null;
+
+            return _resultFactory.GetResult(ShortcutMenuHelper.ModifiedMediaInfoString.AsSpan(),
                 "application/x-javascript");
         }
     }

@@ -12,7 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using static StrmAssistant.Common.CommonUtility;
-using static StrmAssistant.Options.GeneralOptions;
+using static StrmAssistant.Options.TaskConcurrencyOptions;
 using static StrmAssistant.Options.Utility;
 
 namespace StrmAssistant.Options.Store
@@ -27,6 +27,11 @@ namespace StrmAssistant.Options.Store
             : base(applicationHost, logger, pluginFullName)
         {
             _logger = logger;
+
+            // 分组化改造：GeneralOptions / ModOptions 由平铺改为分组嵌套。先把旧配置就地迁移，
+            // 否则旧键会被反序列化忽略、用户设置静默回退为默认值。
+            PluginOptionsMigration.MigrateIfNeeded(OptionsFilePath,
+                applicationHost.Resolve<MediaBrowser.Model.Serialization.IJsonSerializer>(), logger);
 
             FileSaved += OnFileSaved;
             FileSaving += OnFileSaving;
@@ -46,65 +51,35 @@ namespace StrmAssistant.Options.Store
             {
                 var suppress = _currentSuppressOnOptionsSaved;
 
-                if (string.IsNullOrEmpty(options.GeneralOptions.CatchupTaskScope))
+                if (string.IsNullOrEmpty(options.GeneralOptions.TaskConcurrency.CatchupTaskScope))
                 {
-                    options.GeneralOptions.CatchupTaskScope = CatchupTask.MediaInfo.ToString();
+                    options.GeneralOptions.TaskConcurrency.CatchupTaskScope = CatchupTask.MediaInfo.ToString();
                 }
-                else if (options.GeneralOptions.CatchupMode &&
-                         !Plugin.Instance.IntroSkipStore.GetOptions().UnlockIntroSkip)
+                else if (options.GeneralOptions.TaskConcurrency.CatchupMode &&
+                         !Plugin.Instance.IntroSkipStore.GetOptions().Fingerprint.UnlockIntroSkip)
                 {
-                    var taskScope = options.GeneralOptions.CatchupTaskScope;
+                    var taskScope = options.GeneralOptions.TaskConcurrency.CatchupTaskScope;
                     var selectedTasks = taskScope.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                         .Where(f => f != CatchupTask.Fingerprint.ToString())
                         .ToList();
-                    options.GeneralOptions.CatchupTaskScope = string.Join(",", selectedTasks);
+                    options.GeneralOptions.TaskConcurrency.CatchupTaskScope = string.Join(",", selectedTasks);
                 }
 
-                options.NetworkOptions.ProxyServerUrl =
-                    !string.IsNullOrWhiteSpace(options.NetworkOptions.ProxyServerUrl)
-                        ? options.NetworkOptions.ProxyServerUrl.Trim().TrimEnd('/')
-                        : options.NetworkOptions.ProxyServerUrl?.Trim();
-
-                options.NetworkOptions.LocalDiscoveryUrl =
-                    !string.IsNullOrWhiteSpace(options.NetworkOptions.LocalDiscoveryUrl)
-                        ? options.NetworkOptions.LocalDiscoveryUrl.Trim().TrimEnd('/')
-                        : options.NetworkOptions.LocalDiscoveryUrl?.Trim();
-
-                if (!suppress)
-                {
-                    if (options.NetworkOptions.EnableProxyServer &&
-                        !string.IsNullOrWhiteSpace(options.NetworkOptions.ProxyServerUrl))
-                    {
-                        if (TryParseProxyUrl(options.NetworkOptions.ProxyServerUrl, out var schema, out var host, out var port,
-                                out var username, out var password) &&
-                            CheckProxyReachability(schema, host, port, username, password) is (true, var httpPing))
-                        {
-                            options.NetworkOptions.ProxyServerStatus.Status = ItemStatus.Succeeded;
-                            options.NetworkOptions.ProxyServerStatus.Caption = Resources.ProxyServer_Available;
-                            options.NetworkOptions.ProxyServerStatus.StatusText = $"{httpPing} ms";
-                        }
-                        else
-                        {
-                            options.NetworkOptions.ProxyServerStatus.Status = ItemStatus.Unavailable;
-                            options.NetworkOptions.ProxyServerStatus.Caption = Resources.ProxyServer_Unavailable;
-                            options.NetworkOptions.ProxyServerStatus.StatusText = "N/A";
-                        }
-
-                        options.NetworkOptions.ShowProxyServerStatus = true;
-                    }
-                    else
-                    {
-                        options.NetworkOptions.ProxyServerStatus.StatusText = string.Empty;
-                        options.NetworkOptions.ShowProxyServerStatus = false;
-                    }
-                }
-                
                 var changes = PropertyChangeDetector.DetectObjectPropertyChanges(PluginOptions, options);
                 var changedProperties = new HashSet<string>(changes.Select(c => c.PropertyName));
 
-                if (changedProperties.Contains(nameof(PluginOptions.GeneralOptions.CatchupMode)))
+                // 插件总开关需重启生效：保存时立即提示管理员重启，
+                // 避免「点了关闭但功能还在跑」的困惑（Emby 顶部会弹出重启提示）。
+                if (changedProperties.Contains(nameof(PluginOptions.EnablePlugin)))
                 {
-                    if (options.GeneralOptions.CatchupMode)
+                    _logger.Info("EnablePlugin changed to {0} - a server restart is required to take effect",
+                        options.EnablePlugin);
+                    Plugin.Instance.ApplicationHost.NotifyPendingRestart();
+                }
+
+                if (changedProperties.Contains(nameof(PluginOptions.GeneralOptions.TaskConcurrency.CatchupMode)))
+                {
+                    if (options.GeneralOptions.TaskConcurrency.CatchupMode)
                     {
                         QueueManager.Initialize();
                     }
@@ -114,143 +89,76 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(PluginOptions.GeneralOptions.CatchupTaskScope)))
+                if (changedProperties.Contains(nameof(PluginOptions.GeneralOptions.TaskConcurrency.CatchupTaskScope)))
                 {
-                    UpdateCatchupScope(options.GeneralOptions.CatchupTaskScope);
+                    UpdateCatchupScope(options.GeneralOptions.TaskConcurrency.CatchupTaskScope);
                 }
 
-                if (changedProperties.Contains(nameof(PluginOptions.GeneralOptions.MaxConcurrentCount)))
+                if (changedProperties.Contains(nameof(PluginOptions.GeneralOptions.TaskConcurrency.MaxConcurrentCount)))
                 {
-                    var maxConcurrentCount = options.GeneralOptions.MaxConcurrentCount;
+                    var maxConcurrentCount = options.GeneralOptions.TaskConcurrency.MaxConcurrentCount;
 
                     QueueManager.UpdateMasterSemaphore(maxConcurrentCount);
 
-                    if (Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableImageCapture)
+                    if (Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCapture.EnableImageCapture)
                         EnableImageCapture.UpdateResourcePool(maxConcurrentCount);
 
                     Plugin.FingerprintApi.PatchTimeout(maxConcurrentCount);
                 }
 
-                if (changedProperties.Contains(nameof(PluginOptions.GeneralOptions.Tier2MaxConcurrentCount)))
+                if (changedProperties.Contains(nameof(PluginOptions.GeneralOptions.TaskConcurrency.Tier2MaxConcurrentCount)))
                 {
-                    QueueManager.UpdateTier2Semaphore(options.GeneralOptions.Tier2MaxConcurrentCount);
+                    QueueManager.UpdateTier2Semaphore(options.GeneralOptions.TaskConcurrency.Tier2MaxConcurrentCount);
                 }
 
-                if (changedProperties.Contains(nameof(PluginOptions.GeneralOptions.EnableMemoryCleanup)) ||
-                    changedProperties.Contains(nameof(PluginOptions.GeneralOptions.MemoryCleanupIntervalMinutes)))
+                if (changedProperties.Contains(nameof(PluginOptions.GeneralOptions.Memory.EnableMemoryCleanup)) ||
+                    changedProperties.Contains(nameof(PluginOptions.GeneralOptions.Memory.MemoryCleanupIntervalMinutes)))
                 {
                     MemoryCleaner.ApplySettings(_logger,
-                        options.GeneralOptions.EnableMemoryCleanup,
-                        options.GeneralOptions.MemoryCleanupIntervalMinutes);
+                        options.GeneralOptions.Memory.EnableMemoryCleanup,
+                        options.GeneralOptions.Memory.MemoryCleanupIntervalMinutes);
                 }
 
-                if (changedProperties.Contains(nameof(PluginOptions.GeneralOptions.EnableMemoryAutoRestart)) ||
-                    changedProperties.Contains(nameof(PluginOptions.GeneralOptions.MemoryAutoRestartThresholdMB)))
+                if (changedProperties.Contains(nameof(PluginOptions.GeneralOptions.Memory.EnableMemoryAutoRestart)) ||
+                    changedProperties.Contains(nameof(PluginOptions.GeneralOptions.Memory.MemoryAutoRestartThresholdMB)))
                 {
                     MemoryGuard.Apply(_logger,
-                        options.GeneralOptions.EnableMemoryAutoRestart,
-                        options.GeneralOptions.MemoryAutoRestartThresholdMB);
+                        options.GeneralOptions.Memory.EnableMemoryAutoRestart,
+                        options.GeneralOptions.Memory.MemoryAutoRestartThresholdMB);
                 }
 
                 if (PatchManager.EnhanceChineseSearch != null)
                 {
                     var isSimpleTokenizer = string.Equals(EnhanceChineseSearch.CurrentTokenizerName, "simple",
                         StringComparison.Ordinal);
-                    options.ModOptions.EnhanceChineseSearchRestore =
-                        !options.ModOptions.EnhanceChineseSearch && isSimpleTokenizer;
+                    options.ModOptions.ChineseSearch.EnhanceChineseSearchRestore =
+                        !options.ModOptions.ChineseSearch.EnhanceChineseSearch && isSimpleTokenizer;
 
-                    if (changedProperties.Contains(nameof(PluginOptions.ModOptions.EnhanceChineseSearch)) &&
-                        ((!options.ModOptions.EnhanceChineseSearch && isSimpleTokenizer) ||
-                         (options.ModOptions.EnhanceChineseSearch && !isSimpleTokenizer)))
+                    if (changedProperties.Contains(nameof(ChineseSearchOptions.EnhanceChineseSearch)) &&
+                        ((!options.ModOptions.ChineseSearch.EnhanceChineseSearch && isSimpleTokenizer) ||
+                         (options.ModOptions.ChineseSearch.EnhanceChineseSearch && !isSimpleTokenizer)))
                     {
                         Plugin.Instance.ApplicationHost.NotifyPendingRestart();
                     }
                 }
 
-                if (changedProperties.Contains(nameof(PluginOptions.ModOptions.SearchScope)))
+                if (changedProperties.Contains(nameof(ChineseSearchOptions.SearchScope)))
                 {
-                    UpdateSearchScope(options.ModOptions.SearchScope);
+                    UpdateSearchScope(options.ModOptions.ChineseSearch.SearchScope);
                 }
 
                 // MixedChineseVariants 改变了索引侧的归一化规则，切换时必须重建 FTS 索引，
                 // 否则旧索引与新查询规则不一致会导致互通匹配失效。
-                if (changedProperties.Contains(nameof(PluginOptions.ModOptions.MixedChineseVariants)))
+                if (changedProperties.Contains(nameof(ChineseSearchOptions.MixedChineseVariants)))
                 {
-                    _logger.Info("MixedChineseVariants is set to {0}", options.ModOptions.MixedChineseVariants);
+                    _logger.Info("MixedChineseVariants is set to {0}", options.ModOptions.ChineseSearch.MixedChineseVariants);
                     EnhanceChineseSearch.ScheduleIndexRebuild();
                     Plugin.Instance.ApplicationHost.NotifyPendingRestart();
                 }
 
-                if (changedProperties.Contains(nameof(PluginOptions.ModOptions.DigitsAsTmdbId)))
+                if (changedProperties.Contains(nameof(ChineseSearchOptions.DigitsAsTmdbId)))
                 {
-                    _logger.Info("DigitsAsTmdbId is set to {0}", options.ModOptions.DigitsAsTmdbId);
-                }
-
-                if (changedProperties.Contains(nameof(PluginOptions.ModOptions.ShowMediaInfo)))
-                {
-                    _logger.Info("ShowMediaInfo is set to {0}", options.ModOptions.ShowMediaInfo);
-                }
-
-                if (changedProperties.Contains(nameof(PluginOptions.NetworkOptions.EnableProxyServer)))
-                {
-                    if (options.NetworkOptions.EnableProxyServer)
-                    {
-                        PatchManager.EnableProxyServer.Patch();
-                    }
-                    else
-                    {
-                        PatchManager.EnableProxyServer.Unpatch();
-                    }
-                }
-
-                if (changedProperties.Contains(nameof(PluginOptions.NetworkOptions.ProxyServerUrl)) ||
-                    changedProperties.Contains(nameof(PluginOptions.NetworkOptions.EnableProxyServer)))
-                {
-                    if (options.NetworkOptions.EnableProxyServer &&
-                        options.NetworkOptions.ProxyServerStatus.Status == ItemStatus.Succeeded)
-                    {
-                        Plugin.Instance.ApplicationHost.NotifyPendingRestart();
-                    }
-                    else if (!options.NetworkOptions.EnableProxyServer)
-                    {
-                        Plugin.Instance.ApplicationHost.NotifyPendingRestart();
-                    }
-                }
-
-                if (changedProperties.Contains(nameof(PluginOptions.NetworkOptions.LocalDiscoveryUrl)))
-                {
-                    if (!string.IsNullOrWhiteSpace(options.NetworkOptions.LocalDiscoveryUrl))
-                    {
-                        PatchManager.CustomLocalDiscovery.Patch();
-                    }
-                    else
-                    {
-                        PatchManager.CustomLocalDiscovery.Unpatch();
-                    }
-                }
-
-                // 影音直链：保存后即时生效（直接比较新旧值，避免依赖嵌套层级的变更检测）
-                try
-                {
-                    var oldDirectLink = PluginOptions.ModOptions.DirectLinkOptions ?? new DirectLinkOptions();
-                    var newDirectLink = options.ModOptions.DirectLinkOptions ?? new DirectLinkOptions();
-
-                    if (oldDirectLink.EnableStrmDirectRedirect != newDirectLink.EnableStrmDirectRedirect ||
-                        oldDirectLink.StrmDirectRedirectFollow302 != newDirectLink.StrmDirectRedirectFollow302 ||
-                        !string.Equals(oldDirectLink.StrmVideoDirectRedirectClientBlacklist, newDirectLink.StrmVideoDirectRedirectClientBlacklist) ||
-                        !string.Equals(oldDirectLink.StrmAudioDirectRedirectClientBlacklist, newDirectLink.StrmAudioDirectRedirectClientBlacklist))
-                    {
-                        PatchManager.StrmDirectRedirect?.ApplyOptionsAndConfigure(newDirectLink);
-                    }
-
-                    if (oldDirectLink.EnableLiveTvDirectRedirect != newDirectLink.EnableLiveTvDirectRedirect)
-                    {
-                        PatchManager.LiveTvDirectRedirect?.ApplyOptionsAndConfigure(newDirectLink);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.Warn($"影音直链选项即时生效失败: {ex.Message}");
+                    _logger.Info("DigitsAsTmdbId is set to {0}", options.ModOptions.ChineseSearch.DigitsAsTmdbId);
                 }
             }
         }
@@ -263,38 +171,33 @@ namespace StrmAssistant.Options.Store
 
                 if (!suppress)
                 {
-                    _logger.Info("CatchupMode is set to {0}", options.GeneralOptions.CatchupMode);
+                    _logger.Info("CatchupMode is set to {0}", options.GeneralOptions.TaskConcurrency.CatchupMode);
                     var catchupTaskScope = GetSelectedCatchupTaskDescription();
                     _logger.Info("CatchupTaskScope is set to {0}",
                         string.IsNullOrEmpty(catchupTaskScope) ? "EMPTY" : catchupTaskScope);
-                    _logger.Info("CatchupMinWaitMinutes is set to {0}", options.GeneralOptions.CatchupMinWaitMinutes);
-                    _logger.Info("EnableMemoryAutoRestart is set to {0}", options.GeneralOptions.EnableMemoryAutoRestart);
-                    _logger.Info("MemoryAutoRestartThresholdMB is set to {0}", options.GeneralOptions.MemoryAutoRestartThresholdMB);
+                    _logger.Info("CatchupMinWaitMinutes is set to {0}", options.GeneralOptions.TaskConcurrency.CatchupMinWaitMinutes);
+                    _logger.Info("EnableMemoryAutoRestart is set to {0}", options.GeneralOptions.Memory.EnableMemoryAutoRestart);
+                    _logger.Info("MemoryAutoRestartThresholdMB is set to {0}", options.GeneralOptions.Memory.MemoryAutoRestartThresholdMB);
 
-                    _logger.Info("Master MaxConcurrentCount is set to {0}", options.GeneralOptions.MaxConcurrentCount);
-                    _logger.Info("CooldownDurationSeconds is set to {0}", options.GeneralOptions.CooldownDurationSeconds);
-                    _logger.Info("Tier2 MaxConcurrentCount is set to {0}", options.GeneralOptions.Tier2MaxConcurrentCount);
+                    _logger.Info("Master MaxConcurrentCount is set to {0}", options.GeneralOptions.TaskConcurrency.MaxConcurrentCount);
+                    _logger.Info("CooldownDurationSeconds is set to {0}", options.GeneralOptions.TaskConcurrency.CooldownDurationSeconds);
+                    _logger.Info("Tier2 MaxConcurrentCount is set to {0}", options.GeneralOptions.TaskConcurrency.Tier2MaxConcurrentCount);
                     
-                    _logger.Info("CatchupMode is set to {0}", options.GeneralOptions.CatchupMode);
+                    _logger.Info("CatchupMode is set to {0}", options.GeneralOptions.TaskConcurrency.CatchupMode);
 
-                    _logger.Info("EnhanceChineseSearch is set to {0}", options.ModOptions.EnhanceChineseSearch);
+                    _logger.Info("EnhanceChineseSearch is set to {0}", options.ModOptions.ChineseSearch.EnhanceChineseSearch);
                     var searchScope = string.Join(", ",
-                        options.ModOptions.SearchScope
+                        options.ModOptions.ChineseSearch.SearchScope
                             ?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                             .Select(s =>
-                                Enum.TryParse(s.Trim(), true, out ModOptions.SearchItemType type)
+                                Enum.TryParse(s.Trim(), true, out ChineseSearchOptions.SearchItemType type)
                                     ? Utility.GetEnumDescription(type)
                                     : null)
                             .Where(d => d != null) ?? Enumerable.Empty<string>());
                     _logger.Info("EnhanceChineseSearch - SearchScope is set to {0}",
                         string.IsNullOrEmpty(searchScope) ? "ALL" : searchScope);
-                    _logger.Info("ExcludeOriginalTitleFromSearch is set to {0}", options.ModOptions.ExcludeOriginalTitleFromSearch);
+                    _logger.Info("ExcludeOriginalTitleFromSearch is set to {0}", options.ModOptions.ChineseSearch.ExcludeOriginalTitleFromSearch);
 
-                    _logger.Info("EnableProxyServer is set to {0}", options.NetworkOptions.EnableProxyServer);
-                    _logger.Info("ProxyServerUrl is set to {0}",
-                        !string.IsNullOrEmpty(options.NetworkOptions.ProxyServerUrl)
-                            ? options.NetworkOptions.ProxyServerUrl
-                            : "EMPTY");
                 }
 
                 if (suppress) _currentSuppressOnOptionsSaved = false;

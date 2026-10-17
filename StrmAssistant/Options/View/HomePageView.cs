@@ -1,4 +1,4 @@
-﻿using Emby.Media.Common.Extensions;
+using Emby.Media.Common.Extensions;
 using Emby.Web.GenericEdit.Elements;
 using Emby.Web.GenericEdit.Elements.List;
 using MediaBrowser.Controller.Session;
@@ -40,7 +40,6 @@ namespace StrmAssistant.Options.View
             PluginOptions.Initialize();
             PluginOptions.GeneralOptions.Initialize();
             PluginOptions.ModOptions.Initialize();
-            PluginOptions.NetworkOptions.Initialize();
             PluginOptions.AboutOptions.Initialize();
 
             PopulateRuntimeStatus(PluginOptions.GeneralOptions);
@@ -50,7 +49,7 @@ namespace StrmAssistant.Options.View
 
         private void PopulateRuntimeStatus(GeneralOptions options)
         {
-            options.RuntimeStatusList.Clear();
+            options.RuntimeStatus.RuntimeStatusList.Clear();
 
             try
             {
@@ -58,7 +57,7 @@ namespace StrmAssistant.Options.View
                 var workingSetMb = process.WorkingSet64 / 1024 / 1024;
                 var gcHeapMb = GC.GetTotalMemory(false) / 1024 / 1024;
 
-                options.RuntimeStatusList.Add(new GenericListItem
+                options.RuntimeStatus.RuntimeStatusList.Add(new GenericListItem
                 {
                     PrimaryText = string.Format(Resources.RuntimeStatus_Memory, workingSetMb, gcHeapMb),
                     Icon = IconNames.memory
@@ -69,7 +68,7 @@ namespace StrmAssistant.Options.View
                     .Select(t => t.ScheduledTask.Name)
                     .ToList();
 
-                options.RuntimeStatusList.Add(new GenericListItem
+                options.RuntimeStatus.RuntimeStatusList.Add(new GenericListItem
                 {
                     PrimaryText = string.Format(Resources.RuntimeStatus_RunningTasks,
                         runningTasks.Count, runningTasks.Count > 0 ? string.Join(", ", runningTasks) : "-"),
@@ -81,7 +80,7 @@ namespace StrmAssistant.Options.View
                     .ToList();
                 var playingCount = sessions?.Count(s => s.FullNowPlayingItem != null) ?? 0;
 
-                options.RuntimeStatusList.Add(new GenericListItem
+                options.RuntimeStatus.RuntimeStatusList.Add(new GenericListItem
                 {
                     PrimaryText = string.Format(Resources.RuntimeStatus_Sessions,
                         sessions?.Count ?? 0,
@@ -92,7 +91,7 @@ namespace StrmAssistant.Options.View
                     Icon = IconNames.devices
                 });
 
-                options.RuntimeStatusList.Add(new GenericListItem
+                options.RuntimeStatus.RuntimeStatusList.Add(new GenericListItem
                 {
                     PrimaryText = string.Format(Resources.RuntimeStatus_SearchIndex,
                         EnhanceChineseSearch.GetSearchIndexStatus()),
@@ -110,7 +109,7 @@ namespace StrmAssistant.Options.View
                     processing.Add(Resources.CatchupTask_EpisodeRefresh_EpisodeRefresh);
                 }
 
-                options.RuntimeStatusList.Add(new GenericListItem
+                options.RuntimeStatus.RuntimeStatusList.Add(new GenericListItem
                 {
                     PrimaryText = string.Format(Resources.RuntimeStatus_ProcessingTasks,
                         processing.Count > 0 ? string.Join(", ", processing) : "-"),
@@ -122,7 +121,7 @@ namespace StrmAssistant.Options.View
                 var introQueue = QueueManager.IntroSkipItemQueue.Count;
                 var episodeRefreshQueue = QueueManager.EpisodeRefreshItemQueue.Count;
 
-                options.RuntimeStatusList.Add(new GenericListItem
+                options.RuntimeStatus.RuntimeStatusList.Add(new GenericListItem
                 {
                     PrimaryText = string.Format(Resources.RuntimeStatus_PendingQueue,
                         mediaInfoQueue + fingerprintQueue + introQueue + episodeRefreshQueue,
@@ -133,7 +132,7 @@ namespace StrmAssistant.Options.View
                 var conflicts = ConflictDetector.GetConflictingAssemblies();
                 if (conflicts.Length > 0)
                 {
-                    options.RuntimeStatusList.Add(new GenericListItem
+                    options.RuntimeStatus.RuntimeStatusList.Add(new GenericListItem
                     {
                         PrimaryText = string.Format(Resources.RuntimeStatus_ConflictPlugin,
                             string.Join(", ", conflicts)),
@@ -172,6 +171,20 @@ namespace StrmAssistant.Options.View
                     RaiseUIViewInfoChanged();
                     return Task.FromResult<IPluginUIView>(this);
 
+                case "OptimizeSearchIndex":
+                {
+                    var optimizeResult = EnhanceChineseSearch.OptimizeSearchIndex();
+                    PopulateRuntimeStatus(PluginOptions.GeneralOptions);
+                    RaiseUIViewInfoChanged();
+                    Plugin.NotificationApi?.SendMessageToAdmins(
+                        optimizeResult.HasValue
+                            ? string.Format(Resources.GeneralOptions_OptimizeSearchIndex_Reclaimed,
+                                optimizeResult.Value.ReclaimedPages, optimizeResult.Value.ReclaimedBytes)
+                            : Resources.GeneralOptions_OptimizeSearchIndex_Failed,
+                        8000);
+                    return Task.FromResult<IPluginUIView>(this);
+                }
+
                 case "RestartServer":
                     Task.Run(async () =>
                     {
@@ -192,7 +205,6 @@ namespace StrmAssistant.Options.View
             if (ContentData is PluginOptions options)
             {
                 options.GeneralOptions.ValidateOrThrow();
-                options.NetworkOptions.ValidateOrThrow();
             }
 
             _store.SetOptions(PluginOptions);

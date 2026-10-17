@@ -31,7 +31,7 @@ namespace StrmAssistant.Mod
         }
 
         private static string GetOverrideUrl() =>
-            Plugin.Instance.MainOptionsStore.GetOptions().NetworkOptions.LocalDiscoveryUrl;
+            Plugin.Instance.NetworkProxyStore.GetOptions().Network.LocalDiscoveryUrl;
 
         protected override void OnInitialize()
         {

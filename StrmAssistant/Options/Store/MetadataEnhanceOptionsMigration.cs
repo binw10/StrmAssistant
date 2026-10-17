@@ -53,10 +53,6 @@ namespace StrmAssistant.Options.Store
             (nameof(MetadataEnhanceOptions.MetadataCache), new[]
             {
                 "MetadataCacheMode", "MetadataCacheRootFolder", "MetadataCacheOptionalImageTypes"
-            }),
-            (nameof(MetadataEnhanceOptions.AltMovieDb), new[]
-            {
-                "AltMovieDbConfig", "AltMovieDbApiUrl", "AltMovieDbImageUrl", "AltMovieDbApiKey"
             })
         };
 
@@ -70,8 +66,7 @@ namespace StrmAssistant.Options.Store
             nameof(MetadataEnhanceOptions.DoubanAssist),
             nameof(MetadataEnhanceOptions.PosterSort),
             nameof(MetadataEnhanceOptions.MetadataRefresh),
-            nameof(MetadataEnhanceOptions.MetadataCache),
-            nameof(MetadataEnhanceOptions.AltMovieDb)
+            nameof(MetadataEnhanceOptions.MetadataCache)
         };
 
         public static void MigrateIfNeeded(string optionsFilePath, IJsonSerializer jsonSerializer, ILogger logger)
@@ -196,12 +191,6 @@ namespace StrmAssistant.Options.Store
             cache.MetadataCacheMode = legacy.MetadataCacheMode;
             cache.MetadataCacheRootFolder = legacy.MetadataCacheRootFolder;
             cache.MetadataCacheOptionalImageTypes = legacy.MetadataCacheOptionalImageTypes;
-
-            var altMovieDb = options.AltMovieDb;
-            altMovieDb.AltMovieDbConfig = legacy.AltMovieDbConfig;
-            altMovieDb.AltMovieDbApiUrl = legacy.AltMovieDbApiUrl;
-            altMovieDb.AltMovieDbImageUrl = legacy.AltMovieDbImageUrl;
-            altMovieDb.AltMovieDbApiKey = legacy.AltMovieDbApiKey;
         }
 
         /// <summary>

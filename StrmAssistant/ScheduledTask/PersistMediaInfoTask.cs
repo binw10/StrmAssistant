@@ -24,9 +24,11 @@ namespace StrmAssistant
 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
+            if (!Plugin.IsPluginEnabled) return;
+
             _logger.Info("MediaInfoPersist - Scheduled Task Execute");
             _logger.Info("Tier2 Max Concurrent Count: " +
-                         Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.Tier2MaxConcurrentCount);
+                         Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.Tier2MaxConcurrentCount);
 
             await Task.Yield();
             progress.Report(0);

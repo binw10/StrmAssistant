@@ -33,16 +33,18 @@ namespace StrmAssistant.ScheduledTask
 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
+            if (!Plugin.IsPluginEnabled) return;
+
             _logger.Info("VideoThumbnailExtract - Scheduled Task Execute");
 
-            var maxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.MaxConcurrentCount;
+            var maxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount;
             _logger.Info("Master Max Concurrent Count: " + maxConcurrentCount);
             var cooldownSeconds = maxConcurrentCount == 1
-                ? Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.CooldownDurationSeconds
+                ? Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.CooldownDurationSeconds
                 : (int?)null;
             if (cooldownSeconds.HasValue) _logger.Info("Cooldown Duration Seconds: " + cooldownSeconds.Value);
 
-            var persistMediaInfoMode = Plugin.Instance.MediaInfoExtractStore.GetOptions().PersistMediaInfoMode;
+            var persistMediaInfoMode = Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoPersist.PersistMediaInfoMode;
             _logger.Info("Persist MediaInfo Mode: " + persistMediaInfoMode);
             var persistMediaInfo = persistMediaInfoMode != PersistMediaInfoOption.None.ToString();
             var mediaInfoRestoreMode = persistMediaInfoMode == PersistMediaInfoOption.Restore.ToString();

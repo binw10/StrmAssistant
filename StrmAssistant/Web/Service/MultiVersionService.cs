@@ -46,9 +46,11 @@ namespace StrmAssistant.Web.Service
 
         public object Get(GetMultiVersionInfo request)
         {
+            if (!Plugin.IsPluginEnabled) return null;
+
             var response = new MultiVersionResponse();
 
-            if (!Plugin.Instance.ExperienceEnhanceStore.GetOptions().EnableMultiVersionEnhance)
+            if (!Plugin.Instance.ExperienceEnhanceStore.GetOptions().Display.EnableMultiVersionEnhance)
             {
                 return response;
             }
@@ -115,7 +117,7 @@ namespace StrmAssistant.Web.Service
                     var video = source.MediaStreams?.FirstOrDefault(s => s.Type == MediaStreamType.Video);
                     var path = source.Path;
 
-                    var label = uiOptions.MultiVersionDisplayOption switch
+                    var label = uiOptions.Display.MultiVersionDisplayOption switch
                     {
                         MultiVersionDisplayOption.FileNameWithoutExtension => string.IsNullOrEmpty(path)
                             ? null
@@ -140,7 +142,7 @@ namespace StrmAssistant.Web.Service
                 })
                 .ToList();
 
-            sources = uiOptions.MultiVersionSortOption switch
+            sources = uiOptions.Display.MultiVersionSortOption switch
             {
                 MultiVersionSortOption.HighToLowQuality => sources
                     .OrderByDescending(s => QualityScore(s.Height, s.Hdr))

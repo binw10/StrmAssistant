@@ -54,10 +54,6 @@ namespace StrmAssistant.Options
         [DisplayNameL("MetadataEnhanceOptions_Group_MetadataCache", typeof(Resources))]
         public MetadataCacheOptions MetadataCache { get; set; } = new MetadataCacheOptions();
 
-        /// <summary>备用 MovieDb 接口：自定义 TMDB API / 图片地址与 API Key。</summary>
-        [DisplayNameL("MetadataEnhanceOptions_Group_AltMovieDb", typeof(Resources))]
-        public AltMovieDbOptions AltMovieDb { get; set; } = new AltMovieDbOptions();
-
         [Browsable(false)]
         public bool IsModSupported => RuntimeInformation.ProcessArchitecture == Architecture.X64 || RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
 
@@ -127,7 +123,6 @@ namespace StrmAssistant.Options
         protected override void Validate(ValidationContext context)
         {
             ValidateChildGroup(context, nameof(MetadataCache));
-            ValidateChildGroup(context, nameof(AltMovieDb));
         }
     }
 }

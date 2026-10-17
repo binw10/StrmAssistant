@@ -16,7 +16,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
 using static StrmAssistant.Mod.PatchManager;
-using static StrmAssistant.Options.ExperienceEnhanceOptions;
+using static StrmAssistant.Options.VersionMergeOptions;
 
 namespace StrmAssistant.Mod
 {
@@ -36,7 +36,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().MergeMultiVersion)
+            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().Merge.MergeMultiVersion)
             {
                 Patch();
             }
@@ -174,7 +174,7 @@ namespace StrmAssistant.Mod
         /// </summary>
         private static void ApplyFolderGroupingLimit(bool apply)
         {
-            _folderGroupingLimit = Plugin.Instance.ExperienceEnhanceStore.GetOptions().FolderVideoGroupingLimit;
+            _folderGroupingLimit = Plugin.Instance.ExperienceEnhanceStore.GetOptions().Merge.FolderVideoGroupingLimit;
 
             if (_getVideosGroupedByVersion == null)
             {
@@ -330,7 +330,7 @@ namespace StrmAssistant.Mod
 
             if (item.Parent is null && item.ExtraType is null) return;
 
-            if (item is Series series && Plugin.Instance.ExperienceEnhanceStore.GetOptions().MergeSeriesPreference ==
+            if (item is Series series && Plugin.Instance.ExperienceEnhanceStore.GetOptions().Merge.MergeSeriesPreference ==
                 MergeSeriesScopeOption.GlobalScope)
             {
                 CurrentAllCollectionFolders.Value = GetAllCollectionFolders(series);

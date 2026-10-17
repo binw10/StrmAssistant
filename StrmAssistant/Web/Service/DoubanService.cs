@@ -17,6 +17,8 @@ namespace StrmAssistant.Web.Service
 
         public object Get(GetDoubanRatings request)
         {
+            if (!Plugin.IsPluginEnabled) return null;
+
             var response = new DoubanRatingsResponse();
 
             if (!Plugin.Instance.MetadataEnhanceStore.GetOptions().DoubanAssist.EnableDoubanAssist)

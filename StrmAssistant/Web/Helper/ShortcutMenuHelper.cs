@@ -10,6 +10,13 @@ namespace StrmAssistant.Web.Helper
     {
         public static string ModifiedShortcutsString { get; private set; }
 
+        /// <summary>
+        /// modules/mediainfo/mediainfo.js 末尾追加徽章引导代码后的内容。
+        /// shortcuts.js 只在右键菜单场景按需加载，详情页/列表页不会加载它，
+        /// 而 mediainfo.js 被 cardbuilder.js 与 item/item.js 依赖，这两类页面都会加载。
+        /// </summary>
+        public static string ModifiedMediaInfoString { get; private set; }
+
         public static MemoryStream StrmAssistantJs { get; private set; }
 
         private static IServerConfigurationManager _configurationManager;
@@ -227,22 +234,38 @@ setTimeout(() => {
             const string injectDoubanBadgeBootstrap = @"
 // StrmAssistant Douban badge bootstrap
 window.__saUI = { replaceUnplayedWithTotal: REPLACE_UNPLAYED_TOTAL, showLibraryItemCount: SHOW_LIB_COUNT, reverseLogLines: REVERSE_LOGS, blockSearchRecommend: BLOCK_SEARCH_RECS, showMediaInfo: SHOW_MEDIA_INFO };
-require(['components/strmassistant/strmassistant'], function (responses) {
-    var mod = responses && responses[0];
-    if (mod && mod.badges) { try { mod.badges.init(); } catch (e) {} }
-    if (mod && mod.versions) { try { mod.versions.init(); } catch (e) {} }
-    if (mod && mod.ui) { try { mod.ui.init(); } catch (e) {} }
-});
+require(['components/strmassistant/strmassistant']).then(function (mods) {
+    var mod = mods && mods[0];
+    if (!mod || !mod.badges) { console.error('StrmAssistant: strmassistant module not loaded', mods); return; }
+    try { mod.badges.init(); } catch (e) { console.error('StrmAssistant: badges init failed', e); }
+    if (mod.versions) { try { mod.versions.init(); } catch (e) { console.error('StrmAssistant: versions init failed', e); } }
+    if (mod.ui) { try { mod.ui.init(); } catch (e) { console.error('StrmAssistant: ui init failed', e); } }
+}).catch(function (e) { console.error('StrmAssistant: module load failed', e); });
 ";
             var uiOptions = Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions;
-            var modOptions = Plugin.Instance.MainOptionsStore.GetOptions().ModOptions;
             var uiConfig = injectDoubanBadgeBootstrap
                 .Replace("REPLACE_UNPLAYED_TOTAL", uiOptions.ReplaceUnplayedWithTotal ? "true" : "false")
                 .Replace("SHOW_LIB_COUNT", uiOptions.ShowLibraryItemCount ? "true" : "false")
                 .Replace("REVERSE_LOGS", uiOptions.ReverseLogLines ? "true" : "false")
                 .Replace("BLOCK_SEARCH_RECS", uiOptions.BlockSearchRecommend ? "true" : "false")
-                .Replace("SHOW_MEDIA_INFO", modOptions.ShowMediaInfo ? "true" : "false");
+                .Replace("SHOW_MEDIA_INFO", uiOptions.ShowMediaInfo ? "true" : "false");
             ModifiedShortcutsString += uiConfig;
+
+            // shortcuts.js 在详情页/列表页不会加载（4.10 里它是按需导入的 itemShortcuts），
+            // 因此把同一份引导代码追加到 mediainfo.js，保证徽章在渲染评分的页面必定初始化。
+            try
+            {
+                ModifiedMediaInfoString =
+                    File.ReadAllText(Path.Combine(dashboardSourcePath, "modules", "mediainfo", "mediainfo.js")) +
+                    uiConfig;
+            }
+            catch (Exception e)
+            {
+                Plugin.Instance.Logger.Error($"{nameof(ShortcutMenuHelper)} - Media Info injection failed");
+                Plugin.Instance.Logger.Error(e.Message);
+                Plugin.Instance.Logger.Debug(e.StackTrace);
+                ModifiedMediaInfoString = null;
+            }
 
             if (dataExplorer2Assembly != null)
             {

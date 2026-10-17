@@ -373,7 +373,7 @@ namespace StrmAssistant.Common
         public List<Video> FetchExtractTaskItems()
         {
             var libraryIds = Plugin.Instance.MediaInfoExtractStore.GetOptions()
-                .LibraryScope.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .ExtractionScope.LibraryScope.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                 .ToArray();
             var librariesWithVideoThumbnail = _libraryManager.GetVirtualFolders()
                 .Where(f => f.LibraryOptions.EnableChapterImageExtraction)
@@ -387,7 +387,7 @@ namespace StrmAssistant.Common
                         ? new[] { Resources.Favorites }.Concat(librariesSelected.Select(l => l.Name))
                         : librariesSelected.Select(l => l.Name)).DefaultIfEmpty("ALL"))));
 
-            var includeExtra = Plugin.Instance.MediaInfoExtractStore.GetOptions().IncludeExtra;
+            var includeExtra = Plugin.Instance.MediaInfoExtractStore.GetOptions().ExtractionScope.IncludeExtra;
             _logger.Info("Include Extra: " + includeExtra);
 
             var librariesWithVideoThumbnailPaths = librariesWithVideoThumbnail.SelectMany(l => l.Locations)
@@ -450,13 +450,13 @@ namespace StrmAssistant.Common
                 .Select(g => g.First()).Where(i => isModSupported || !i.IsShortcut).OfType<Video>()
                 .Where(i =>
                 {
-                    if (LibraryApi.IsKeywordExcluded(i, vtOptions.VideoThumbnailExcludeKeywords))
+                    if (LibraryApi.IsKeywordExcluded(i, vtOptions.ExtractionScope.VideoThumbnailExcludeKeywords))
                     {
                         _logger.Debug("VideoThumbnailExtract - Keyword excluded: " + i.Path);
                         return false;
                     }
 
-                    if (LibraryApi.IsContainerExcluded(i, vtOptions.VideoThumbnailExcludeMediaContainers))
+                    if (LibraryApi.IsContainerExcluded(i, vtOptions.ExtractionScope.VideoThumbnailExcludeMediaContainers))
                     {
                         _logger.Debug("VideoThumbnailExtract - Container excluded: " + i.Path);
                         return false;

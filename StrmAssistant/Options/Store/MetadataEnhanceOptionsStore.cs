@@ -66,16 +66,6 @@ namespace StrmAssistant.Options.Store
                     options.MetadataRefresh.EpisodeRefreshScope = EpisodeRefreshOption.NoOverview.ToString();
                 }
 
-                options.AltMovieDb.AltMovieDbApiUrl =
-                    !string.IsNullOrWhiteSpace(options.AltMovieDb.AltMovieDbApiUrl)
-                        ? options.AltMovieDb.AltMovieDbApiUrl.Trim().TrimEnd('/')
-                        : options.AltMovieDb.AltMovieDbApiUrl?.Trim();
-
-                options.AltMovieDb.AltMovieDbImageUrl =
-                    !string.IsNullOrWhiteSpace(options.AltMovieDb.AltMovieDbImageUrl)
-                        ? options.AltMovieDb.AltMovieDbImageUrl.Trim().TrimEnd('/')
-                        : options.AltMovieDb.AltMovieDbImageUrl?.Trim();
-
                 var changes = PropertyChangeDetector.DetectObjectPropertyChanges(MetadataEnhanceOptions, options);
                 var changedProperties = new HashSet<string>(changes.Select(c => c.PropertyName));
 
@@ -177,35 +167,6 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(AltMovieDbOptions.AltMovieDbConfig)))
-                {
-                    if (options.AltMovieDb.AltMovieDbConfig)
-                    {
-                        PatchManager.AltMovieDbConfig.PatchApiUrl();
-                        if (!string.IsNullOrEmpty(options.AltMovieDb.AltMovieDbImageUrl))
-                            PatchManager.AltMovieDbConfig.PatchImageUrl();
-                    }
-                    else
-                    {
-                        PatchManager.AltMovieDbConfig.UnpatchApiUrl();
-                        if (!string.IsNullOrEmpty(MetadataEnhanceOptions.AltMovieDb.AltMovieDbImageUrl))
-                            PatchManager.AltMovieDbConfig.UnpatchImageUrl();
-                    }
-                }
-
-                if (changedProperties.Contains(nameof(AltMovieDbOptions.AltMovieDbImageUrl)))
-                {
-                    if (!string.IsNullOrEmpty(options.AltMovieDb.AltMovieDbImageUrl))
-                    {
-                        PatchManager.AltMovieDbConfig.PatchImageUrl();
-                    }
-                    else
-                    {
-                        PatchManager.AltMovieDbConfig.UnpatchImageUrl();
-                    }
-                }
-
-                if (changedProperties.Contains(nameof(PosterSortOptions.PreferOriginalPoster)))
                 {
                     if (options.PosterSort.PreferOriginalPoster)
                     {
@@ -300,19 +261,6 @@ namespace StrmAssistant.Options.Store
                         .Where(d => d != null) ?? Enumerable.Empty<string>());
                 _logger.Info("EpisodeRefreshScope is set to {0}", episodeRefreshScope);
                 _logger.Info("EpisodeRefreshLookbackDays is set to {0}", options.MetadataRefresh.EpisodeRefreshLookbackDays);
-                _logger.Info("AltMovieDbConfig is set to {0}", options.AltMovieDb.AltMovieDbConfig);
-                _logger.Info("AltMovieDbApiUrl is set to {0}",
-                    !string.IsNullOrEmpty(options.AltMovieDb.AltMovieDbApiUrl)
-                        ? options.AltMovieDb.AltMovieDbApiUrl
-                        : "EMPTY");
-                _logger.Info("AltMovieDbImageUrl is set to {0}",
-                    !string.IsNullOrEmpty(options.AltMovieDb.AltMovieDbImageUrl)
-                        ? options.AltMovieDb.AltMovieDbImageUrl
-                        : "EMPTY");
-                _logger.Info("AltMovieDbApiKey is set to {0}",
-                    !string.IsNullOrEmpty(options.AltMovieDb.AltMovieDbApiKey)
-                        ? options.AltMovieDb.AltMovieDbApiKey
-                        : "EMPTY");
                 _logger.Info("EnableDoubanAssist is set to {0}", options.DoubanAssist.EnableDoubanAssist);
                 _logger.Info("DoubanCookie is set to {0}",
                     !string.IsNullOrEmpty(options.DoubanAssist.DoubanCookie) ? "CONFIGURED" : "EMPTY");

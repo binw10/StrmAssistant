@@ -337,7 +337,7 @@ namespace StrmAssistant.Common
 
         public static string GetMediaInfoJsonPath(BaseItem item)
         {
-            var jsonRootFolder = Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoJsonRootFolder;
+            var jsonRootFolder = Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoPersist.MediaInfoJsonRootFolder;
 
             var relativePath = item.ContainingFolderPath;
             if (!string.IsNullOrEmpty(jsonRootFolder) && Path.IsPathRooted(item.ContainingFolderPath))
@@ -565,7 +565,7 @@ namespace StrmAssistant.Common
                     _logger.Info($"MediaInfoPersist - Attempting to delete ({source}): {mediaInfoJsonPath}");
                     _fileSystem.DeleteFile(mediaInfoJsonPath);
 
-                    var jsonRoot = Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoJsonRootFolder;
+                    var jsonRoot = Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoPersist.MediaInfoJsonRootFolder;
 
                     if (!string.IsNullOrWhiteSpace(jsonRoot))
                     {

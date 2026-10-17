@@ -24,6 +24,8 @@ namespace StrmAssistant.ScheduledTask
 
         public Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
+            if (!Plugin.IsPluginEnabled) return Task.CompletedTask;
+
             _logger.Info("DeletePerson - Scheduled Task Execute");
 
             var personItems = _libraryManager.GetItemList(new InternalItemsQuery

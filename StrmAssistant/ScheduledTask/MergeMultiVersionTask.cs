@@ -14,7 +14,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using static StrmAssistant.Common.CommonUtility;
-using static StrmAssistant.Options.ExperienceEnhanceOptions;
+using static StrmAssistant.Options.VersionMergeOptions;
 
 namespace StrmAssistant.ScheduledTask
 {
@@ -26,7 +26,7 @@ namespace StrmAssistant.ScheduledTask
 
         public Task Run(IProgress<double> progress, CancellationToken cancellationToken)
         {
-            return Plugin.Instance.ExperienceEnhanceStore.GetOptions().MergeMultiVersion
+            return Plugin.Instance.ExperienceEnhanceStore.GetOptions().Merge.MergeMultiVersion
                 ? _task.Execute(cancellationToken, progress)
                 : Task.CompletedTask;
         }
@@ -52,6 +52,8 @@ namespace StrmAssistant.ScheduledTask
 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
+            if (!Plugin.IsPluginEnabled) return;
+
             _logger.Info("MergeMultiVersion - Scheduled Task Execute");
 
             var currentScanLibrary = CurrentScanLibrary.Value;
@@ -185,7 +187,7 @@ namespace StrmAssistant.ScheduledTask
 
         private long[] PrepareMergeSeries()
         {
-            var mergeSeriesPreference = Plugin.Instance.ExperienceEnhanceStore.GetOptions().MergeSeriesPreference;
+            var mergeSeriesPreference = Plugin.Instance.ExperienceEnhanceStore.GetOptions().Merge.MergeSeriesPreference;
             _logger.Info("MergeMultiVersion - Merge Series Preference: " + mergeSeriesPreference);
 
             if (!Plugin.Instance.IsModSupported || mergeSeriesPreference != MergeSeriesScopeOption.GlobalScope)
@@ -272,7 +274,7 @@ namespace StrmAssistant.ScheduledTask
 
         private long[][] PrepareMergeMovies(CollectionFolder currentScanLibrary)
         {
-            var mergeMoviesPreference = Plugin.Instance.ExperienceEnhanceStore.GetOptions().MergeMoviesPreference;
+            var mergeMoviesPreference = Plugin.Instance.ExperienceEnhanceStore.GetOptions().Merge.MergeMoviesPreference;
             _logger.Info("MergeMultiVersion - Merge Movies Preference: " + mergeMoviesPreference);
 
             var libraryGroups = Array.Empty<long[]>();

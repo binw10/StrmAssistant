@@ -641,6 +641,33 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Optimize Search Index.
+        /// </summary>
+        public static string GeneralOptions_OptimizeSearchIndex_Optimize_Search_Index {
+            get {
+                return ResourceManager.GetString("GeneralOptions_OptimizeSearchIndex_Optimize_Search_Index", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Search index optimized. Reclaimed {0} pages ({1} bytes)..
+        /// </summary>
+        public static string GeneralOptions_OptimizeSearchIndex_Reclaimed {
+            get {
+                return ResourceManager.GetString("GeneralOptions_OptimizeSearchIndex_Reclaimed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Optimize search index failed. See server log for details..
+        /// </summary>
+        public static string GeneralOptions_OptimizeSearchIndex_Failed {
+            get {
+                return ResourceManager.GetString("GeneralOptions_OptimizeSearchIndex_Failed", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Restart Server.
         /// </summary>
         public static string GeneralOptions_RestartServer_Restart_Server {
@@ -2918,6 +2945,186 @@ namespace StrmAssistant.Properties {
         public static string MetadataEnhanceOptions_Group_AltMovieDb {
             get {
                 return ResourceManager.GetString("MetadataEnhanceOptions_Group_AltMovieDb", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Extraction Scope.
+        /// </summary>
+        public static string MediaInfoExtractOptions_Group_ExtractionScope {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_Group_ExtractionScope", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Image Capture.
+        /// </summary>
+        public static string MediaInfoExtractOptions_Group_ImageCapture {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_Group_ImageCapture", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ISO and External Tools.
+        /// </summary>
+        public static string MediaInfoExtractOptions_Group_IsoTool {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_Group_IsoTool", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Result and Persistence.
+        /// </summary>
+        public static string MediaInfoExtractOptions_Group_MediaInfoPersist {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_Group_MediaInfoPersist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Performance and Exclusive.
+        /// </summary>
+        public static string MediaInfoExtractOptions_Group_ExtractionPerformance {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_Group_ExtractionPerformance", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Detection and Fingerprint.
+        /// </summary>
+        public static string IntroSkipOptions_Group_Fingerprint {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_Group_Fingerprint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Online Scraping.
+        /// </summary>
+        public static string IntroSkipOptions_Group_Scrape {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_Group_Scrape", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Playback and Skip.
+        /// </summary>
+        public static string IntroSkipOptions_Group_Playback {
+            get {
+                return ResourceManager.GetString("IntroSkipOptions_Group_Playback", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Version Merge.
+        /// </summary>
+        public static string ExperienceEnhanceOptions_Group_VersionMerge {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_Group_VersionMerge", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Version Display.
+        /// </summary>
+        public static string ExperienceEnhanceOptions_Group_VersionDisplay {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_Group_VersionDisplay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Playback and Cleanup.
+        /// </summary>
+        public static string ExperienceEnhanceOptions_Group_Playback {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_Group_Playback", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Notification.
+        /// </summary>
+        public static string ExperienceEnhanceOptions_Group_Notification {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_Group_Notification", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tasks and Concurrency.
+        /// </summary>
+        public static string GeneralOptions_Group_TaskConcurrency {
+            get {
+                return ResourceManager.GetString("GeneralOptions_Group_TaskConcurrency", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Memory.
+        /// </summary>
+        public static string GeneralOptions_Group_Memory {
+            get {
+                return ResourceManager.GetString("GeneralOptions_Group_Memory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Status and Maintenance.
+        /// </summary>
+        public static string GeneralOptions_Group_RuntimeStatus {
+            get {
+                return ResourceManager.GetString("GeneralOptions_Group_RuntimeStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Chinese Search.
+        /// </summary>
+        public static string ModOptions_Group_ChineseSearch {
+            get {
+                return ResourceManager.GetString("ModOptions_Group_ChineseSearch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Basic Settings.
+        /// </summary>
+        public static string PluginOptions_EditorTitle_Basic_Settings {
+            get {
+                return ResourceManager.GetString("PluginOptions_EditorTitle_Basic_Settings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Enable Plugin.
+        /// </summary>
+        public static string PluginOptions_EnablePlugin_Enable_Plugin {
+            get {
+                return ResourceManager.GetString("PluginOptions_EnablePlugin_Enable_Plugin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Disables all patches, scheduled tasks and web endpoints.
+        /// </summary>
+        public static string PluginOptions_EnablePlugin_Description {
+            get {
+                return ResourceManager.GetString("PluginOptions_EnablePlugin_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Network and Direct Link.
+        /// </summary>
+        public static string NetworkProxyOptions_EditorTitle_Network_Direct_Link {
+            get {
+                return ResourceManager.GetString("NetworkProxyOptions_EditorTitle_Network_Direct_Link", resourceCulture);
             }
         }
         

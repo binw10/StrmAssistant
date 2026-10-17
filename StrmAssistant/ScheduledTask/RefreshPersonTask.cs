@@ -34,6 +34,8 @@ namespace StrmAssistant.ScheduledTask
 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
+            if (!Plugin.IsPluginEnabled) return;
+
             _logger.Info("RefreshPerson - Scheduled Task Execute");
             await Task.Yield();
             progress.Report(0);
@@ -55,7 +57,7 @@ namespace StrmAssistant.ScheduledTask
             }
 
             var tier2MaxConcurrentCount =
-                Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.Tier2MaxConcurrentCount;
+                Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.Tier2MaxConcurrentCount;
             _logger.Info("Tier2 Max Concurrent Count: " + tier2MaxConcurrentCount);
 
             var personQuery = new InternalItemsQuery

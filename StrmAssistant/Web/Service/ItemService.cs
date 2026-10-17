@@ -16,6 +16,8 @@ namespace StrmAssistant.Web.Service
 
         public void Post(LockItem request)
         {
+            if (!Plugin.IsPluginEnabled) return;
+
             var itemById = _libraryManager.GetItemById(request.ItemId);
 
             var items = _libraryManager.GetItemList(new InternalItemsQuery
@@ -47,6 +49,8 @@ namespace StrmAssistant.Web.Service
 
         public void Post(ClearMediaInfo request)
         {
+            if (!Plugin.IsPluginEnabled) return;
+
             var itemById = _libraryManager.GetItemById(request.Id);
 
             if (itemById is null) return;

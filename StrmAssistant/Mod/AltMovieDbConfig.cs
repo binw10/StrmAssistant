@@ -32,9 +32,9 @@ namespace StrmAssistant.Mod
         {
             get
             {
-                var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();
-                return IsValidMovieDbApiKey(options.AltMovieDb.AltMovieDbApiKey)
-                    ? options.AltMovieDb.AltMovieDbApiKey
+                var tmdb = Plugin.Instance.NetworkProxyStore.GetOptions().TmdbReplacement;
+                return IsValidMovieDbApiKey(tmdb.AltMovieDbApiKey)
+                    ? tmdb.AltMovieDbApiKey
                     : SystemDefaultMovieDbApiKey;
             }
         }
@@ -43,8 +43,8 @@ namespace StrmAssistant.Mod
         {
             get
             {
-                var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();
-                return IsValidHttpUrl(options.AltMovieDb.AltMovieDbApiUrl) ? options.AltMovieDb.AltMovieDbApiUrl : DefaultMovieDbApiUrl;
+                var tmdb = Plugin.Instance.NetworkProxyStore.GetOptions().TmdbReplacement;
+                return IsValidHttpUrl(tmdb.AltMovieDbApiUrl) ? tmdb.AltMovieDbApiUrl : DefaultMovieDbApiUrl;
             }
         }
 
@@ -52,8 +52,8 @@ namespace StrmAssistant.Mod
         {
             get
             {
-                var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();
-                return IsValidHttpUrl(options.AltMovieDb.AltMovieDbImageUrl) ? options.AltMovieDb.AltMovieDbImageUrl : DefaultMovieDbImageUrl;
+                var tmdb = Plugin.Instance.NetworkProxyStore.GetOptions().TmdbReplacement;
+                return IsValidHttpUrl(tmdb.AltMovieDbImageUrl) ? tmdb.AltMovieDbImageUrl : DefaultMovieDbImageUrl;
             }
         }
         
@@ -61,11 +61,11 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MetadataEnhanceStore.GetOptions().AltMovieDb.AltMovieDbConfig)
+            if (Plugin.Instance.NetworkProxyStore.GetOptions().TmdbReplacement.AltMovieDbConfig)
             {
                 PatchApiUrl();
 
-                if (!string.IsNullOrEmpty(Plugin.Instance.MetadataEnhanceStore.GetOptions().AltMovieDb.AltMovieDbImageUrl))
+                if (!string.IsNullOrEmpty(Plugin.Instance.NetworkProxyStore.GetOptions().TmdbReplacement.AltMovieDbImageUrl))
                 {
                     PatchImageUrl();
                 }
@@ -153,9 +153,9 @@ namespace StrmAssistant.Mod
         [HarmonyPrefix]
         private static bool GetMovieDbResponsePrefix(HttpRequestOptions options)
         {
-            var metadataEnhanceOptions = Plugin.Instance.MetadataEnhanceStore.GetOptions();
-            var apiUrl = metadataEnhanceOptions.AltMovieDb.AltMovieDbApiUrl;
-            var apiKey = metadataEnhanceOptions.AltMovieDb.AltMovieDbApiKey;
+            var tmdbOptions = Plugin.Instance.NetworkProxyStore.GetOptions().TmdbReplacement;
+            var apiUrl = tmdbOptions.AltMovieDbApiUrl;
+            var apiKey = tmdbOptions.AltMovieDbApiKey;
 
             var requestUrl = options.Url;
 
@@ -183,7 +183,7 @@ namespace StrmAssistant.Mod
 
         private static void ReplaceMovieDbImageUrl(ref string url)
         {
-            var imageUrl = Plugin.Instance.MetadataEnhanceStore.GetOptions().AltMovieDb.AltMovieDbImageUrl;
+            var imageUrl = Plugin.Instance.NetworkProxyStore.GetOptions().TmdbReplacement.AltMovieDbImageUrl;
 
             if (IsValidHttpUrl(imageUrl))
             {

@@ -1,3 +1,4 @@
+using StrmAssistant.Options;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
@@ -47,9 +48,9 @@ namespace StrmAssistant.IntroSkip
             _userManager = userManager;
             _sessionManager = sessionManager;
 
-            UpdateLibraryPathsInScope(Plugin.Instance.IntroSkipStore.GetOptions().LibraryScope);
-            UpdateUsersInScope(Plugin.Instance.IntroSkipStore.GetOptions().UserScope);
-            UpdateClientInScope(Plugin.Instance.IntroSkipStore.GetOptions().ClientScope);
+            UpdateLibraryPathsInScope(Plugin.Instance.IntroSkipStore.GetOptions().Playback.LibraryScope);
+            UpdateUsersInScope(Plugin.Instance.IntroSkipStore.GetOptions().Playback.UserScope);
+            UpdateClientInScope(Plugin.Instance.IntroSkipStore.GetOptions().Playback.ClientScope);
         }
 
         public void UpdateLibraryPathsInScope(string currentScope)
@@ -70,12 +71,12 @@ namespace StrmAssistant.IntroSkip
 
         public void UpdateLibraryPathsInScope()
         {
-            UpdateLibraryPathsInScope(Plugin.Instance.IntroSkipStore.GetOptions().LibraryScope);
+            UpdateLibraryPathsInScope(Plugin.Instance.IntroSkipStore.GetOptions().Playback.LibraryScope);
         }
 
         public void UpdateUsersInScope(string currentScope)
         {
-            var userIds = Plugin.Instance.IntroSkipStore.GetOptions().UserScope
+            var userIds = Plugin.Instance.IntroSkipStore.GetOptions().Playback.UserScope
                 ?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(long.Parse).ToArray();
 
             var userQuery = new UserQuery
@@ -127,19 +128,19 @@ namespace StrmAssistant.IntroSkip
             var options = Plugin.Instance.IntroSkipStore.GetOptions();
 
             _logger.Info("IntroSkip - Client Name: " + e.ClientName);
-            _logger.Info("IntroSkip - Allowed Clients: " + options.ClientScope);
+            _logger.Info("IntroSkip - Allowed Clients: " + options.Playback.ClientScope);
 
             var intoSkipLibraryScope = string.Join(", ",
-                options.LibraryScope?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(v => options.LibraryList
+                options.Playback.LibraryScope?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(v => options.Playback.LibraryList
                         .FirstOrDefault(option => option.Value == v)
                         ?.Name) ?? Enumerable.Empty<string>());
             _logger.Info("IntroSkip - LibraryScope is set to {0}",
                 string.IsNullOrEmpty(intoSkipLibraryScope) ? "ALL" : intoSkipLibraryScope);
 
             var introSkipUserScope = string.Join(", ",
-                options.UserScope?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(v => options.UserList
+                options.Playback.UserScope?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(v => options.Playback.UserList
                         .FirstOrDefault(option => option.Value == v)
                         ?.Name) ?? Enumerable.Empty<string>());
             _logger.Info("IntroSkip - UserScope is set to {0}",

@@ -34,6 +34,7 @@ namespace StrmAssistant.Mod
         private static string _tokenizerPath;
         private static readonly object _lock = new object();
         private static bool _patchPhase2Initialized;
+        private static string _libraryDbPath;
         private static readonly string RebuildMarkerPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath, "strmassistant_chinese_search_rebuild.pending");
         private static readonly string NormV2MarkerPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath, "strmassistant_chinese_search_norm2.done");
         private static readonly string TokenizerMarkerPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath, "strmassistant_chinese_search_tokenizer.done");
@@ -69,6 +70,102 @@ namespace StrmAssistant.Mod
             catch (Exception ex)
             {
                 Plugin.Instance.Logger.Warn($"EnhanceChineseSearch: failed to schedule index rebuild: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 立即优化搜索索引：对 FTS5 表执行 <c>optimize</c> 合并倒排段，并回收库内空闲页。
+        /// 返回 (回收页数, 回收字节)；library.db 不可用或执行失败时返回 null。
+        ///
+        /// 注意：不同于 <see cref="ScheduleIndexRebuild"/>（只写标记、下次重启重建），
+        /// 本方法**当场**打开 library.db 执行，不改变索引内容、不影响查询结果。
+        /// </summary>
+        public static (long ReclaimedPages, long ReclaimedBytes)? OptimizeSearchIndex()
+        {
+            const string ftsTableName = "fts_search9";
+            SQLiteDatabaseConnection connection = null;
+
+            try
+            {
+                var dbPath = ResolveLibraryDbPath();
+                if (dbPath == null)
+                {
+                    Plugin.Instance.Logger.Warn("EnhanceChineseSearch - OptimizeSearchIndex skipped: library.db not found");
+                    return null;
+                }
+
+                connection = SQLite3.Open(dbPath, ConnectionFlags.ReadWrite, null, true);
+
+                // 短暂等待库锁，避免与 Emby 正在进行的写入冲突
+                connection.Execute("PRAGMA busy_timeout = 5000");
+
+                // 自定义 tokenizer 未注册时无法打开 FTS5 虚表（读取 sqlite_master 即报 no such tokenizer）
+                LoadTokenizerExtension(connection);
+
+                var pageSize = ReadPragmaInt64(connection, "page_size");
+                var beforeFree = ReadPragmaInt64(connection, "freelist_count");
+
+                connection.Execute($"INSERT INTO {ftsTableName}({ftsTableName}) VALUES('optimize')");
+
+                var afterFree = ReadPragmaInt64(connection, "freelist_count");
+                var reclaimedPages = Math.Max(0, afterFree - beforeFree);
+                var reclaimedBytes = reclaimedPages * (pageSize > 0 ? pageSize : 4096);
+
+                Plugin.Instance.Logger.Info(
+                    $"EnhanceChineseSearch - OptimizeSearchIndex reclaimed {reclaimedPages} pages ({reclaimedBytes} bytes)");
+
+                return (reclaimedPages, reclaimedBytes);
+            }
+            catch (Exception e)
+            {
+                Plugin.Instance.Logger.Warn($"EnhanceChineseSearch - OptimizeSearchIndex failed: {e.Message}");
+                if (Plugin.Instance.DebugMode)
+                {
+                    Plugin.Instance.Logger.Debug(e.StackTrace);
+                }
+                return null;
+            }
+            finally
+            {
+                connection?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 定位 library.db：优先用 <see cref="CreateConnectionPostfix"/> 缓存的真实路径，
+        /// 回退到 ProgramData 下的常见位置。
+        /// </summary>
+        private static string ResolveLibraryDbPath()
+        {
+            if (!string.IsNullOrEmpty(_libraryDbPath) && File.Exists(_libraryDbPath))
+            {
+                return _libraryDbPath;
+            }
+
+            var programDataPath = Plugin.Instance.ApplicationPaths?.ProgramDataPath;
+            if (string.IsNullOrEmpty(programDataPath)) return null;
+
+            foreach (var candidate in new[]
+                     {
+                         Path.Combine(programDataPath, "data", "library.db"),
+                         Path.Combine(programDataPath, "library.db")
+                     })
+            {
+                if (File.Exists(candidate))
+                {
+                    _libraryDbPath = candidate;
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private static long ReadPragmaInt64(IDatabaseConnection connection, string pragma)
+        {
+            using (var statement = connection.PrepareStatement("PRAGMA " + pragma))
+            {
+                return statement.MoveNext() ? statement.Current.GetInt64(0) : 0;
             }
         }
 
@@ -124,8 +221,8 @@ namespace StrmAssistant.Mod
 
             Initialize();
 
-            if (Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.EnhanceChineseSearch ||
-                Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.EnhanceChineseSearchRestore)
+            if (Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.EnhanceChineseSearch ||
+                Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.EnhanceChineseSearchRestore)
             {
                 PatchPhase1();
             }
@@ -335,7 +432,7 @@ namespace StrmAssistant.Mod
 
                 var tokenizerUnknown = string.Equals(CurrentTokenizerName, "unknown", StringComparison.Ordinal);
 
-                if (Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.EnhanceChineseSearchRestore)
+                if (Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.EnhanceChineseSearchRestore)
                 {
                     if (tokenizerUnknown)
                     {
@@ -355,7 +452,7 @@ namespace StrmAssistant.Mod
                     }
                     ResetOptions();
                 }
-                else if (Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.EnhanceChineseSearch)
+                else if (Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.EnhanceChineseSearch)
                 {
                     patchSearchFunctionsResult = PatchSearchFunctions();
 
@@ -526,7 +623,7 @@ namespace StrmAssistant.Mod
                 ApplySimplifiedSweep(connection, ftsTableName);
 
                 // MixedChineseVariants：在简繁归一化之上再做变体归一化（全角/标点变体等）。
-                if (Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.MixedChineseVariants)
+                if (Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.MixedChineseVariants)
                 {
                     ApplyVariantsSweep(connection, ftsTableName);
                 }
@@ -629,7 +726,7 @@ namespace StrmAssistant.Mod
         {
             try
             {
-                return Plugin.Instance?.MainOptionsStore?.GetOptions()?.ModOptions?.MixedChineseVariants == true;
+                return Plugin.Instance?.MainOptionsStore?.GetOptions()?.ModOptions?.ChineseSearch?.MixedChineseVariants == true;
             }
             catch
             {
@@ -1015,7 +1112,7 @@ namespace StrmAssistant.Mod
 
         private static void ResetOptions()
         {
-            Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.EnhanceChineseSearch = false;
+            Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.EnhanceChineseSearch = false;
             Plugin.Instance.MainOptionsStore.SavePluginOptionsSuppress();
         }
 
@@ -1164,6 +1261,11 @@ namespace StrmAssistant.Mod
                                 return;
                             }
                             
+                            if (db != null && db.EndsWith("library.db", StringComparison.OrdinalIgnoreCase))
+                            {
+                                _libraryDbPath = db;
+                            }
+
                             // 如果 db 为 null，可能是新版本中路径获取方式改变了
                             // 在这种情况下，我们仍然尝试加载，但记录警告
                             if (db == null && Plugin.Instance.DebugMode)
@@ -1210,7 +1312,7 @@ namespace StrmAssistant.Mod
 
             if (!string.IsNullOrEmpty(query.SearchTerm) && __result.Contains("match @SearchTerm"))
             {
-                if (!Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ExcludeOriginalTitleFromSearch)
+                if (!Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.ExcludeOriginalTitleFromSearch)
                 {
                     __result = __result.Replace("match @SearchTerm", "match simple_query(@SearchTerm)");
                 }
@@ -1247,7 +1349,7 @@ namespace StrmAssistant.Mod
 
             if (!string.IsNullOrEmpty(query.SearchTerm) && resultString.Contains("match @SearchTerm"))
             {
-                if (!Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ExcludeOriginalTitleFromSearch)
+                if (!Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.ExcludeOriginalTitleFromSearch)
                 {
                     resultString = resultString.Replace("match @SearchTerm", "match simple_query(@SearchTerm)");
                     modified = true;
@@ -1347,7 +1449,7 @@ namespace StrmAssistant.Mod
                 // DigitsAsTmdbId（PRO 同构）：纯数字搜索词直接当作 TMDB ID 精确匹配。
                 // 仅当已开启该开关、且前面的 provider 前缀匹配未命中时生效；匹配后不再走分词查询。
                 if (!string.IsNullOrEmpty(query.SearchTerm) &&
-                    Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.DigitsAsTmdbId)
+                    Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.DigitsAsTmdbId)
                 {
                     var digits = query.SearchTerm.Trim();
                     if (digits.Length > 0 && digits.All(char.IsDigit))

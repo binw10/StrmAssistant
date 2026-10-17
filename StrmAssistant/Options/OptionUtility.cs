@@ -9,10 +9,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using static StrmAssistant.Options.GeneralOptions;
+using static StrmAssistant.Options.TaskConcurrencyOptions;
 using static StrmAssistant.Options.IntroSkipOptions;
 using static StrmAssistant.Options.MediaInfoExtractOptions;
-using static StrmAssistant.Options.ModOptions;
+using static StrmAssistant.Options.ChineseSearchOptions;
 
 namespace StrmAssistant.Options
 {
@@ -44,23 +44,23 @@ namespace StrmAssistant.Options
         public static void InitializeOptionCache()
         {
             UpdateExclusiveControlFeatures(Plugin.Instance.MediaInfoExtractStore.GetOptions());
-            UpdateCatchupScope(Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.CatchupTaskScope);
-            UpdateIntroSkipPreferences(Plugin.Instance.IntroSkipStore.GetOptions().IntroSkipPreferences);
-            UpdateSearchScope(Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.SearchScope);
+            UpdateCatchupScope(Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.CatchupTaskScope);
+            UpdateIntroSkipPreferences(Plugin.Instance.IntroSkipStore.GetOptions().Playback.IntroSkipPreferences);
+            UpdateSearchScope(Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.SearchScope);
         }
 
         public static void UpdateExclusiveControlFeatures(MediaInfoExtractOptions options)
         {
             var featureSet = new HashSet<string>(
-                options.ExclusiveControlFeatures?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries) ??
+                options.ExtractionPerformance.ExclusiveControlFeatures?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries) ??
                 Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
 
-            if (options.PersistMediaInfoMode == PersistMediaInfoOption.Restore.ToString())
+            if (options.MediaInfoPersist.PersistMediaInfoMode == PersistMediaInfoOption.Restore.ToString())
             {
                 featureSet.Add(ExclusiveControl.IgnoreFileChange.ToString());
                 featureSet.Add(ExclusiveControl.CatchAllBlock.ToString());
             }
-            else if (options.PersistMediaInfoMode == PersistMediaInfoOption.None.ToString())
+            else if (options.MediaInfoPersist.PersistMediaInfoMode == PersistMediaInfoOption.None.ToString())
             {
                 featureSet.Add(ExclusiveControl.NoPersistIntegration.ToString());
             }
@@ -159,7 +159,7 @@ namespace StrmAssistant.Options
                 Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
         }
 
-        public static bool IsIntroSkipPreferenceSelected(params IntroSkipPreference[] preferencesToCheck)
+        public static bool IsIntroSkipPreferenceSelected(params IntroSkipPlaybackOptions.IntroSkipPreference[] preferencesToCheck)
         {
             return preferencesToCheck.Any(f => _selectedIntroSkipPreferences.Contains(f.ToString()));
         }
@@ -169,9 +169,9 @@ namespace StrmAssistant.Options
             return string.Join(", ",
                 _selectedIntroSkipPreferences
                     .Select(pref =>
-                        Enum.TryParse(pref.Trim(), true, out IntroSkipPreference type)
+                        Enum.TryParse(pref.Trim(), true, out IntroSkipPlaybackOptions.IntroSkipPreference type)
                             ? type
-                            : (IntroSkipPreference?)null)
+                            : (IntroSkipPlaybackOptions.IntroSkipPreference?)null)
                     .Where(type => type.HasValue)
                     .OrderBy(type => type)
                     .Select(type => GetEnumDescription(type.Value)));

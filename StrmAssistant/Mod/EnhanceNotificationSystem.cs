@@ -34,7 +34,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().EnhanceNotificationSystem)
+            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().Notification.EnhanceNotificationSystem)
             {
                 Patch();
             }

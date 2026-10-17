@@ -34,7 +34,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableIsoExtraction)
+            if (Plugin.Instance.MediaInfoExtractStore.GetOptions().IsoTool.EnableIsoExtraction)
             {
                 Patch();
             }

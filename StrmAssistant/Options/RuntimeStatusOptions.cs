@@ -1,0 +1,54 @@
+using Emby.Media.Common.Extensions;
+using Emby.Web.GenericEdit;
+using Emby.Web.GenericEdit.Elements;
+using Emby.Web.GenericEdit.Elements.List;
+using MediaBrowser.Model.LocalizationAttributes;
+using StrmAssistant.Properties;
+
+namespace StrmAssistant.Options
+{
+    /// <summary>
+    /// 通用选项 · 运行状态与维护分组：运行时状态只读列表，以及清理内存 / 重建索引 /
+    /// 优化索引 / 重启服务器等维护操作。
+    /// 说明：这些项都是「操作类」，按统一排序规范放在设置项之后、危险操作居末。
+    /// </summary>
+    public class RuntimeStatusOptions : EditableOptionsBase
+    {
+        [DisplayNameL("GeneralOptions_Group_RuntimeStatus", typeof(Resources))]
+        public override string EditorTitle => Resources.GeneralOptions_Group_RuntimeStatus;
+
+        [DisplayNameL("GeneralOptions_RuntimeStatus_Runtime_Status", typeof(Resources))]
+        public GenericItemList RuntimeStatusList { get; set; } = new GenericItemList();
+
+        public ButtonItem CleanMemoryNowButton =>
+            new ButtonItem(Resources.GeneralOptions_CleanMemoryNow_Clean_Memory_Now)
+            {
+                Icon = IconNames.memory, Data1 = "CleanMemoryNow"
+            };
+
+        public ButtonItem ScheduleIndexRebuildButton =>
+            new ButtonItem(Resources.GeneralOptions_ScheduleIndexRebuild_Schedule_Search_Index_Rebuild)
+            {
+                Icon = IconNames.build, Data1 = "ScheduleIndexRebuild",
+                ConfirmationPrompt = Resources.AreYouSureToContinue
+            };
+
+        public ButtonItem OptimizeSearchIndexButton =>
+            new ButtonItem(Resources.GeneralOptions_OptimizeSearchIndex_Optimize_Search_Index)
+            {
+                Icon = IconNames.cleaning_services, Data1 = "OptimizeSearchIndex"
+            };
+
+        public ButtonItem RestartServerButton =>
+            new ButtonItem(Resources.GeneralOptions_RestartServer_Restart_Server)
+            {
+                Icon = IconNames.autorenew, Data1 = "RestartServer",
+                ConfirmationPrompt = Resources.AreYouSureToContinue
+            };
+
+        public void Initialize()
+        {
+            RuntimeStatusList.Clear();
+        }
+    }
+}

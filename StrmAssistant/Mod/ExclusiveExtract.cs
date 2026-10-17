@@ -72,7 +72,7 @@ namespace StrmAssistant.Mod
 
             PatchFfProbeProcess();
 
-            if (Plugin.Instance.MediaInfoExtractStore.GetOptions().ExclusiveExtract)
+            if (Plugin.Instance.MediaInfoExtractStore.GetOptions().ExtractionPerformance.ExclusiveExtract)
             {
                 Patch();
             }
@@ -175,7 +175,7 @@ namespace StrmAssistant.Mod
         {
             if (ExclusiveItem.Value != 0)
             {
-                timeoutMs = 60000 * Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.MaxConcurrentCount;
+                timeoutMs = 60000 * Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount;
             }
         }
 
@@ -218,7 +218,7 @@ namespace StrmAssistant.Mod
 
             if (!ShouldCleanEmbeddedMetadata.Value) return;
 
-            if (!Plugin.Instance.MediaInfoExtractStore.GetOptions().ClearEmbeddedMetadata) return;
+            if (!Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoPersist.ClearEmbeddedMetadata) return;
 
             __result.Name = null;
             __result.Overview = null;

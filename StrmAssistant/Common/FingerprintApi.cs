@@ -119,7 +119,7 @@ namespace StrmAssistant.Common
 
                         if (_audioFingerprintManager != null && _timeoutMs != null)
                         {
-                            PatchTimeout(Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.MaxConcurrentCount);
+                            PatchTimeout(Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount);
                         }
                     }
                 }
@@ -256,7 +256,7 @@ namespace StrmAssistant.Common
 
         public void UpdateLibraryPathsInScope()
         {
-            UpdateLibraryPathsInScope(Plugin.Instance.IntroSkipStore.GetOptions().MarkerEnabledLibraryScope);
+            UpdateLibraryPathsInScope(Plugin.Instance.IntroSkipStore.GetOptions().Fingerprint.MarkerEnabledLibraryScope);
         }
 
         /// <summary>
@@ -264,7 +264,7 @@ namespace StrmAssistant.Common
         /// </summary>
         private List<Episode> FilterBlacklistKeywords(List<Episode> episodes)
         {
-            var keywords = Plugin.Instance.IntroSkipStore.GetOptions().FingerprintBlacklistKeywords
+            var keywords = Plugin.Instance.IntroSkipStore.GetOptions().Fingerprint.FingerprintBlacklistKeywords
                 .Split(new[] { ',', ';', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(k => k.Trim())
                 .Where(k => k.Length > 0)
@@ -287,7 +287,7 @@ namespace StrmAssistant.Common
         public HashSet<long> GetAllBlacklistSeasons()
         {
             var blacklistShowIds = Plugin.Instance.IntroSkipStore.GetOptions()
-                .FingerprintBlacklistShows.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Fingerprint.FingerprintBlacklistShows.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(part => long.TryParse(part.Trim(), out var id) ? id : (long?)null)
                 .Where(id => id.HasValue).Select(id => id.Value).ToArray();
 
@@ -321,14 +321,14 @@ namespace StrmAssistant.Common
 
         public List<Episode> FetchFingerprintQueueItems(List<BaseItem> items)
         {
-            var libraryIds = Plugin.Instance.IntroSkipStore.GetOptions().MarkerEnabledLibraryScope?
+            var libraryIds = Plugin.Instance.IntroSkipStore.GetOptions().Fingerprint.MarkerEnabledLibraryScope?
                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).ToArray();
 
             var includeFavorites = libraryIds?.Contains("-1") == true;
             var resultItems = new List<Episode>();
             var incomingItems = items.OfType<Episode>().ToList();
 
-            if (IsCatchupTaskSelected(GeneralOptions.CatchupTask.Fingerprint) && LibraryPathsInScope.Any())
+            if (IsCatchupTaskSelected(TaskConcurrencyOptions.CatchupTask.Fingerprint) && LibraryPathsInScope.Any())
             {
                 if (includeFavorites) resultItems = Plugin.LibraryApi.ExpandFavorites(items, true, null, false).OfType<Episode>().ToList();
                 if (libraryIds is null || !libraryIds.Any() || libraryIds.Any(id => id != "-1"))
@@ -347,7 +347,7 @@ namespace StrmAssistant.Common
 
         private List<Episode> FilterUnprocessed(List<Episode> items)
         {
-            var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableImageCapture;
+            var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCapture.EnableImageCapture;
             var results = items.Where(item => Plugin.LibraryApi.IsExtractNeeded(item, enableImageCapture) || IsExtractNeeded(item)).ToList();
             _logger.Info("IntroFingerprintExtract - Number of items: " + results.Count);
             return results;
@@ -370,7 +370,7 @@ namespace StrmAssistant.Common
 
         public List<Episode> FetchIntroPreExtractTaskItems()
         {
-            var markerEnabledLibraryScope = Plugin.Instance.IntroSkipStore.GetOptions().MarkerEnabledLibraryScope;
+            var markerEnabledLibraryScope = Plugin.Instance.IntroSkipStore.GetOptions().Fingerprint.MarkerEnabledLibraryScope;
             var itemsFingerprintQuery = new InternalItemsQuery { IncludeItemTypes = new[] { nameof(Episode) }, Recursive = true, GroupByPresentationUniqueKey = false, HasPath = true, HasAudioStream = false };
 
             if (IsFavoritesOnlyScope(markerEnabledLibraryScope))
@@ -388,8 +388,8 @@ namespace StrmAssistant.Common
 
         public List<Episode> FetchIntroFingerprintTaskItems()
         {
-            var markerEnabledLibraryScope = Plugin.Instance.IntroSkipStore.GetOptions().MarkerEnabledLibraryScope;
-            var introDetectionFingerprintMinutes = Plugin.Instance.IntroSkipStore.GetOptions().IntroDetectionFingerprintMinutes;
+            var markerEnabledLibraryScope = Plugin.Instance.IntroSkipStore.GetOptions().Fingerprint.MarkerEnabledLibraryScope;
+            var introDetectionFingerprintMinutes = Plugin.Instance.IntroSkipStore.GetOptions().Fingerprint.IntroDetectionFingerprintMinutes;
 
             var itemsFingerprintQuery = new InternalItemsQuery {
                 IncludeItemTypes = new[] { nameof(Episode) }, Recursive = true, GroupByPresentationUniqueKey = false,
@@ -427,7 +427,7 @@ namespace StrmAssistant.Common
 
         public void UpdateLibraryIntroDetectionFingerprintLength()
         {
-            UpdateLibraryIntroDetectionFingerprintLength(Plugin.Instance.IntroSkipStore.GetOptions().IntroDetectionFingerprintMinutes);
+            UpdateLibraryIntroDetectionFingerprintLength(Plugin.Instance.IntroSkipStore.GetOptions().Fingerprint.IntroDetectionFingerprintMinutes);
         }
 
         /// <summary>
@@ -436,7 +436,7 @@ namespace StrmAssistant.Common
         /// </summary>
         public static int? GetLibraryFingerprintMinutesOverride(string libraryId)
         {
-            var raw = Plugin.Instance.IntroSkipStore.GetOptions().LibraryFingerprintMinutes;
+            var raw = Plugin.Instance.IntroSkipStore.GetOptions().Fingerprint.LibraryFingerprintMinutes;
             if (string.IsNullOrWhiteSpace(raw) || string.IsNullOrEmpty(libraryId)) return null;
 
             foreach (var pair in raw.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
@@ -464,7 +464,7 @@ namespace StrmAssistant.Common
                 return minutes;
             }
 
-            return Plugin.Instance.IntroSkipStore.GetOptions().IntroDetectionFingerprintMinutes;
+            return Plugin.Instance.IntroSkipStore.GetOptions().Fingerprint.IntroDetectionFingerprintMinutes;
         }
 
 #nullable enable

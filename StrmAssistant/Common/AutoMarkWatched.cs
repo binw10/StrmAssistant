@@ -68,7 +68,7 @@ namespace StrmAssistant.Common
             if (_markedSessions.ContainsKey(playSessionId)) return;
 
             var options = Plugin.Instance.ExperienceEnhanceStore.GetOptions();
-            var threshold = Math.Min(Math.Max(options.AutoMarkWatchedThreshold, 5), 100);
+            var threshold = Math.Min(Math.Max(options.Playback.AutoMarkWatchedThreshold, 5), 100);
 
             if (positionTicks.Value * 100.0 / episode.RunTimeTicks.Value < threshold) return;
 
@@ -80,7 +80,7 @@ namespace StrmAssistant.Common
 
             try
             {
-                var marked = MarkPreviousEpisodesWatched(episode, user, options.AutoMarkWatchedExcludeFavorites);
+                var marked = MarkPreviousEpisodesWatched(episode, user, options.Playback.AutoMarkWatchedExcludeFavorites);
 
                 if (marked > 0)
                 {

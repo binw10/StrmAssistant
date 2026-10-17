@@ -34,6 +34,8 @@ namespace StrmAssistant.Web.Service
 
         public void Any(DeleteVersion request)
         {
+            if (!Plugin.IsPluginEnabled) return;
+
             var item = _libraryManager.GetItemById(request.Id);
 
             if (!(item is Video video) || !(video is Movie || video is Episode) || !video.IsFileProtocol ||
@@ -57,8 +59,8 @@ namespace StrmAssistant.Web.Service
                 return;
             }
 
-            var enableDeepDelete = Plugin.Instance.ExperienceEnhanceStore.GetOptions().EnableDeepDelete;
-            var enableNotification = Plugin.Instance.ExperienceEnhanceStore.GetOptions().EnhanceNotificationSystem;
+            var enableDeepDelete = Plugin.Instance.ExperienceEnhanceStore.GetOptions().Playback.EnableDeepDelete;
+            var enableNotification = Plugin.Instance.ExperienceEnhanceStore.GetOptions().Notification.EnhanceNotificationSystem;
 
             var deleteItems = item is Episode episode && request.DeleteParent
                 ? GetSeasonEpisodesSameVersion(episode)

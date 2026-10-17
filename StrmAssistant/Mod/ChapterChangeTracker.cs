@@ -22,7 +22,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MediaInfoExtractStore.GetOptions().PersistMediaInfoMode !=
+            if (Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoPersist.PersistMediaInfoMode !=
                 PersistMediaInfoOption.None.ToString())
             {
                 Patch();

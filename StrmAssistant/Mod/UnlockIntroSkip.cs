@@ -24,7 +24,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.IntroSkipStore.GetOptions().UnlockIntroSkip)
+            if (Plugin.Instance.IntroSkipStore.GetOptions().Fingerprint.UnlockIntroSkip)
             {
                 Patch();
             }
@@ -88,7 +88,7 @@ namespace StrmAssistant.Mod
         [HarmonyPostfix]
         private static void CreateQueryForEpisodeIntroDetectionPostfix(LibraryOptions libraryOptions, ref InternalItemsQuery __result)
         {
-            var markerEnabledLibraryScope = Plugin.Instance.IntroSkipStore.GetOptions().MarkerEnabledLibraryScope;
+            var markerEnabledLibraryScope = Plugin.Instance.IntroSkipStore.GetOptions().Fingerprint.MarkerEnabledLibraryScope;
 
             if (!string.IsNullOrEmpty(markerEnabledLibraryScope) && markerEnabledLibraryScope.Contains("-1"))
             {

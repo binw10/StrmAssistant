@@ -54,8 +54,8 @@ namespace StrmAssistant.Options.View
 
         private async Task HandleClearIntroButton()
         {
-            IntroSkipOptions.ClearIntroButton.IsEnabled = false;
-            IntroSkipOptions.ClearIntroResult.Clear();
+            IntroSkipOptions.Playback.ClearIntroButton.IsEnabled = false;
+            IntroSkipOptions.Playback.ClearIntroResult.Clear();
             var progressItem = new GenericListItem
             {
                 Icon = IconNames.work_outline,
@@ -63,7 +63,7 @@ namespace StrmAssistant.Options.View
                 Status = ItemStatus.InProgress,
                 HasPercentage = true
             };
-            IntroSkipOptions.ClearIntroResult.Add(progressItem);
+            IntroSkipOptions.Playback.ClearIntroResult.Add(progressItem);
             RaiseUIViewInfoChanged();
             await Task.Delay(10.ms());
 
@@ -88,14 +88,14 @@ namespace StrmAssistant.Options.View
                 await Task.Delay(10.ms());
             }
 
-            IntroSkipOptions.ClearIntroButton.IsEnabled = true;
+            IntroSkipOptions.Playback.ClearIntroButton.IsEnabled = true;
             progressItem.HasPercentage = false;
             progressItem.SecondaryText = Resources.Operation_Success;
             progressItem.Icon = IconNames.info;
             progressItem.Status = ItemStatus.Succeeded;
             RaiseUIViewInfoChanged();
             await Task.Delay(2000);
-            IntroSkipOptions.ClearIntroResult.Clear();
+            IntroSkipOptions.Playback.ClearIntroResult.Clear();
             RaiseUIViewInfoChanged();
         }
     }

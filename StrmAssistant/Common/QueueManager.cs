@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using static StrmAssistant.Options.GeneralOptions;
+using static StrmAssistant.Options.TaskConcurrencyOptions;
 using static StrmAssistant.Options.MediaInfoExtractOptions;
 using static StrmAssistant.Options.Utility;
 
@@ -50,8 +50,8 @@ namespace StrmAssistant.Common
         static QueueManager()
         {
             Logger = Plugin.Instance.Logger;
-            _currentMasterMaxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.MaxConcurrentCount;
-            _currentTier2MaxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.Tier2MaxConcurrentCount;
+            _currentMasterMaxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount;
+            _currentTier2MaxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.Tier2MaxConcurrentCount;
 
             MasterSemaphore = new SemaphoreSlim(_currentMasterMaxConcurrentCount);
             Tier2Semaphore = new SemaphoreSlim(_currentTier2MaxConcurrentCount);
@@ -165,7 +165,7 @@ namespace StrmAssistant.Common
         /// </summary>
         private static List<T> FilterByCatchupMinWait<T>(List<T> items, Action<T> requeue) where T : BaseItem
         {
-            var minWaitMinutes = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.CatchupMinWaitMinutes;
+            var minWaitMinutes = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.CatchupMinWaitMinutes;
 
             if (minWaitMinutes <= 0 || items.Count == 0) return items;
 
@@ -216,7 +216,7 @@ namespace StrmAssistant.Common
 
                 if (!MediaInfoExtractItemQueue.IsEmpty)
                 {
-                    var maxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.MaxConcurrentCount;
+                    var maxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount;
                     var currentQueueCount = MediaInfoExtractItemQueue.Count;
                     
                     dequeueItems.Clear();
@@ -249,13 +249,13 @@ namespace StrmAssistant.Common
                     {
                         Logger.Info("Master Max Concurrent Count: " + maxConcurrentCount);
                         var cooldownSeconds = maxConcurrentCount == 1
-                            ? Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.CooldownDurationSeconds
+                            ? Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.CooldownDurationSeconds
                             : (int?)null;
                         if (cooldownSeconds.HasValue)
                             Logger.Info("Cooldown Duration Seconds: " + cooldownSeconds.Value);
                         Logger.Info("Tier2 Max Concurrent Count: " +
                                     Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions
-                                        .Tier2MaxConcurrentCount);
+                                        .TaskConcurrency.Tier2MaxConcurrentCount);
 
                         IsMediaInfoProcessTaskRunning = true;
 
@@ -406,7 +406,7 @@ namespace StrmAssistant.Common
 
                 if (!FingerprintItemQueue.IsEmpty)
                 {
-                    var maxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.MaxConcurrentCount;
+                    var maxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount;
                     var currentQueueCount = FingerprintItemQueue.Count;
                     
                     dequeueItems.Clear();
@@ -448,11 +448,11 @@ namespace StrmAssistant.Common
                     {
                         Logger.Info("Master Max Concurrent Count: " + maxConcurrentCount);
                         var cooldownSeconds = maxConcurrentCount == 1
-                            ? Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.CooldownDurationSeconds
+                            ? Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.CooldownDurationSeconds
                             : (int?)null;
                         if (cooldownSeconds.HasValue)
                             Logger.Info("Cooldown Duration Seconds: " + cooldownSeconds.Value);
-                        var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableImageCapture;
+                        var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCapture.EnableImageCapture;
 
                         var groupedBySeason = episodes.GroupBy(e => e.Season).ToList();
                         var seasonTasks = new List<Task>();
@@ -762,7 +762,7 @@ namespace StrmAssistant.Common
                     if (itemsToRefresh.Count > 0)
                     {
                         var tier2MaxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions
-                            .Tier2MaxConcurrentCount;
+                            .TaskConcurrency.Tier2MaxConcurrentCount;
                         Logger.Info("Tier2 Max Concurrent Count: " + tier2MaxConcurrentCount);
 
                         IsEpisodeRefreshProcessTaskRunning = true;

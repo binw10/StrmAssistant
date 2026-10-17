@@ -67,7 +67,7 @@ namespace StrmAssistant.Mod
 
         private static Options.DirectLinkOptions GetDirectLinkOptions()
         {
-            return Plugin.Instance?.MainOptionsStore?.GetOptions()?.ModOptions?.DirectLinkOptions
+            return Plugin.Instance?.NetworkProxyStore?.GetOptions()?.DirectLink
                    ?? new Options.DirectLinkOptions();
         }
 

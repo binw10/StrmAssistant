@@ -30,6 +30,8 @@ namespace StrmAssistant.ScheduledTask
 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
+            if (!Plugin.IsPluginEnabled) return;
+
             _logger.Info("DoubanCacheBuild - Scheduled Task Execute");
 
             var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();

@@ -40,11 +40,11 @@ namespace StrmAssistant.Mod
 
         public EnableImageCapture()
         {
-            SemaphoreFFmpegMaxCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.MaxConcurrentCount;
+            SemaphoreFFmpegMaxCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount;
 
             Initialize();
 
-            if (Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableImageCapture)
+            if (Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCapture.EnableImageCapture)
             {
                 SemaphoreFFmpeg = new SemaphoreSlim(SemaphoreFFmpegMaxCount);
                 PatchResourcePool();
@@ -355,11 +355,11 @@ namespace StrmAssistant.Mod
                 if (codes[i].opcode == OpCodes.Ldc_I4_1)
                 {
                     codes[i] = new CodeInstruction(OpCodes.Ldc_I4_S,
-                        (sbyte)Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.MaxConcurrentCount);
+                        (sbyte)Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount);
                     if (i + 1 < codes.Count && codes[i + 1].opcode == OpCodes.Ldc_I4_1)
                     {
                         codes[i + 1] = new CodeInstruction(OpCodes.Ldc_I4_S,
-                            (sbyte)Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.MaxConcurrentCount);
+                            (sbyte)Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount);
                     }
                     break;
                 }
@@ -418,7 +418,7 @@ namespace StrmAssistant.Mod
 
         private static long GetThumbnailPositionTicks(long runtimeTicks)
         {
-            var percent = Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCapturePosition / 100.0;
+            var percent = Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCapture.ImageCapturePosition / 100.0;
 
             var min = Math.Min(Convert.ToInt64(runtimeTicks * 0.5), TimeSpan.FromSeconds(20.0).Ticks);
 
@@ -439,7 +439,7 @@ namespace StrmAssistant.Mod
             var timeoutProperty = Traverse.Create(__instance).Property("TotalTimeoutMs");
             var origTimeout = timeoutProperty.GetValue<int>();
             var newTimeout = origTimeout *
-                             Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.MaxConcurrentCount;
+                             Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount;
 
             if (ExtractVideoThumbnailTask.IsRunning)
             {

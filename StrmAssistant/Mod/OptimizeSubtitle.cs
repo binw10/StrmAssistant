@@ -26,7 +26,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().OptimizeSubtitle)
+            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().Playback.OptimizeSubtitle)
             {
                 Patch();
             }

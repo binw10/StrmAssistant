@@ -31,7 +31,7 @@ namespace StrmAssistant.Notification
                 }
             };
 
-            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().EnhanceNotificationSystem)
+            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().Notification.EnhanceNotificationSystem)
             {
                 notificationTypes.Add(new NotificationTypeInfo
                 {

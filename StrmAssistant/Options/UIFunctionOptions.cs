@@ -109,6 +109,11 @@ namespace StrmAssistant.Options
         [VisibleCondition(nameof(OptimizeMediaItemOrder), SimpleCondition.IsTrue)]
         public string OptimizeItemOrderPreferences { get; set; } = string.Empty;
 
+        [DisplayNameL("ModOptions_ShowMediaInfo_Show_Media_Info", typeof(Resources))]
+        [DescriptionL("ModOptions_ShowMediaInfo_Show_media_info_on_search_result_items__Default_is_OFF_", typeof(Resources))]
+        [Required]
+        public bool ShowMediaInfo { get; set; } = false;
+
         [DisplayNameL("UIFunctionOptions_ReplaceUnplayedWithTotal_Show_Total_Episodes", typeof(Resources))]
         [DescriptionL("UIFunctionOptions_ReplaceUnplayedWithTotal_Show_total_episode_count_instead_of_unplayed_count_on_series_cards__Default_is_OFF_", typeof(Resources))]
         [Required]

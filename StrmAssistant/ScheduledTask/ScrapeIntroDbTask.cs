@@ -30,7 +30,9 @@ namespace StrmAssistant.ScheduledTask
 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
-            if (!Plugin.Instance.IntroSkipStore.GetOptions().EnableIntroDbScrape)
+            if (!Plugin.IsPluginEnabled) return;
+
+            if (!Plugin.Instance.IntroSkipStore.GetOptions().Scrape.EnableIntroDbScrape)
             {
                 _logger.Warn("IntroDbScrape - Feature is disabled in options, task skipped");
                 return;

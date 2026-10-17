@@ -1,3 +1,4 @@
+using StrmAssistant.Options;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
@@ -266,7 +267,7 @@ namespace StrmAssistant.Common
         private static bool AllowOverwrite(ChapterInfo chapter)
         {
             return IsMarkerAddedByIntroSkip(chapter) ||
-                   IsIntroSkipPreferenceSelected(IntroSkipPreference.ResetAndOverwrite);
+                   IsIntroSkipPreferenceSelected(IntroSkipPlaybackOptions.IntroSkipPreference.ResetAndOverwrite);
         }
 
         private static bool AllowOverwrite(ChapterInfo chapter, bool ignore)
@@ -453,7 +454,7 @@ namespace StrmAssistant.Common
 
             if (clearAll)
             {
-                var currentScope = Plugin.Instance.IntroSkipStore.GetOptions().LibraryScope;
+                var currentScope = Plugin.Instance.IntroSkipStore.GetOptions().Playback.LibraryScope;
                 var validLibraryIds = GetValidLibraryIds(currentScope);
                 var libraries = _libraryManager.GetVirtualFolders()
                     .Where(f => (f.CollectionType == CollectionType.TvShows.ToString() || f.CollectionType is null) &&

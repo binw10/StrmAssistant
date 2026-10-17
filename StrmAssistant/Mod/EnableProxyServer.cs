@@ -19,7 +19,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MainOptionsStore.GetOptions().NetworkOptions.EnableProxyServer)
+            if (Plugin.Instance.NetworkProxyStore.GetOptions().Network.EnableProxyServer)
             {
                 Patch();
             }
@@ -43,7 +43,7 @@ namespace StrmAssistant.Mod
         [HarmonyPostfix]
         private static void CreateHttpClientHandlerPostfix(ref HttpMessageHandler __result)
         {
-            var options = Plugin.Instance.MainOptionsStore.PluginOptions.NetworkOptions;
+            var options = Plugin.Instance.NetworkProxyStore.GetOptions().Network;
             var proxyStatus = options.ProxyServerStatus.Status;
             var ignoreCertificateValidation = options.IgnoreCertificateValidation;
 

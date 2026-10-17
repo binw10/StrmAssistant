@@ -22,6 +22,8 @@ namespace StrmAssistant.Web.Service
 
         public void Post(ClearIntro request)
         {
+            if (!Plugin.IsPluginEnabled) return;
+
             var itemById = _libraryManager.GetItemById(request.Id);
 
             if (!(itemById is Series || itemById is Season)) return;
@@ -37,6 +39,8 @@ namespace StrmAssistant.Web.Service
 
         public void Post(ClearChapterImages request)
         {
+            if (!Plugin.IsPluginEnabled) return;
+
             var itemById = _libraryManager.GetItemById(request.Id);
 
             if (itemById is null) return;

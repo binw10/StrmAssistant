@@ -18,7 +18,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().EnableDeepDelete)
+            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().Playback.EnableDeepDelete)
             {
                 Patch();
             }

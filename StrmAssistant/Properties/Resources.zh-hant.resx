@@ -120,7 +120,7 @@
     <value>掃庫時自動合併電影和電視節目為多版本，不需符合官方嚴格的命名規範，預設為關閉。</value>
   </data>
   <data name="PluginOptions_ModOptions_Mod_Features" xml:space="preserve">
-    <value>搜尋</value>
+    <value>中文搜尋</value>
   </data>
   <data name="ModOptions_ChineseMovieDb_Chinese_MovieDb" xml:space="preserve">
     <value>自訂 TMDB 備選語言</value>
@@ -489,7 +489,7 @@
     <value>季</value>
   </data>
   <data name="MetadataEnhanceOptions_Group_AltMovieDb" xml:space="preserve">
-    <value>備用 MovieDb 介面</value>
+    <value>TMDB 替換</value>
   </data>
   <data name="MetadataEnhanceOptions_Group_ChineseMetadata" xml:space="preserve">
     <value>中文元資料</value>
@@ -564,7 +564,7 @@
     <value>跳過所有單集圖片請求以加快入庫速度，預設關閉。</value>
   </data>
   <data name="ExperienceEnhanceOptions_EditorTitle_Experience_Enhance" xml:space="preserve">
-    <value>體驗增強</value>
+    <value>進階功能</value>
   </data>
   <data name="CatchupTask_MediaInfo_MediaInfo" xml:space="preserve">
     <value>媒體資訊擷取</value>
@@ -937,6 +937,15 @@
   </data>
   <data name="GeneralOptions_ScheduleIndexRebuild_Schedule_Search_Index_Rebuild" xml:space="preserve">
     <value>排程重建搜尋索引</value>
+  </data>
+  <data name="GeneralOptions_OptimizeSearchIndex_Optimize_Search_Index" xml:space="preserve">
+    <value>最佳化搜尋索引</value>
+  </data>
+  <data name="GeneralOptions_OptimizeSearchIndex_Reclaimed" xml:space="preserve">
+    <value>搜尋索引已最佳化，回收 {0} 頁（{1} 位元組）。</value>
+  </data>
+  <data name="GeneralOptions_OptimizeSearchIndex_Failed" xml:space="preserve">
+    <value>最佳化搜尋索引失敗，詳見伺服器日誌。</value>
   </data>
   <data name="GeneralOptions_RestartServer_Restart_Server" xml:space="preserve">
     <value>重啟伺服器</value>
@@ -1312,5 +1321,65 @@
   </data>
   <data name="RefreshEpisodeTask_Name_Refresh_Episode" xml:space="preserve">
     <value>重新整理劇集中繼資料</value>
+  </data>
+  <data name="MediaInfoExtractOptions_Group_ExtractionScope" xml:space="preserve">
+    <value>擷取範圍</value>
+  </data>
+  <data name="MediaInfoExtractOptions_Group_ImageCapture" xml:space="preserve">
+    <value>圖像擷取</value>
+  </data>
+  <data name="MediaInfoExtractOptions_Group_IsoTool" xml:space="preserve">
+    <value>ISO 與外部工具</value>
+  </data>
+  <data name="MediaInfoExtractOptions_Group_MediaInfoPersist" xml:space="preserve">
+    <value>結果與持久化</value>
+  </data>
+  <data name="MediaInfoExtractOptions_Group_ExtractionPerformance" xml:space="preserve">
+    <value>效能與獨佔</value>
+  </data>
+  <data name="IntroSkipOptions_Group_Fingerprint" xml:space="preserve">
+    <value>偵測與指紋</value>
+  </data>
+  <data name="IntroSkipOptions_Group_Scrape" xml:space="preserve">
+    <value>線上刮削</value>
+  </data>
+  <data name="IntroSkipOptions_Group_Playback" xml:space="preserve">
+    <value>播放與跳過</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_Group_VersionMerge" xml:space="preserve">
+    <value>多版本合併</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_Group_VersionDisplay" xml:space="preserve">
+    <value>多版本展示</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_Group_Playback" xml:space="preserve">
+    <value>播放與清理</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_Group_Notification" xml:space="preserve">
+    <value>通知</value>
+  </data>
+  <data name="GeneralOptions_Group_TaskConcurrency" xml:space="preserve">
+    <value>任務與並發</value>
+  </data>
+  <data name="GeneralOptions_Group_Memory" xml:space="preserve">
+    <value>記憶體管理</value>
+  </data>
+  <data name="GeneralOptions_Group_RuntimeStatus" xml:space="preserve">
+    <value>運行狀態與維護</value>
+  </data>
+  <data name="ModOptions_Group_ChineseSearch" xml:space="preserve">
+    <value>匹配與範圍</value>
+  </data>
+  <data name="PluginOptions_EditorTitle_Basic_Settings" xml:space="preserve">
+    <value>基礎設定</value>
+  </data>
+  <data name="PluginOptions_EnablePlugin_Enable_Plugin" xml:space="preserve">
+    <value>啟用外掛</value>
+  </data>
+  <data name="PluginOptions_EnablePlugin_Description" xml:space="preserve">
+    <value>關閉後外掛不執行任何行為（不載入補丁、不跑定時任務、不回應網頁請求）。修改後需重啟伺服器生效，預設開啟。</value>
+  </data>
+  <data name="NetworkProxyOptions_EditorTitle_Network_Direct_Link" xml:space="preserve">
+    <value>網路與直鏈</value>
   </data>
 </root>

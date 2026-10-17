@@ -30,9 +30,11 @@ namespace StrmAssistant.ScheduledTask
 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
+            if (!Plugin.IsPluginEnabled) return;
+
             _logger.Info("IntroFingerprintExtract - Scheduled Task Execute");
             
-            var unlockIntroSkip = Plugin.Instance.IntroSkipStore.GetOptions().UnlockIntroSkip;
+            var unlockIntroSkip = Plugin.Instance.IntroSkipStore.GetOptions().Fingerprint.UnlockIntroSkip;
             if (!unlockIntroSkip)
             {
                 progress.Report(100.0);
@@ -44,14 +46,14 @@ namespace StrmAssistant.ScheduledTask
                 return;
             }
 
-            var maxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.MaxConcurrentCount;
+            var maxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount;
             _logger.Info("Master Max Concurrent Count: " + maxConcurrentCount);
             var cooldownSeconds = maxConcurrentCount == 1
-                ? Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.CooldownDurationSeconds
+                ? Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.CooldownDurationSeconds
                 : (int?)null;
             if (cooldownSeconds.HasValue) _logger.Info("Cooldown Duration Seconds: " + cooldownSeconds.Value);
 
-            var persistMediaInfoMode = Plugin.Instance.MediaInfoExtractStore.GetOptions().PersistMediaInfoMode;
+            var persistMediaInfoMode = Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoPersist.PersistMediaInfoMode;
             _logger.Info("Persist MediaInfo Mode: " + persistMediaInfoMode);
             var persistMediaInfo = persistMediaInfoMode != PersistMediaInfoOption.None.ToString();
             var mediaInfoRestoreMode = persistMediaInfoMode == PersistMediaInfoOption.Restore.ToString();
@@ -63,7 +65,7 @@ namespace StrmAssistant.ScheduledTask
             var seasonTasks = new List<Task>();
 
             // 并行声纹计算：绕过为 ffprobe 设计的 MasterSemaphore，用 CPU 核数级专用信号量
-            var parallelMarkers = Plugin.Instance.IntroSkipStore.GetOptions().ParallelMarkerComputation &&
+            var parallelMarkers = Plugin.Instance.IntroSkipStore.GetOptions().Fingerprint.ParallelMarkerComputation &&
                                   Plugin.Instance.IsModSupported;
             var workSemaphore = parallelMarkers ? QueueManager.ParallelMarkerSemaphore : QueueManager.MasterSemaphore;
             if (parallelMarkers)

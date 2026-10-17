@@ -12,9 +12,21 @@ namespace StrmAssistant.Options
 {
     public class PluginOptions : EditableOptionsBase
     {
-        public override string EditorTitle => Resources.PluginOptions_EditorTitle_Strm_Assistant;
+        [DisplayNameL("PluginOptions_EditorTitle_Basic_Settings", typeof(Resources))]
+        public override string EditorTitle => Resources.PluginOptions_EditorTitle_Basic_Settings;
 
         public override string EditorDescription => string.Empty;
+
+        /// <summary>
+        /// 插件总开关。关闭后 <c>Plugin.Initialize</c> 会整段跳过（不 patch、不订阅事件、
+        /// 不初始化队列），定时任务与 Web 端点也会早退；修改后需重启服务器才生效。
+        /// 之所以不做即时生效，是因为要撤销 36 个 Harmony patch 并逐个验证幂等性，
+        /// 一旦有遗漏会出现「关了其实没关」——比没有开关更糟。
+        /// </summary>
+        [DisplayNameL("PluginOptions_EnablePlugin_Enable_Plugin", typeof(Resources))]
+        [DescriptionL("PluginOptions_EnablePlugin_Description", typeof(Resources))]
+        [Required]
+        public bool EnablePlugin { get; set; } = true;
 
         public ButtonItem DisclaimerButton { get; set; } = new ButtonItem
         {
@@ -32,9 +44,6 @@ namespace StrmAssistant.Options
 
         [DisplayNameL("PluginOptions_ModOptions_Mod_Features", typeof(Resources))]
         public ModOptions ModOptions { get; set; } = new ModOptions();
-
-        [DisplayNameL("NetworkOptions_EditorTitle_Network", typeof(Resources))]
-        public NetworkOptions NetworkOptions { get; set; } = new NetworkOptions();
 
         [DisplayNameL("AboutOptions_EditorTitle_About", typeof(Resources))]
         public AboutOptions AboutOptions { get; set; } = new AboutOptions();

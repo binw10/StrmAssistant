@@ -207,7 +207,7 @@
     <value>While library scan, auto merge movies and series to multi versions, bypass naming convention. Default is OFF.</value>
   </data>
   <data name="PluginOptions_ModOptions_Mod_Features" xml:space="preserve">
-    <value>Search</value>
+    <value>Chinese Search</value>
   </data>
   <data name="ModOptions_ChineseMovieDb_Chinese_MovieDb" xml:space="preserve">
     <value>Customize MovieDb Fallback Language</value>
@@ -576,7 +576,7 @@
     <value>Season</value>
   </data>
   <data name="MetadataEnhanceOptions_Group_AltMovieDb" xml:space="preserve">
-    <value>Alternative MovieDb</value>
+    <value>TMDB Replacement</value>
   </data>
   <data name="MetadataEnhanceOptions_Group_ChineseMetadata" xml:space="preserve">
     <value>Chinese Metadata</value>
@@ -651,7 +651,7 @@
     <value>Skip all episode image requests to speed up library import. Default is OFF.</value>
   </data>
   <data name="ExperienceEnhanceOptions_EditorTitle_Experience_Enhance" xml:space="preserve">
-    <value>Experience Enhance</value>
+    <value>Advanced Features</value>
   </data>
   <data name="CatchupTask_MediaInfo_MediaInfo" xml:space="preserve">
     <value>MediaInfo Extract</value>
@@ -1024,6 +1024,15 @@
   </data>
   <data name="GeneralOptions_ScheduleIndexRebuild_Schedule_Search_Index_Rebuild" xml:space="preserve">
     <value>Schedule Search Index Rebuild</value>
+  </data>
+  <data name="GeneralOptions_OptimizeSearchIndex_Optimize_Search_Index" xml:space="preserve">
+    <value>Optimize Search Index</value>
+  </data>
+  <data name="GeneralOptions_OptimizeSearchIndex_Reclaimed" xml:space="preserve">
+    <value>Search index optimized. Reclaimed {0} pages ({1} bytes).</value>
+  </data>
+  <data name="GeneralOptions_OptimizeSearchIndex_Failed" xml:space="preserve">
+    <value>Optimize search index failed. See server log for details.</value>
   </data>
   <data name="GeneralOptions_RestartServer_Restart_Server" xml:space="preserve">
     <value>Restart Server</value>
@@ -1399,5 +1408,65 @@
   </data>
   <data name="RefreshEpisodeTask_Name_Refresh_Episode" xml:space="preserve">
     <value>Refresh Episode</value>
+  </data>
+  <data name="MediaInfoExtractOptions_Group_ExtractionScope" xml:space="preserve">
+    <value>Extraction Scope</value>
+  </data>
+  <data name="MediaInfoExtractOptions_Group_ImageCapture" xml:space="preserve">
+    <value>Image Capture</value>
+  </data>
+  <data name="MediaInfoExtractOptions_Group_IsoTool" xml:space="preserve">
+    <value>ISO &amp; External Tools</value>
+  </data>
+  <data name="MediaInfoExtractOptions_Group_MediaInfoPersist" xml:space="preserve">
+    <value>Result &amp; Persistence</value>
+  </data>
+  <data name="MediaInfoExtractOptions_Group_ExtractionPerformance" xml:space="preserve">
+    <value>Performance &amp; Exclusive</value>
+  </data>
+  <data name="IntroSkipOptions_Group_Fingerprint" xml:space="preserve">
+    <value>Detection &amp; Fingerprint</value>
+  </data>
+  <data name="IntroSkipOptions_Group_Scrape" xml:space="preserve">
+    <value>Online Scraping</value>
+  </data>
+  <data name="IntroSkipOptions_Group_Playback" xml:space="preserve">
+    <value>Playback &amp; Skip</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_Group_VersionMerge" xml:space="preserve">
+    <value>Version Merge</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_Group_VersionDisplay" xml:space="preserve">
+    <value>Version Display</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_Group_Playback" xml:space="preserve">
+    <value>Playback &amp; Cleanup</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_Group_Notification" xml:space="preserve">
+    <value>Notification</value>
+  </data>
+  <data name="GeneralOptions_Group_TaskConcurrency" xml:space="preserve">
+    <value>Tasks &amp; Concurrency</value>
+  </data>
+  <data name="GeneralOptions_Group_Memory" xml:space="preserve">
+    <value>Memory</value>
+  </data>
+  <data name="GeneralOptions_Group_RuntimeStatus" xml:space="preserve">
+    <value>Status &amp; Maintenance</value>
+  </data>
+  <data name="ModOptions_Group_ChineseSearch" xml:space="preserve">
+    <value>Matching &amp; Scope</value>
+  </data>
+  <data name="PluginOptions_EditorTitle_Basic_Settings" xml:space="preserve">
+    <value>Basic Settings</value>
+  </data>
+  <data name="PluginOptions_EnablePlugin_Enable_Plugin" xml:space="preserve">
+    <value>Enable Plugin</value>
+  </data>
+  <data name="PluginOptions_EnablePlugin_Description" xml:space="preserve">
+    <value>Disables all patches, scheduled tasks and web endpoints. Requires a server restart to take effect. Default is ON.</value>
+  </data>
+  <data name="NetworkProxyOptions_EditorTitle_Network_Direct_Link" xml:space="preserve">
+    <value>Network &amp; Direct Link</value>
   </data>
 </root>

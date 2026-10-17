@@ -73,7 +73,7 @@ namespace StrmAssistant.Common
             CancellationToken cancellationToken, string imdbId = null, long? durationMs = null)
         {
             var providers = ParseUnifiedProviders(
-                Plugin.Instance.IntroSkipStore.GetOptions().UnifiedIntroDbProviders);
+                Plugin.Instance.IntroSkipStore.GetOptions().Scrape.UnifiedIntroDbProviders);
 
             foreach (var provider in providers)
             {
@@ -121,7 +121,7 @@ namespace StrmAssistant.Common
                     return null;
                 }
 
-                apiKey = Plugin.Instance.IntroSkipStore.GetOptions().IntroDbApiKey;
+                apiKey = Plugin.Instance.IntroSkipStore.GetOptions().Scrape.IntroDbApiKey;
                 url = season.HasValue && episode.HasValue
                     ? $"{IntroDbAppBaseUrl}/segments?imdb_id={Uri.EscapeDataString(imdbId)}&season={season.Value}&episode={episode.Value}"
                     : $"{IntroDbAppBaseUrl}/segments?imdb_id={Uri.EscapeDataString(imdbId)}";
@@ -130,7 +130,7 @@ namespace StrmAssistant.Common
             {
                 if (string.IsNullOrWhiteSpace(tmdbId)) return null;
 
-                apiKey = Plugin.Instance.IntroSkipStore.GetOptions().TidbApiKey;
+                apiKey = Plugin.Instance.IntroSkipStore.GetOptions().Scrape.TidbApiKey;
                 url = season.HasValue && episode.HasValue
                     ? $"{TheIntroDbBaseUrl}/media?tmdb_id={tmdbId}&season={season.Value}&episode={episode.Value}"
                     : $"{TheIntroDbBaseUrl}/media?tmdb_id={tmdbId}&type=movie";

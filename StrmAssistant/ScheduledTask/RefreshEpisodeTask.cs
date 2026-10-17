@@ -19,9 +19,11 @@ namespace StrmAssistant.ScheduledTask
 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
+            if (!Plugin.IsPluginEnabled) return;
+
             _logger.Info("EpisodeRefresh - Scheduled Task Execute");
             var tier2MaxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions
-                .Tier2MaxConcurrentCount;
+                .TaskConcurrency.Tier2MaxConcurrentCount;
             _logger.Info("Tier2 Max Concurrent Count: " + tier2MaxConcurrentCount);
 
             await Task.Yield();

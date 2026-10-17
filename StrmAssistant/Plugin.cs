@@ -45,7 +45,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using static StrmAssistant.Options.ExperienceEnhanceOptions;
-using static StrmAssistant.Options.GeneralOptions;
+using static StrmAssistant.Options.TaskConcurrencyOptions;
 using static StrmAssistant.Options.MediaInfoExtractOptions;
 using static StrmAssistant.Options.Utility;
 
@@ -59,8 +59,18 @@ namespace StrmAssistant
         public readonly MetadataEnhanceOptionsStore MetadataEnhanceStore;
         public readonly IntroSkipOptionsStore IntroSkipStore;
         public readonly ExperienceEnhanceOptionsStore ExperienceEnhanceStore;
+        public readonly NetworkProxyOptionsStore NetworkProxyStore;
 
         public static Plugin Instance { get; private set; }
+
+        /// <summary>
+        /// 插件总开关（重启生效）。关闭时 <see cref="Initialize"/> 会整段跳过补丁、API 对象与
+        /// 事件订阅，定时任务与 Web 端点也据此早退；配置读写仍保留，使设置页可以重新启用。
+        /// 默认 true，避免 store 尚未初始化时把功能误判为关闭。
+        /// </summary>
+        public static bool IsPluginEnabled =>
+            Instance?.MainOptionsStore?.GetOptions()?.EnablePlugin ?? true;
+
         public static LibraryApi LibraryApi { get; private set; }
         public static MediaInfoApi MediaInfoApi { get; private set; }
         public static ChapterApi ChapterApi { get; private set; }
@@ -164,6 +174,9 @@ namespace StrmAssistant
             IntroSkipStore = new IntroSkipOptionsStore(applicationHost, Logger, ConfigName + "_" + nameof(IntroSkipOptions));
             ExperienceEnhanceStore = new ExperienceEnhanceOptionsStore(applicationHost, Logger,
                 ConfigName + "_" + nameof(ExperienceEnhanceOptions));
+            // 网络与直链：新建 Tab，迁移时从主配置与元数据配置各取一块（见 NetworkProxyOptionsMigration）
+            NetworkProxyStore = new NetworkProxyOptionsStore(applicationHost, Logger,
+                ConfigName + "_" + nameof(NetworkProxyOptions));
 
             MigrateChineseSearchOptions();
             InitializeOptionCache();
@@ -187,6 +200,16 @@ namespace StrmAssistant
             else if (Debugger.IsAttached)
             {
                 DebugMode = true;
+            }
+
+            // 插件总开关（重启生效）：关闭时跳过补丁、API 对象与事件订阅，
+            // 仅保留配置读写，使设置页仍可打开以重新启用。
+            if (!MainOptionsStore.GetOptions().EnablePlugin)
+            {
+                Logger.Warn("StrmAssistant is disabled (EnablePlugin = false): " +
+                            "no patches, scheduled tasks or web endpoints will run. " +
+                            "Re-enable it and restart the server to take effect.");
+                return;
             }
 
             if (IsModSupported)
@@ -277,7 +300,7 @@ namespace StrmAssistant
             try
             {
                 var memOpts = MainOptionsStore.GetOptions().GeneralOptions;
-                MemoryCleaner.ApplySettings(Logger, memOpts.EnableMemoryCleanup, memOpts.MemoryCleanupIntervalMinutes);
+                MemoryCleaner.ApplySettings(Logger, memOpts.Memory.EnableMemoryCleanup, memOpts.Memory.MemoryCleanupIntervalMinutes);
             }
             catch (Exception ex)
             {
@@ -320,7 +343,7 @@ namespace StrmAssistant
 
             FfmpegPathOverride.Initialize(ffmpegManager, Logger);
             var mediaInfoOptions = MediaInfoExtractStore.GetOptions();
-            FfmpegPathOverride.Apply(mediaInfoOptions.CustomProbePath, mediaInfoOptions.CustomEncoderPath);
+            FfmpegPathOverride.Apply(mediaInfoOptions.IsoTool.CustomProbePath, mediaInfoOptions.IsoTool.CustomEncoderPath);
 
             var metadataCacheOptions = MetadataEnhanceStore.GetOptions();
             if (metadataCacheOptions.MetadataCache.IsMetadataCacheEnabled)
@@ -332,12 +355,12 @@ namespace StrmAssistant
                     : $"MetadataCache - root invalid ({cacheError}): {metadataCacheOptions.MetadataCache.MetadataCacheRootFolder}");
             }
 
-            if (MainOptionsStore.GetOptions().GeneralOptions.CatchupMode) QueueManager.Initialize();
-            if (IntroSkipStore.GetOptions().EnableIntroSkip) PlaySessionMonitor.Initialize();
-            if (ExperienceEnhanceStore.GetOptions().EnableAutoMarkWatched) AutoMarkWatched.Initialize();
+            if (MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.CatchupMode) QueueManager.Initialize();
+            if (IntroSkipStore.GetOptions().Playback.EnableIntroSkip) PlaySessionMonitor.Initialize();
+            if (ExperienceEnhanceStore.GetOptions().Playback.EnableAutoMarkWatched) AutoMarkWatched.Initialize();
             MemoryGuard.Apply(Logger,
-                MainOptionsStore.GetOptions().GeneralOptions.EnableMemoryAutoRestart,
-                MainOptionsStore.GetOptions().GeneralOptions.MemoryAutoRestartThresholdMB);
+                MainOptionsStore.GetOptions().GeneralOptions.Memory.EnableMemoryAutoRestart,
+                MainOptionsStore.GetOptions().GeneralOptions.Memory.MemoryAutoRestartThresholdMB);
 
             MigrateImageCaptureExcludeContainers();
 
@@ -364,10 +387,10 @@ namespace StrmAssistant
                 const string legacyDefault = "MpegTs,Ts,M2Ts";
                 var mediaInfoOptions = MediaInfoExtractStore.GetOptions();
 
-                if (!string.Equals(mediaInfoOptions.ImageCaptureExcludeMediaContainers, legacyDefault,
+                if (!string.Equals(mediaInfoOptions.ImageCapture.ImageCaptureExcludeMediaContainers, legacyDefault,
                         StringComparison.Ordinal)) return;
 
-                mediaInfoOptions.ImageCaptureExcludeMediaContainers = string.Empty;
+                mediaInfoOptions.ImageCapture.ImageCaptureExcludeMediaContainers = string.Empty;
                 MediaInfoExtractStore.SetOptions(mediaInfoOptions);
 
                 Logger.Info("MediaInfoExtract - Migrated ImageCaptureExcludeMediaContainers: ts/m2ts no longer excluded by default");
@@ -386,7 +409,7 @@ namespace StrmAssistant
 
             var introSkipOptions = IntroSkipStore.GetOptions();
 
-            if (introSkipOptions.EnableIntroDbScrape && introSkipOptions.EnableAutomaticIntroScraping)
+            if (introSkipOptions.Scrape.EnableIntroDbScrape && introSkipOptions.Scrape.EnableAutomaticIntroScraping)
             {
                 if (e.Argument.Item is Series refreshedSeries)
                 {
@@ -400,13 +423,13 @@ namespace StrmAssistant
 
             var mediaInfoOptions = MediaInfoExtractStore.GetOptions();
 
-            if (mediaInfoOptions.EnableImageCapture &&
-                (mediaInfoOptions.ForcePortraitPoster || mediaInfoOptions.EnsureEpisode16x9))
+            if (mediaInfoOptions.ImageCapture.EnableImageCapture &&
+                (mediaInfoOptions.ImageCapture.ForcePortraitPoster || mediaInfoOptions.ImageCapture.EnsureEpisode16x9))
             {
                 var refreshedItem = e.Argument.Item;
 
                 _ = Task.Run(() => ImagePostProcessor.ProcessItem(refreshedItem,
-                    mediaInfoOptions.ForcePortraitPoster, mediaInfoOptions.EnsureEpisode16x9));
+                    mediaInfoOptions.ImageCapture.ForcePortraitPoster, mediaInfoOptions.ImageCapture.EnsureEpisode16x9));
             }
 
             if (MetadataEnhanceStore.GetOptions().DoubanAssist.EnableDoubanAssist)
@@ -425,13 +448,14 @@ namespace StrmAssistant
                 }
             }
 
-            if (options.MergeMultiVersion && e.Argument.Item.IsTopParent)
+            if (options.Merge.MergeMultiVersion && e.Argument.Item.IsTopParent)
             {
                 var library = e.Argument.CollectionFolders.OfType<CollectionFolder>().FirstOrDefault();
 
                 if (library != null && (library.CollectionType == CollectionType.Movies.ToString() ||
                                         library.CollectionType == CollectionType.TvShows.ToString() &&
-                                        options.MergeSeriesPreference == MergeSeriesScopeOption.GlobalScope ||
+                                        options.Merge.MergeSeriesPreference ==
+                                        VersionMergeOptions.MergeSeriesScopeOption.GlobalScope ||
                                         library.CollectionType is null))
                 {
                     MergeMultiVersionTask.CurrentScanLibrary.Value = library;
@@ -475,10 +499,10 @@ namespace StrmAssistant
                     PlaySessionMonitor.UpdateLibraryPathsInScope();
                     FingerprintApi.UpdateLibraryPathsInScope();
 
-                    if (IntroSkipStore.GetOptions().UnlockIntroSkip)
+                    if (IntroSkipStore.GetOptions().Fingerprint.UnlockIntroSkip)
                         FingerprintApi.UpdateLibraryIntroDetectionFingerprintLength();
 
-                    if (ExperienceEnhanceStore.GetOptions().MergeMultiVersion)
+                    if (ExperienceEnhanceStore.GetOptions().Merge.MergeMultiVersion)
                         LibraryApi.EnsureLibraryEnabledAutomaticSeriesGrouping();
                 }
             }
@@ -489,7 +513,7 @@ namespace StrmAssistant
             try
             {
                 // 合集变更通知：条目加入合集
-                if (ExperienceEnhanceStore.GetOptions().EnhanceNotificationSystem &&
+                if (ExperienceEnhanceStore.GetOptions().Notification.EnhanceNotificationSystem &&
                     (e.Parent ?? e.Item?.Parent) is BoxSet boxsetAdded)
                 {
                     NotificationApi.BoxsetUpdateSendNotification(boxsetAdded, e.Item, true);
@@ -497,7 +521,7 @@ namespace StrmAssistant
 
                 var deserializeResult = false;
 
-                if (e.Item is Video && MediaInfoExtractStore.GetOptions().PersistMediaInfoMode !=
+                if (e.Item is Video && MediaInfoExtractStore.GetOptions().MediaInfoPersist.PersistMediaInfoMode !=
                     PersistMediaInfoOption.None.ToString())
                 {
                     deserializeResult = LibraryApi.HasMediaInfo(e.Item);
@@ -516,9 +540,9 @@ namespace StrmAssistant
                     }
                 }
 
-                if ((e.Item is Video || e.Item is Audio) && MainOptionsStore.PluginOptions.GeneralOptions.CatchupMode)
+                if ((e.Item is Video || e.Item is Audio) && MainOptionsStore.PluginOptions.GeneralOptions.TaskConcurrency.CatchupMode)
                 {
-                    if (IntroSkipStore.IntroSkipOptions.UnlockIntroSkip &&
+                    if (IntroSkipStore.IntroSkipOptions.Fingerprint.UnlockIntroSkip &&
                         IsCatchupTaskSelected(CatchupTask.Fingerprint) &&
                         e.Item is Episode && FingerprintApi.IsLibraryInScope(e.Item) &&
                         (!deserializeResult || FingerprintApi.IsExtractNeeded(e.Item)))
@@ -567,7 +591,7 @@ namespace StrmAssistant
 
         private void OnPlaybackStopped(object sender, PlaybackProgressEventArgs e)
         {
-            if (e.Item is Video && MediaInfoExtractStore.MediaInfoExtractOptions.ExclusiveExtract &&
+            if (e.Item is Video && MediaInfoExtractStore.MediaInfoExtractOptions.ExtractionPerformance.ExclusiveExtract &&
                 IsExclusiveFeatureSelected(ExclusiveControl.ExtractAlternative))
             {
                 var targetItem = MediaInfoApi.GetItemByMediaSourceId(e.Item, e.MediaSourceId);
@@ -597,7 +621,7 @@ namespace StrmAssistant
             }
 
             // 增强通知系统：元数据/图像更新通知（发给管理员）
-            if (ExperienceEnhanceStore.GetOptions().EnhanceNotificationSystem &&
+            if (ExperienceEnhanceStore.GetOptions().Notification.EnhanceNotificationSystem &&
                 (e.Item is Video || e.Item is Audio))
             {
                 if ((e.UpdateReason & ItemUpdateType.ImageUpdate) != 0)
@@ -608,7 +632,7 @@ namespace StrmAssistant
                           (ItemUpdateType.MetadataDownload | ItemUpdateType.MetadataEdit |
                            ItemUpdateType.MetadataImport)) != 0)
                 {
-                    var trackedFields = ExperienceEnhanceStore.GetOptions().MetadataUpdateTrackedFields;
+                    var trackedFields = ExperienceEnhanceStore.GetOptions().Notification.MetadataUpdateTrackedFields;
                     if (MatchesTrackedFields(e, trackedFields))
                     {
                         NotificationApi.MetadataUpdateSendNotification(e.Item,
@@ -668,13 +692,13 @@ namespace StrmAssistant
         private void OnItemRemoved(object sender, ItemChangeEventArgs e)
         {
             // 合集变更通知：条目移出合集
-            if (ExperienceEnhanceStore.GetOptions().EnhanceNotificationSystem &&
+            if (ExperienceEnhanceStore.GetOptions().Notification.EnhanceNotificationSystem &&
                 (e.Parent ?? e.Item?.Parent) is BoxSet boxsetRemoved)
             {
                 NotificationApi.BoxsetUpdateSendNotification(boxsetRemoved, e.Item, false);
             }
 
-            if (e.Item is Video && MediaInfoExtractStore.GetOptions().PersistMediaInfoMode !=
+            if (e.Item is Video && MediaInfoExtractStore.GetOptions().MediaInfoPersist.PersistMediaInfoMode !=
                 PersistMediaInfoOption.Restore.ToString())
             {
                 var directoryService = new DirectoryService(Logger, _fileSystem);
@@ -708,13 +732,13 @@ namespace StrmAssistant
         {
             if (e.UserData.IsFavorite)
             {
-                if (MainOptionsStore.PluginOptions.GeneralOptions.CatchupMode &&
-                    IntroSkipStore.IntroSkipOptions.UnlockIntroSkip && IsCatchupTaskSelected(CatchupTask.Fingerprint) &&
+                if (MainOptionsStore.PluginOptions.GeneralOptions.TaskConcurrency.CatchupMode &&
+                    IntroSkipStore.IntroSkipOptions.Fingerprint.UnlockIntroSkip && IsCatchupTaskSelected(CatchupTask.Fingerprint) &&
                     FingerprintApi.IsLibraryInScope(e.Item) && (e.Item is Series || e.Item is Episode))
                 {
                     QueueManager.FingerprintItemQueue.Enqueue(e.Item);
                 }
-                else if (MainOptionsStore.PluginOptions.GeneralOptions.CatchupMode &&
+                else if (MainOptionsStore.PluginOptions.GeneralOptions.TaskConcurrency.CatchupMode &&
                          IsCatchupTaskSelected(CatchupTask.MediaInfo))
                 {
                     QueueManager.MediaInfoExtractItemQueue.Enqueue(e.Item);
@@ -724,7 +748,7 @@ namespace StrmAssistant
 
         public override void OnUninstalling()
         {
-            if (MainOptionsStore.GetOptions().ModOptions.EnhanceChineseSearch)
+            if (MainOptionsStore.GetOptions().ModOptions.ChineseSearch.EnhanceChineseSearch)
             {
                 _ = NotificationApi.SendMessageToAdmins(
                     $"[{Resources.PluginOptions_EditorTitle_Strm_Assistant}] {Resources.Uninstall_Warning}", 10000);
@@ -833,15 +857,15 @@ namespace StrmAssistant
                 var options = MainOptionsStore.GetOptions();
                 var changed = false;
 
-                if (options.ModOptions.EnhanceChineseSearch)
+                if (options.ModOptions.ChineseSearch.EnhanceChineseSearch)
                 {
-                    options.ModOptions.EnhanceChineseSearch = false;
+                    options.ModOptions.ChineseSearch.EnhanceChineseSearch = false;
                     changed = true;
                 }
 
-                if (options.ModOptions.EnhanceChineseSearchRestore)
+                if (options.ModOptions.ChineseSearch.EnhanceChineseSearchRestore)
                 {
-                    options.ModOptions.EnhanceChineseSearchRestore = false;
+                    options.ModOptions.ChineseSearch.EnhanceChineseSearchRestore = false;
                     changed = true;
                 }
 
@@ -917,7 +941,7 @@ namespace StrmAssistant
                     {
                         new MainPageController(GetPluginInfo(), _libraryManager, MainOptionsStore,
                             MediaInfoExtractStore, MetadataEnhanceStore, IntroSkipStore, ExperienceEnhanceStore,
-                            _taskManager, _sessionManager)
+                            NetworkProxyStore, _taskManager, _sessionManager)
                     };
                 }
 

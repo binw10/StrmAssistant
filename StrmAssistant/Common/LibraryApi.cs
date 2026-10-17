@@ -50,7 +50,7 @@ namespace StrmAssistant.Common
         {
             get
             {
-                return Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCaptureExcludeMediaContainers
+                return Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCapture.ImageCaptureExcludeMediaContainers
                     .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                     .Select(c =>
                         Enum.TryParse<MediaContainers>(c.Trim(), true, out var container)
@@ -69,7 +69,7 @@ namespace StrmAssistant.Common
         /// Windows 由挂载卷上的正片作答，Linux/Docker 交由 <c>CustomProbePath</c> 指定的自定义 ffprobe 直读 ISO。
         /// </summary>
         private static IEnumerable<MediaContainers> IsoContainersIfExcluded =>
-            Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableIsoExtraction
+            Plugin.Instance.MediaInfoExtractStore.GetOptions().IsoTool.EnableIsoExtraction
                 ? Enumerable.Empty<MediaContainers>()
                 : new[] { MediaContainers.Iso };
 
@@ -78,7 +78,7 @@ namespace StrmAssistant.Common
             get
             {
                 return Plugin.Instance.MediaInfoExtractStore.GetOptions()
-                    .ImageCaptureExcludeMediaContainers.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .ImageCapture.ImageCaptureExcludeMediaContainers.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                     .SelectMany(c =>
                     {
                         if (Enum.TryParse<MediaContainers>(c.Trim(), true, out var container))
@@ -89,7 +89,7 @@ namespace StrmAssistant.Common
 
                         return Array.Empty<string>();
                     })
-                    .Concat(Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableIsoExtraction
+                    .Concat(Plugin.Instance.MediaInfoExtractStore.GetOptions().IsoTool.EnableIsoExtraction
                         ? Array.Empty<string>()
                         : MediaContainers.Iso.GetAliases())
                     .Where(alias => !string.IsNullOrWhiteSpace(alias))
@@ -191,7 +191,7 @@ namespace StrmAssistant.Common
             _mediaMountManager = mediaMountManager;
             _userManager = userManager;
 
-            UpdateLibraryPathsInScope(Plugin.Instance.MediaInfoExtractStore.GetOptions().LibraryScope);
+            UpdateLibraryPathsInScope(Plugin.Instance.MediaInfoExtractStore.GetOptions().ExtractionScope.LibraryScope);
             FetchUsers();
         }
 
@@ -213,7 +213,7 @@ namespace StrmAssistant.Common
 
         public void UpdateLibraryPathsInScope()
         {
-            UpdateLibraryPathsInScope(Plugin.Instance.MediaInfoExtractStore.GetOptions().LibraryScope);
+            UpdateLibraryPathsInScope(Plugin.Instance.MediaInfoExtractStore.GetOptions().ExtractionScope.LibraryScope);
         }
 
         public bool IsLibraryInScope(BaseItem item)
@@ -282,16 +282,16 @@ namespace StrmAssistant.Common
 
         public List<BaseItem> FetchExtractQueueItems(List<BaseItem> items)
         {
-            var libraryIds = Plugin.Instance.MediaInfoExtractStore.GetOptions().LibraryScope
+            var libraryIds = Plugin.Instance.MediaInfoExtractStore.GetOptions().ExtractionScope.LibraryScope
                 ?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).ToArray();
 
             var includeFavorites = libraryIds == null || !libraryIds.Any() || libraryIds.Contains("-1");
-            var includeExtra = Plugin.Instance.MediaInfoExtractStore.GetOptions().IncludeExtra;
-            var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableImageCapture;
+            var includeExtra = Plugin.Instance.MediaInfoExtractStore.GetOptions().ExtractionScope.IncludeExtra;
+            var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCapture.EnableImageCapture;
 
             var resultItems = new List<BaseItem>();
 
-            if (IsCatchupTaskSelected(GeneralOptions.CatchupTask.MediaInfo))
+            if (IsCatchupTaskSelected(TaskConcurrencyOptions.CatchupTask.MediaInfo))
             {
                 if (includeFavorites) resultItems = ExpandFavorites(items, true, true, enableImageCapture);
 
@@ -311,7 +311,7 @@ namespace StrmAssistant.Common
                 }
             }
 
-            if (IsCatchupTaskSelected(GeneralOptions.CatchupTask.IntroSkip))
+            if (IsCatchupTaskSelected(TaskConcurrencyOptions.CatchupTask.IntroSkip))
             {
                 var episodesIntroSkip = Plugin.ChapterApi.SeasonHasIntroCredits(items.OfType<Episode>().ToList());
                 resultItems = resultItems.Concat(episodesIntroSkip).ToList();
@@ -330,7 +330,7 @@ namespace StrmAssistant.Common
 
         public List<BaseItem> FetchPreExtractTaskItems()
         {
-            var libraryIds = Plugin.Instance.MediaInfoExtractStore.GetOptions().LibraryScope
+            var libraryIds = Plugin.Instance.MediaInfoExtractStore.GetOptions().ExtractionScope.LibraryScope
                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).ToArray();
             var libraries = _libraryManager.GetVirtualFolders()
                 .Where(f => !libraryIds.Any() || libraryIds.Contains(f.Id)).ToList();
@@ -343,9 +343,9 @@ namespace StrmAssistant.Common
                         ? new[] { Resources.Favorites }.Concat(libraries.Select(l => l.Name))
                         : libraries.Select(l => l.Name).DefaultIfEmpty("NONE"))));
 
-            var includeExtra = Plugin.Instance.MediaInfoExtractStore.GetOptions().IncludeExtra;
+            var includeExtra = Plugin.Instance.MediaInfoExtractStore.GetOptions().ExtractionScope.IncludeExtra;
             _logger.Info("Include Extra: " + includeExtra);
-            var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableImageCapture;
+            var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCapture.EnableImageCapture;
 
             var favoritesWithExtra = Array.Empty<BaseItem>();
             if (libraryIds.Contains("-1"))
@@ -440,7 +440,7 @@ namespace StrmAssistant.Common
 
         public List<BaseItem> FetchPostExtractTaskItems(bool includeAudio)
         {
-            var libraryIds = Plugin.Instance.MediaInfoExtractStore.GetOptions().LibraryScope
+            var libraryIds = Plugin.Instance.MediaInfoExtractStore.GetOptions().ExtractionScope.LibraryScope
                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                 .ToArray();
             var libraries = _libraryManager.GetVirtualFolders()
@@ -454,7 +454,7 @@ namespace StrmAssistant.Common
                         ? new[] { Resources.Favorites }.Concat(libraries.Select(l => l.Name))
                         : libraries.Select(l => l.Name).DefaultIfEmpty("NONE"))));
 
-            var includeExtra = Plugin.Instance.MediaInfoExtractStore.GetOptions().IncludeExtra;
+            var includeExtra = Plugin.Instance.MediaInfoExtractStore.GetOptions().ExtractionScope.IncludeExtra;
             _logger.Info("Include Extra: " + includeExtra);
 
             var favoritesWithExtra = new List<BaseItem>();
@@ -560,7 +560,7 @@ namespace StrmAssistant.Common
 
         private List<BaseItem> FilterUnprocessed(List<BaseItem> items)
         {
-            var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableImageCapture;
+            var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCapture.EnableImageCapture;
 
             var results = new List<BaseItem>();
 
@@ -585,13 +585,13 @@ namespace StrmAssistant.Common
         {
             var miOptions = Plugin.Instance.MediaInfoExtractStore.GetOptions();
 
-            if (IsKeywordExcluded(item, miOptions.MediaInfoExcludeKeywords))
+            if (IsKeywordExcluded(item, miOptions.ExtractionScope.MediaInfoExcludeKeywords))
             {
                 _logger.Debug("MediaInfoExtract - Keyword excluded: " + item.Path);
                 return false;
             }
 
-            if (IsContainerExcluded(item, miOptions.MediaInfoExcludeMediaContainers))
+            if (IsContainerExcluded(item, miOptions.ExtractionScope.MediaInfoExcludeMediaContainers))
             {
                 _logger.Debug("MediaInfoExtract - Container excluded: " + item.Path);
                 return false;
@@ -610,7 +610,7 @@ namespace StrmAssistant.Common
 
             if (!enableImageCapture) return false;
 
-            if (Plugin.Instance.MediaInfoExtractStore.GetOptions().PersistMediaInfoMode ==
+            if (Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoPersist.PersistMediaInfoMode ==
                 PersistMediaInfoOption.Restore.ToString()) return false;
 
             var libraryOptions = _libraryManager.GetLibraryOptions(item);
@@ -744,10 +744,10 @@ namespace StrmAssistant.Common
 
         public async Task<bool?> OrchestrateMediaInfoProcessAsync(BaseItem taskItem, string source, CancellationToken cancellationToken)
         {
-            var persistMediaInfoMode = Plugin.Instance.MediaInfoExtractStore.GetOptions().PersistMediaInfoMode;
+            var persistMediaInfoMode = Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoPersist.PersistMediaInfoMode;
             var persistMediaInfo = taskItem is Video && persistMediaInfoMode != PersistMediaInfoOption.None.ToString();
             var mediaInfoRestoreMode = persistMediaInfoMode == PersistMediaInfoOption.Restore.ToString();
-            var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableImageCapture;
+            var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCapture.EnableImageCapture;
 
             ExclusiveExtract.AllowExtractInstance(taskItem);
 

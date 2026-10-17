@@ -22,6 +22,11 @@ namespace StrmAssistant.Options.Store
         {
             _logger = logger;
 
+            // 分组化改造：设置项由平铺改为 4 个分组嵌套。先把旧配置就地迁移为嵌套结构，
+            // 否则旧键会被反序列化忽略、用户设置静默回退为默认值。
+            ExperienceEnhanceOptionsMigration.MigrateIfNeeded(OptionsFilePath,
+                applicationHost.Resolve<MediaBrowser.Model.Serialization.IJsonSerializer>(), logger);
+
             FileSaving += OnFileSaving;
             FileSaved += OnFileSaved;
         }
@@ -46,11 +51,11 @@ namespace StrmAssistant.Options.Store
                 var changes = PropertyChangeDetector.DetectObjectPropertyChanges(ExperienceEnhanceOptions, options);
                 var changedProperties = new HashSet<string>(changes.Select(c => c.PropertyName));
 
-                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.MergeMultiVersion)))
+                if (changedProperties.Contains(nameof(VersionMergeOptions.MergeMultiVersion)))
                 {
                     if (options.IsModSupported)
                     {
-                        if (options.MergeMultiVersion)
+                        if (options.Merge.MergeMultiVersion)
                         {
                             PatchManager.MergeMultiVersion.Patch();
                         }
@@ -61,13 +66,13 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (options.MergeMultiVersion) Plugin.LibraryApi.EnsureLibraryEnabledAutomaticSeriesGrouping();
+                if (options.Merge.MergeMultiVersion) Plugin.LibraryApi.EnsureLibraryEnabledAutomaticSeriesGrouping();
 
-                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.FolderVideoGroupingLimit)))
+                if (changedProperties.Contains(nameof(VersionMergeOptions.FolderVideoGroupingLimit)))
                 {
-                    if (options.MergeMultiVersion && options.IsModSupported)
+                    if (options.Merge.MergeMultiVersion && options.IsModSupported)
                     {
-                        MergeMultiVersion.UpdateFolderGroupingLimit(options.FolderVideoGroupingLimit);
+                        MergeMultiVersion.UpdateFolderGroupingLimit(options.Merge.FolderVideoGroupingLimit);
                     }
                 }
 
@@ -80,9 +85,9 @@ namespace StrmAssistant.Options.Store
                     Web.Helper.ShortcutMenuHelper.Refresh();
                 }
 
-                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.OptimizeSubtitle)))
+                if (changedProperties.Contains(nameof(ExperiencePlaybackOptions.OptimizeSubtitle)))
                 {
-                    if (options.OptimizeSubtitle && options.IsModSupported)
+                    if (options.Playback.OptimizeSubtitle && options.IsModSupported)
                     {
                         PatchManager.OptimizeSubtitle.Patch();
                     }
@@ -92,9 +97,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.EnhanceNotificationSystem)))
+                if (changedProperties.Contains(nameof(ExperienceNotificationOptions.EnhanceNotificationSystem)))
                 {
-                    if (options.EnhanceNotificationSystem)
+                    if (options.Notification.EnhanceNotificationSystem)
                     {
                         PatchManager.EnhanceNotificationSystem.Patch();
                     }
@@ -104,9 +109,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
                 
-                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.EnableDeepDelete)))
+                if (changedProperties.Contains(nameof(ExperiencePlaybackOptions.EnableDeepDelete)))
                 {
-                    if (options.EnableDeepDelete)
+                    if (options.Playback.EnableDeepDelete)
                     {
                         PatchManager.EnableDeepDelete.Patch();
                     }
@@ -234,11 +239,11 @@ namespace StrmAssistant.Options.Store
 
                 if (!suppress)
                 {
-                    _logger.Info("MergeMultiVersion is set to {0}", options.MergeMultiVersion);
-                    _logger.Info("MergeMoviesPreference is set to {0}", options.MergeMoviesPreference.GetDescription());
-                    _logger.Info("MergeSeriesPreference is set to {0}", options.MergeSeriesPreference.GetDescription());
-                    _logger.Info("EnhanceNotificationSystem is set to {0}", options.EnhanceNotificationSystem);
-                    _logger.Info("EnableDeepDelete is set to {0}", options.EnableDeepDelete);
+                    _logger.Info("MergeMultiVersion is set to {0}", options.Merge.MergeMultiVersion);
+                    _logger.Info("MergeMoviesPreference is set to {0}", options.Merge.MergeMoviesPreference.GetDescription());
+                    _logger.Info("MergeSeriesPreference is set to {0}", options.Merge.MergeSeriesPreference.GetDescription());
+                    _logger.Info("EnhanceNotificationSystem is set to {0}", options.Notification.EnhanceNotificationSystem);
+                    _logger.Info("EnableDeepDelete is set to {0}", options.Playback.EnableDeepDelete);
                     _logger.Info("HidePersonNoImage is set to {0}", options.UIFunctionOptions.HidePersonNoImage);
                     var hidePersonPreference = string.Join(", ",
                         options.UIFunctionOptions.HidePersonPreference
@@ -257,15 +262,15 @@ namespace StrmAssistant.Options.Store
                     _logger.Info("NoBoxsetsAutoCreation is set to {0}",
                         options.UIFunctionOptions.NoBoxsetsAutoCreation);
 
-                    _logger.Info("EnableAutoMarkWatched is set to {0}", options.EnableAutoMarkWatched);
-                    _logger.Info("AutoMarkWatchedThreshold is set to {0}", options.AutoMarkWatchedThreshold);
-                    _logger.Info("AutoMarkWatchedExcludeFavorites is set to {0}", options.AutoMarkWatchedExcludeFavorites);
-                    _logger.Info("EnableMultiVersionEnhance is set to {0}", options.EnableMultiVersionEnhance);
-                    _logger.Info("FolderVideoGroupingLimit is set to {0}", options.FolderVideoGroupingLimit);
+                    _logger.Info("EnableAutoMarkWatched is set to {0}", options.Playback.EnableAutoMarkWatched);
+                    _logger.Info("AutoMarkWatchedThreshold is set to {0}", options.Playback.AutoMarkWatchedThreshold);
+                    _logger.Info("AutoMarkWatchedExcludeFavorites is set to {0}", options.Playback.AutoMarkWatchedExcludeFavorites);
+                    _logger.Info("EnableMultiVersionEnhance is set to {0}", options.Display.EnableMultiVersionEnhance);
+                    _logger.Info("FolderVideoGroupingLimit is set to {0}", options.Merge.FolderVideoGroupingLimit);
 
                     // 系列合并仅 GlobalScope 生效的可见提示（参考 Mod/MergeMultiVersion.cs 行 217-218）
-                    if (options.MergeMultiVersion &&
-                        options.MergeSeriesPreference == ExperienceEnhanceOptions.MergeSeriesScopeOption.LibraryScope)
+                    if (options.Merge.MergeMultiVersion &&
+                        options.Merge.MergeSeriesPreference == VersionMergeOptions.MergeSeriesScopeOption.LibraryScope)
                     {
                         _logger.Warn("MergeMultiVersion 已开启但 MergeSeriesPreference 为 LibraryScope：跨媒体库的同一系列版本合并仅在 GlobalScope 下生效。若需跨库按系列合并，请选择 GlobalScope。");
                     }

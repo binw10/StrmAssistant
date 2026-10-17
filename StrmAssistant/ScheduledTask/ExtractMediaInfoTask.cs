@@ -18,24 +18,26 @@ namespace StrmAssistant.ScheduledTask
 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
+            if (!Plugin.IsPluginEnabled) return;
+
             _logger.Info("MediaInfoExtract - Scheduled Task Execute");
 
-            var maxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.MaxConcurrentCount;
+            var maxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount;
             _logger.Info("Master Max Concurrent Count: " + maxConcurrentCount);
             var cooldownSeconds = maxConcurrentCount == 1
-                ? Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.CooldownDurationSeconds
+                ? Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.CooldownDurationSeconds
                 : (int?)null;
             if (cooldownSeconds.HasValue) _logger.Info("Cooldown Duration Seconds: " + cooldownSeconds.Value);
 
-            var persistMediaInfoMode = Plugin.Instance.MediaInfoExtractStore.GetOptions().PersistMediaInfoMode;
+            var persistMediaInfoMode = Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoPersist.PersistMediaInfoMode;
             _logger.Info("Persist MediaInfo Mode: " + persistMediaInfoMode);
             var mediaInfoRestoreMode = persistMediaInfoMode == PersistMediaInfoOption.Restore.ToString();
 
-            var timeoutMs = Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoExtractionTimeoutMs;
-            var imageMultiplier = Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageExtractionTimeoutMultiplier;
-            var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableImageCapture;
+            var timeoutMs = Plugin.Instance.MediaInfoExtractStore.GetOptions().ExtractionPerformance.MediaInfoExtractionTimeoutMs;
+            var imageMultiplier = Plugin.Instance.MediaInfoExtractStore.GetOptions().ExtractionPerformance.ImageExtractionTimeoutMultiplier;
+            var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCapture.EnableImageCapture;
             _logger.Info("Enable Image Capture: " + enableImageCapture);
-            var enableIntroSkip = Plugin.Instance.IntroSkipStore.GetOptions().EnableIntroSkip;
+            var enableIntroSkip = Plugin.Instance.IntroSkipStore.GetOptions().Playback.EnableIntroSkip;
             _logger.Info("Intro Skip Enabled: " + enableIntroSkip);
 
             if (timeoutMs > 0) _logger.Info("Media Info Extraction Timeout (ms): " + timeoutMs +

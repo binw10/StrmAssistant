@@ -23,6 +23,8 @@ namespace StrmAssistant.Web.Service
 
         public void Post(CopyVirtualFolder request)
         {
+            if (!Plugin.IsPluginEnabled) return;
+
             var sourceLibrary = _libraryManager.GetItemById(request.Id);
             var sourceOptions = _libraryManager.GetLibraryOptions(sourceLibrary);
 

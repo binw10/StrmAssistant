@@ -54,7 +54,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableIsoExtraction)
+            if (Plugin.Instance.MediaInfoExtractStore.GetOptions().IsoTool.EnableIsoExtraction)
             {
                 Patch();
             }
@@ -124,7 +124,7 @@ namespace StrmAssistant.Mod
         {
             try
             {
-                if (Plugin.Instance.MediaInfoExtractStore.GetOptions().EnableIsoExtraction &&
+                if (Plugin.Instance.MediaInfoExtractStore.GetOptions().IsoTool.EnableIsoExtraction &&
                     !string.IsNullOrWhiteSpace(path) &&
                     IsoMounter.LooksLikeIsoPath(path))
                 {
