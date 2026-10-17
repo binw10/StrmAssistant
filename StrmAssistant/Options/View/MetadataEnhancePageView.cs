@@ -30,5 +30,27 @@ namespace StrmAssistant.Options.View
             _store.SetOptions(MetadataEnhanceOptions);
             return base.OnSaveCommand(itemId, commandId, data);
         }
+
+        public override Task<IPluginUIView> RunCommand(string itemId, string commandId, string data)
+        {
+            if (commandId == "ClearSeasonMap")
+            {
+                // 季映射清理是毫秒级操作（只清内存字典 + 删 json），同步执行即可
+                try
+                {
+                    var cleared = Plugin.DoubanAssist.ClearSeasonMap();
+                    Plugin.Instance.Logger.Info(
+                        $"MetadataEnhance - Clear season map requested from UI: {cleared} season(s) removed");
+                }
+                catch (System.Exception e)
+                {
+                    Plugin.Instance.Logger.Warn("MetadataEnhance - Clear season map failed: " + e.Message);
+                }
+
+                return Task.FromResult<IPluginUIView>(this);
+            }
+
+            return base.RunCommand(itemId, commandId, data);
+        }
     }
 }

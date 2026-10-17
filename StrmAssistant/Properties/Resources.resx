@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
 	<!-- 
 		Microsoft ResX Schema
@@ -129,7 +129,7 @@
     <value>Library Scope</value>
   </data>
   <data name="PluginOptions_LibraryScope_Library_scope_to_extract__Blank_includes_all_" xml:space="preserve">
-    <value>Library scope to extract. Blank includes all.</value>
+    <value>Library scope; blank includes all. Note: to extract video preview thumbnails, first set "Generate video preview thumbnails" to a scheduled task in the Emby library settings.</value>
   </data>
   <data name="MediaInfoExtractOptions_CustomProbePath_Custom_Probe_Path" xml:space="preserve">
     <value>Custom Probe Path</value>
@@ -864,7 +864,7 @@
     <value>Enable ISO Extraction</value>
   </data>
   <data name="MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__Windows_native_OS_mount__Linux_Docker_in_process_UDF_read_with_custom_ffprobe__Default_is_OFF_" xml:space="preserve">
-    <value>Include ISO images in media info extraction, including local .iso files and remote strm/http ISO streams. Local: Windows native OS mount; remote: a head window is fetched to a temp file and probed. Default is OFF.</value>
+    <value>Include local .iso files and strm/http remote ISO streams in media info extraction. On Windows the main title is resolved via OS mount; on Linux/Docker the plugin parses it with the built-in UDF reader (a custom ffprobe is required). Default is OFF.</value>
   </data>
   <data name="MediaInfoExtractOptions_ClearEmbeddedMetadata_Clear_Embedded_Metadata" xml:space="preserve">
     <value>Clear Embedded Metadata</value>
@@ -1416,10 +1416,10 @@
     <value>Image Capture</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_IsoTool" xml:space="preserve">
-    <value>ISO &amp; External Tools</value>
+    <value>ISO Extraction</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_MediaInfoPersist" xml:space="preserve">
-    <value>Result &amp; Persistence</value>
+    <value>Info Persistence</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_ExtractionPerformance" xml:space="preserve">
     <value>Performance &amp; Exclusive</value>
@@ -1468,5 +1468,11 @@
   </data>
   <data name="NetworkProxyOptions_EditorTitle_Network_Direct_Link" xml:space="preserve">
     <value>Network Proxy</value>
+  </data>
+  <data name="MetadataEnhanceOptions_ClearSeasonMapButton_Clear_Season_Map" xml:space="preserve">
+    <value>Clear Season Map</value>
+  </data>
+  <data name="MetadataEnhanceOptions_ClearSeasonMapButton_Remove_cached_series_season_mappings_so_season_items_are_matched_again__Useful_after_a_wrong_season_match_" xml:space="preserve">
+    <value>Remove cached series-to-season mappings so season items are matched again. Use this after a wrong season match.</value>
   </data>
 </root>

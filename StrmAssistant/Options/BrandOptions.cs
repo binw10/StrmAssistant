@@ -26,10 +26,9 @@ namespace StrmAssistant.Options
             BrandItemList.Add(new GenericListItem
             {
                 PrimaryText = "版本：v" + AboutOptions.GetVersion() +
-                              "　Support " + Plugin.AdvertisedEmbyVersion + " +",
-                // Emby 4.10 的 IconNames 枚举没有 diamond，用 grade（实心星标）作徽章效果
-                Icon = IconNames.grade,
-                IconMode = ItemListIconMode.SmallRegular
+                              " 💎 Support " + Plugin.AdvertisedEmbyVersion + " +",
+                // 对齐 Pro 样式：无左侧图标，蓝色钻石 emoji 直接嵌在文本中间
+                IconMode = ItemListIconMode.NoIcons
             });
         }
     }

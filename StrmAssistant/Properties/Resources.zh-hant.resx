@@ -1,4 +1,4 @@
-<root>
+﻿<root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -30,7 +30,7 @@
     <value>媒體庫範圍</value>
   </data>
   <data name="PluginOptions_LibraryScope_Library_scope_to_extract__Blank_includes_all_" xml:space="preserve">
-    <value>媒體庫範圍，留空包含所有。</value>
+    <value>媒體庫範圍，留空包含所有。注意：擷取影片預覽縮圖前，需先在 Emby 媒體庫設定中把「產生影片預覽縮圖」設為計畫任務。</value>
   </data>
   <data name="MediaInfoExtractOptions_CustomProbePath_Custom_Probe_Path" xml:space="preserve">
     <value>自訂 Probe 路徑</value>
@@ -777,7 +777,7 @@
     <value>啟用 ISO 擷取</value>
   </data>
   <data name="MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__Windows_native_OS_mount__Linux_Docker_in_process_UDF_read_with_custom_ffprobe__Default_is_OFF_" xml:space="preserve">
-    <value>將 ISO 映像納入媒體資訊擷取，含本機 .iso 檔案與 strm/http 遠端 ISO 串流。本機：Windows 原生掛載；遠端：先拉取頭部視窗到暫存檔再探測。預設為關閉。</value>
+    <value>將本機 .iso 檔案與 strm/http 遠端 ISO 串流納入媒體資訊擷取。Windows 由系統掛載定位正片；Linux/Docker 由外掛內建 UDF 解析（需配合自訂 ffprobe）。預設關閉。</value>
   </data>
   <data name="MediaInfoExtractOptions_ClearEmbeddedMetadata_Clear_Embedded_Metadata" xml:space="preserve">
     <value>清除內嵌中繼資料</value>
@@ -1089,7 +1089,7 @@
     <value>豆瓣評分更新僅作用於首播日期在回看期內的條目（0 為不限制）。預設 365 天。</value>
   </data>
   <data name="MetadataEnhanceOptions_ClearTagline_Clear_Tagline" xml:space="preserve">
-    <value>清標語</value>
+    <value>清除標語</value>
   </data>
   <data name="MetadataEnhanceOptions_ClearTagline_Clear_taglines_populated_by_the_MovieDb_provider_on_refresh__Default_is_OFF_" xml:space="preserve">
     <value>重新整理時清除 MovieDb 刮削器填充的標語。預設為關閉。</value>
@@ -1329,10 +1329,10 @@
     <value>圖像擷取</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_IsoTool" xml:space="preserve">
-    <value>ISO 與外部工具</value>
+    <value>ISO 擷取</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_MediaInfoPersist" xml:space="preserve">
-    <value>結果與持久化</value>
+    <value>資訊持久化</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_ExtractionPerformance" xml:space="preserve">
     <value>效能與獨佔</value>
@@ -1381,5 +1381,11 @@
   </data>
   <data name="NetworkProxyOptions_EditorTitle_Network_Direct_Link" xml:space="preserve">
     <value>網路代理</value>
+  </data>
+  <data name="MetadataEnhanceOptions_ClearSeasonMapButton_Clear_Season_Map" xml:space="preserve">
+    <value>清除季映射</value>
+  </data>
+  <data name="MetadataEnhanceOptions_ClearSeasonMapButton_Remove_cached_series_season_mappings_so_season_items_are_matched_again__Useful_after_a_wrong_season_match_" xml:space="preserve">
+    <value>清除已快取的劇集→季映射，讓季條目重新匹配。季條目匹配錯誤後可點此重置。</value>
   </data>
 </root>
