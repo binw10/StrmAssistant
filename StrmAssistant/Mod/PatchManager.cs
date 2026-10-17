@@ -53,6 +53,7 @@ namespace StrmAssistant.Mod
         public static CustomLocalDiscovery CustomLocalDiscovery;
         public static IsoExtraction IsoExtraction;
         public static DolbyVisionProfile DolbyVisionProfile;
+        public static HdrVividTagging HdrVividTagging;
 
         private static readonly ConcurrentDictionary<Tuple<Type, string>, HarmonyMethod> HarmonyMethodCache 
             = new ConcurrentDictionary<Tuple<Type, string>, HarmonyMethod>();
@@ -121,6 +122,7 @@ namespace StrmAssistant.Mod
             CustomLocalDiscovery = new CustomLocalDiscovery();
             IsoExtraction = new IsoExtraction();
             DolbyVisionProfile = new DolbyVisionProfile();
+            HdrVividTagging = new HdrVividTagging();
 
             // ★ 总览日志：遍历所有 PatchTracker，打印每个模块的最终状态（Info 级别，无需开启 DebugMode）
             try

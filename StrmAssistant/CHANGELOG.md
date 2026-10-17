@@ -55,6 +55,7 @@
 - **Tidb 刮削日志聚合**：逐集请求失败（404 无数据 / 超时 / 连接失败）原日志一次任务可产生 90+ 条 `Warn`。现改为：404 无数据降为 Debug 并计数；网络失败首条 `Warn` 提示、后续降为 `Debug`；任务收尾聚合输出单行汇总（如 `Request failures: timeout=62, other=30`、`no data for 26 episode request(s)`）。实测一次任务 Warn 从 92 条降为 1 条。
 - **豆瓣匹配置信度标记**：匹配日志增加路径标记——直接命中 → Debug，映射表命中 → Info，季搜索主体校验拒绝 → Info（附拒绝原因），S1 回退 → Info。便于排查「为何没匹配到」或「为何匹配错」。
 - **Resx/Designer 键一致性校验**：新增 `tools/check_resx_keys.py`，构建前自动检查三语言 resx 与 `Resources.Designer.cs` 的键是否一致，防止「加了 resx 键但忘了同步 Designer」导致页面 500。
+- **HDR Vivid 支持（对齐 PRO）**：补齐此前缺失的上游检测——探测 postfix 读取 ffprobe `side_data_list` 中 `side_data_type` 含 `CUVA`（`HDR Dynamic Metadata CUVA 005.1 2021 (Vivid)`）的视频流，命中后固化写入 `MediaStream.Comment = "HDR Vivid"`（`Comment` 是 Emby 公开可写且**可持久化**的字段；`VideoRange` 为只读计算属性，且 Emby 的 `ExtendedVideoTypes` 枚举无 Vivid 成员，故不可用）。同时 Prefix `MediaStream.GenerateVideoRange(bool isForDisplay)`，使 Emby 原生「媒体信息」区显示 `HDR Vivid`。多版本标签侧改为读 `Comment` 并**优先于 DV/HDR10+/HDR 类型分支**，解决「双层 DV P7 + Vivid 元数据共存」时的标签歧义。此前的 Vivid 分支读 `videos[0].VideoRange` 属死代码（Emby 只会把它算成 `HDR`/`SDR`），实际永不命中。
 
 ## [3.0.0.55] - 2026-10-16
 

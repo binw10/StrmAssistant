@@ -276,6 +276,12 @@ namespace StrmAssistant.Web.Service
 
             if (videos == null || videos.Count == 0) return null;
 
+            // HDR Vivid 由插件探测后固化在 MediaStream.Comment 上（对齐 PRO：Comment 优先于类型分支）
+            if (videos.Any(v => string.Equals(v.Comment, "HDR Vivid", StringComparison.Ordinal)))
+            {
+                return "HDR Vivid";
+            }
+
             foreach (var video in videos)
             {
                 var dvLabel = GetDvProfileLabel(video.ExtendedVideoSubType);
