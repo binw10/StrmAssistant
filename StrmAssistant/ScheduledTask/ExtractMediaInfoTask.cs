@@ -146,6 +146,13 @@ namespace StrmAssistant.ScheduledTask
                     {
                         timeoutCts?.Dispose();
 
+                        // 强制重新提取的条目：本次已探测过，清除标记避免后续任务重复处理
+                        if (LibraryApi.IsForceReExtract(taskItem.InternalId))
+                        {
+                            LibraryApi.ClearForceReExtract(taskItem.InternalId);
+                            _logger.Info($"MediaInfoExtract - Force re-extract completed: {taskItem.Name}");
+                        }
+
                         if (result is true && cooldownSeconds.HasValue)
                         {
                             try

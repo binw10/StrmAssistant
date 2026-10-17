@@ -46,6 +46,102 @@ namespace StrmAssistant.Common
             ExtraType.Trailer
         };
 
+        // ===== 强制重新提取标记 =====
+        // 「清除媒体信息」只删 mediainfo.json，不动 Emby DB 里的 MediaSources；
+        // 而 IsExtractNeeded 以「无媒体信息」判定，导致清缓存后提取任务永远 0 items。
+        // 这里记录被显式清除的条目，让提取任务无视 HasMediaInfo 重新探测，处理完自动移除。
+        private static readonly object ForceReExtractLock = new object();
+        private static readonly HashSet<long> ForceReExtractIds = new HashSet<long>();
+        private static bool _forceReExtractLoaded;
+
+        private static string ForceReExtractPath()
+        {
+            var dir = Plugin.Instance?.ApplicationPaths?.PluginConfigurationsPath;
+            return string.IsNullOrEmpty(dir) ? null : Path.Combine(dir, "strmassistant_force_reextract.txt");
+        }
+
+        private static void EnsureForceReExtractLoaded()
+        {
+            if (_forceReExtractLoaded) return;
+            _forceReExtractLoaded = true;
+
+            try
+            {
+                var path = ForceReExtractPath();
+                if (path != null && File.Exists(path))
+                {
+                    foreach (var line in File.ReadAllLines(path))
+                    {
+                        if (long.TryParse(line.Trim(), out var id)) ForceReExtractIds.Add(id);
+                    }
+                }
+            }
+            catch
+            {
+                // 标记文件损坏不影响主流程
+            }
+        }
+
+        private static void SaveForceReExtract()
+        {
+            try
+            {
+                var path = ForceReExtractPath();
+                if (path == null) return;
+
+                if (ForceReExtractIds.Count == 0)
+                {
+                    if (File.Exists(path)) File.Delete(path);
+                    return;
+                }
+
+                File.WriteAllLines(path, ForceReExtractIds.Select(id => id.ToString()));
+            }
+            catch
+            {
+                // 忽略
+            }
+        }
+
+        /// <summary>标记某条目需强制重新提取（清除媒体信息时调用）。</summary>
+        public static void MarkForceReExtract(long internalId)
+        {
+            lock (ForceReExtractLock)
+            {
+                EnsureForceReExtractLoaded();
+                if (ForceReExtractIds.Add(internalId)) SaveForceReExtract();
+            }
+        }
+
+        public static bool IsForceReExtract(long internalId)
+        {
+            lock (ForceReExtractLock)
+            {
+                EnsureForceReExtractLoaded();
+                return ForceReExtractIds.Contains(internalId);
+            }
+        }
+
+        /// <summary>当前全部强制重提取标记（供任务补回被 SQL 条件排除的条目）。</summary>
+        public static List<long> GetForceReExtractIds()
+        {
+            lock (ForceReExtractLock)
+            {
+                EnsureForceReExtractLoaded();
+                return ForceReExtractIds.ToList();
+            }
+        }
+
+        /// <summary>提取完成后清除标记，避免每次任务都重复探测。</summary>
+        public static void ClearForceReExtract(long internalId)
+        {
+            lock (ForceReExtractLock)
+            {
+                EnsureForceReExtractLoaded();
+                if (ForceReExtractIds.Remove(internalId)) SaveForceReExtract();
+            }
+        }
+
         public static MediaContainers[] ExcludeMediaContainers
         {
             get
@@ -432,6 +528,29 @@ namespace StrmAssistant.Common
 
             var combined = favoritesWithExtra.Concat(items).Concat(extras).GroupBy(i => i.InternalId)
                 .Select(g => g.First()).ToList();
+
+            // 强制重提取条目必须单独补回：上面的 SQL 查询带 HasAudioStream=false，
+            // 已有媒体信息的条目在 DB 层就被排除，内存里的标记检查收不到（实测 Number of items: 0）。
+            var forcedIds = GetForceReExtractIds();
+            if (forcedIds.Count > 0)
+            {
+                var forcedItems = _libraryManager.GetItemList(new InternalItemsQuery
+                {
+                    ItemIds = forcedIds.ToArray(),
+                    MediaTypes = new[] { MediaType.Video, MediaType.Audio }
+                });
+
+                var missing = forcedIds.Except(combined.Select(i => i.InternalId)
+                        .Concat(forcedItems.Select(i => i.InternalId)))
+                    .ToList();
+                if (missing.Count > 0)
+                    _logger.Warn("MediaInfoExtract - {0} force-re-extract id(s) not found: {1}",
+                        missing.Count, string.Join(",", missing));
+
+                combined = combined.Concat(forcedItems).GroupBy(i => i.InternalId)
+                    .Select(g => g.First()).ToList();
+            }
+
             var filtered = FilterUnprocessed(combined);
             var results = OrderByDescending(filtered);
 
@@ -607,6 +726,13 @@ namespace StrmAssistant.Common
             }
 
             if (!HasMediaInfo(item)) return true;
+
+            // 被「清除媒体信息」标记过的条目：即使 DB 里仍有 MediaSources 也要重新探测
+            if (IsForceReExtract(item.InternalId))
+            {
+                _logger.Info("MediaInfoExtract - Force re-extract (media info cleared): " + item.Name);
+                return true;
+            }
 
             if (!enableImageCapture) return false;
 
@@ -805,7 +931,12 @@ namespace StrmAssistant.Common
             {
                 if (persistMediaInfo)
                 {
-                    var deserializeResult = await Plugin.MediaInfoApi
+                    // 被「清除媒体信息」标记的条目不走捷径：DeserializeMediaInfo 开头有
+                    // HasMediaInfo(DB) 为 true 即返回 true 的短路，会让清缓存后的重提取被跳过
+                    //（实测 53ms 完成、json 不再生成）。
+                    var forceReExtract = IsForceReExtract(taskItem.InternalId);
+
+                    var deserializeResult = !forceReExtract && await Plugin.MediaInfoApi
                         .DeserializeMediaInfo(taskItem, directoryService, source, mediaInfoRestoreMode)
                         .ConfigureAwait(false);
 

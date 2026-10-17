@@ -550,6 +550,11 @@ namespace StrmAssistant.Common
         public void ClearMediaInfoJson(BaseItem item, string source)
         {
             DeleteMediaInfoJson(item, new DirectoryService(_logger, _fileSystem), source);
+
+            // 标记为「需重新提取」：清 json 不会清 Emby DB 的 MediaSources，
+            // 不加标记的话提取任务会认为该条目已处理（实测 Number of items: 0）。
+            LibraryApi.MarkForceReExtract(item.InternalId);
+            _logger.Info($"MediaInfoPersist - marked for re-extraction ({source}): {item.Name}");
         }
 
         public void DeleteMediaInfoJson(BaseItem item, IDirectoryService directoryService, string source)
