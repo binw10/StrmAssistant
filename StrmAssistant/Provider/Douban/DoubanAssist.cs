@@ -158,6 +158,16 @@ namespace StrmAssistant.Provider.Douban
             public double Rating { get; set; }
             public long? Votes { get; set; }
             public DateTime Updated { get; set; }
+
+            /// <summary>
+            /// <c>CommunityRating</c> 是否由豆瓣评分写入。
+            /// 与 <see cref="Rating"/> 的取值互相独立：抓到豆瓣分就会记 <see cref="Rating"/>，
+            /// 但只有在「豆瓣评分覆盖」开关打开、字段生效范围勾选、且未超出回看期时才会写
+            /// <c>CommunityRating</c>，届时本标志置 true。前端据此决定是否把红五星换成豆瓣 logo，
+            /// 不再靠「页面数字恰好等于豆瓣分」去猜来源（那会在两站同分时误判）。
+            /// 可空：null 表示旧版快照（无此字段），此时按实测推断，避免升级瞬间全部图标回退。
+            /// </summary>
+            public bool? Applied { get; set; }
         }
 
         public class DoubanRatingInfo
@@ -166,6 +176,9 @@ namespace StrmAssistant.Provider.Douban
             public string SubjectId { get; set; }
             public double? Rating { get; set; }
             public long? Votes { get; set; }
+
+            /// <summary>当前 <c>CommunityRating</c> 是否确为豆瓣评分（已扣除被外部刮削覆盖的情况）。</summary>
+            public bool Applied { get; set; }
         }
 
         public class DoubanSubject
@@ -243,16 +256,52 @@ namespace StrmAssistant.Provider.Douban
 
         private readonly string _cachePath;
         private readonly string _ratingsPath;
+        private readonly string _retryPath;
         private readonly object _cacheLock = new object();
         private readonly object _ratingsLock = new object();
+        private readonly object _retryLock = new object();
         private readonly object _requestLock = new object();
         private readonly ConcurrentDictionary<long, byte> _inFlight = new ConcurrentDictionary<long, byte>();
 
         private Dictionary<string, CacheEntry> _cache;
         private Dictionary<string, DoubanRatingSnapshot> _ratings;
+        private Dictionary<string, RetryEntry> _retry;
         private DateTime _lastRequestTime = DateTime.MinValue;
         private DateTime _breakerUntil = DateTime.MinValue;
         private int _consecutiveBlocked;
+
+        /// <summary>单条条目最多重试次数，超过后从队列移除，避免永久占用扫库任务。</summary>
+        private const int MaxRetryAttempts = 3;
+
+        /// <summary>「扫库后填充豆瓣 ID」的失败重试记录，按条目 ID 索引，落盘跨进程保留。</summary>
+        private class RetryEntry
+        {
+            public int Attempts { get; set; }
+            public string LastError { get; set; }
+            public DateTime LastAt { get; set; }
+        }
+
+        private DateTime _lastRatingsSave = DateTime.MinValue;
+        private static readonly TimeSpan RatingsSaveThrottle = TimeSpan.FromSeconds(10);
+
+        /// <summary>
+        /// 单次「扫库后填充豆瓣 ID」的统计。仅在该任务运行期间非空，
+        /// 用于任务结束时输出一行分布日志，回答「为什么有些条目没有豆瓣评分」。
+        /// </summary>
+        private class PopulateStats
+        {
+            public int Total;
+            public int Matched;
+            public int NoMatch;
+            public int SkippedLocked;
+            public int SkippedLanguage;
+            public int RatingApplied;
+            public int RatingSkippedLookback;
+            public int RatingSkippedField;
+            public int RatingSkippedOverride;
+        }
+
+        private PopulateStats _populateStats;
 
         public DoubanAssist(IHttpClient httpClient, IJsonSerializer jsonSerializer,
             IProviderManager providerManager, IFileSystem fileSystem)
@@ -266,6 +315,8 @@ namespace StrmAssistant.Provider.Douban
                 "strmassistant_douban_cache.json");
             _ratingsPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath,
                 "strmassistant_douban_ratings.json");
+            _retryPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath,
+                "strmassistant_douban_retry.json");
         }
 
         /// <summary>
@@ -292,12 +343,21 @@ namespace StrmAssistant.Provider.Douban
 
                         if (_ratings.TryGetValue(subjectId, out var snapshot))
                         {
+                            // Applied 以「快照标记 + 当前 CommunityRating 实测」双重确认：
+                            // 条目被 TMDB 等重新刮削后 CommunityRating 可能已不是豆瓣分，
+                            // 此时快照里的标记会失真，实测比对可以把它纠正回来。
+                            // 旧快照没有该字段（null）：退回实测推断，保证升级后图标不集体回退。
+                            var ratingMatches = item.CommunityRating.HasValue &&
+                                                Math.Abs(item.CommunityRating.Value - snapshot.Rating) <= 0.05;
+                            var applied = ratingMatches && (snapshot.Applied ?? true);
+
                             result.Add(new DoubanRatingInfo
                             {
                                 ItemId = itemId,
                                 SubjectId = subjectId,
                                 Rating = snapshot.Rating,
-                                Votes = snapshot.Votes
+                                Votes = snapshot.Votes,
+                                Applied = applied
                             });
                         }
                     }
@@ -328,10 +388,121 @@ namespace StrmAssistant.Provider.Douban
                 {
                     Rating = rating,
                     Votes = votes,
-                    Updated = DateTime.UtcNow
+                    Updated = DateTime.UtcNow,
+                    // 豆瓣分变了，CommunityRating 还停在旧分，两者已不同源：
+                    // 先置 false，等 ApplyAsync 真正写入后再由 MarkRatingApplied 置 true。
+                    Applied = false
                 };
 
                 SaveRatings();
+            }
+        }
+
+        /// <summary>
+        /// 标记某豆瓣条目对应的 <c>CommunityRating</c> 是否已由豆瓣评分写入。
+        /// 只在快照已存在时生效（<see cref="RecordRatingSnapshot"/> 总是先于本方法执行）。
+        /// 全量填充时本方法会被逐条调用，因此写盘按时间节流，收尾由 <see cref="FlushRatings"/> 兜底。
+        /// </summary>
+        private void MarkRatingApplied(string subjectId, bool applied)
+        {
+            lock (_ratingsLock)
+            {
+                if (_ratings == null) LoadRatings();
+
+                if (!_ratings.TryGetValue(subjectId, out var snapshot)) return;
+                if (snapshot.Applied == applied) return;
+
+                snapshot.Applied = applied;
+
+                if (DateTime.UtcNow - _lastRatingsSave < RatingsSaveThrottle) return;
+                _lastRatingsSave = DateTime.UtcNow;
+                SaveRatings();
+            }
+        }
+
+        /// <summary>强制把评分快照落盘（批量任务收尾用，避免节流窗口内的最后一次改动丢失）。</summary>
+        private void FlushRatings()
+        {
+            lock (_ratingsLock)
+            {
+                if (_ratings == null) return;
+
+                SaveRatings();
+                _lastRatingsSave = DateTime.UtcNow;
+            }
+        }
+
+        /// <summary>加载失败重试队列（仅在持有 <see cref="_retryLock"/> 时调用）。</summary>
+        private void EnsureRetryLoaded()
+        {
+            if (_retry != null) return;
+
+            _retry = new Dictionary<string, RetryEntry>();
+
+            try
+            {
+                if (File.Exists(_retryPath))
+                {
+                    var persisted = _jsonSerializer.DeserializeFromFile<Dictionary<string, RetryEntry>>(_retryPath);
+                    if (persisted != null) _retry = persisted;
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.Debug("DoubanAssist - Retry queue load failed: {0}", e.Message);
+            }
+        }
+
+        private void SaveRetry()
+        {
+            lock (_retryLock)
+            {
+                if (_retry == null) return;
+
+                try
+                {
+                    _jsonSerializer.SerializeToFile(_retry, _retryPath);
+                }
+                catch (Exception e)
+                {
+                    _logger.Debug("DoubanAssist - Retry queue save failed: {0}", e.Message);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 记录一次失败。累计达到 <see cref="MaxRetryAttempts"/> 后移出队列，
+        /// 避免标题始终匹配不上的条目每次扫库都被重跑。
+        /// </summary>
+        private void RecordRetry(long itemId, string error)
+        {
+            lock (_retryLock)
+            {
+                EnsureRetryLoaded();
+
+                var key = itemId.ToString();
+
+                if (_retry.TryGetValue(key, out var entry))
+                {
+                    entry.Attempts++;
+                    entry.LastError = error;
+                    entry.LastAt = DateTime.UtcNow;
+
+                    if (entry.Attempts >= MaxRetryAttempts) _retry.Remove(key);
+                }
+                else
+                {
+                    _retry[key] = new RetryEntry { Attempts = 1, LastError = error, LastAt = DateTime.UtcNow };
+                }
+            }
+        }
+
+        private void RemoveRetry(long itemId)
+        {
+            lock (_retryLock)
+            {
+                EnsureRetryLoaded();
+                _retry.Remove(itemId.ToString());
             }
         }
 
@@ -414,6 +585,121 @@ namespace StrmAssistant.Provider.Douban
         }
 
         /// <summary>
+        /// 扫库后补全豆瓣 ID：只处理**缺失 ID** 的条目（等价 PRO 的 TriggerPopulateDoubanIdTask）。
+        /// 已有 ID 的条目跳过——它们的评分刷新由条目事件与 BuildDoubanCacheTask 负责，
+        /// 否则每次扫库都要把整库重跑一遍。上次失败的条目会被优先重试。
+        /// </summary>
+        public async Task PopulateDoubanIdsAsync(IProgress<double> progress, CancellationToken cancellationToken)
+        {
+            var missing = Plugin.LibraryManager.GetItemList(new InternalItemsQuery
+            {
+                IncludeItemTypes = new[] { nameof(Movie), nameof(Series) }
+            }).Where(i => string.IsNullOrEmpty(i.GetProviderId(DoubanProviderId))).ToList();
+
+            // 上次失败的条目优先重试；顺带清理已从库中消失或已补上 ID 的记录
+            List<BaseItem> retryItems;
+
+            lock (_retryLock)
+            {
+                EnsureRetryLoaded();
+
+                retryItems = _retry.Keys
+                    .Select(key => long.TryParse(key, out var id) ? Plugin.LibraryManager.GetItemById(id) : null)
+                    .Where(i => i != null && string.IsNullOrEmpty(i.GetProviderId(DoubanProviderId)))
+                    .ToList();
+
+                var alive = new HashSet<string>(retryItems.Select(i => i.InternalId.ToString()));
+
+                foreach (var key in _retry.Keys.Where(k => !alive.Contains(k)).ToList())
+                {
+                    _retry.Remove(key);
+                }
+            }
+
+            var queue = retryItems.Concat(missing)
+                .GroupBy(i => i.InternalId)
+                .Select(g => g.First())
+                .ToList();
+
+            _logger.Info("DoubanPopulate - Candidates: {0} (missingId={1}, retry={2})",
+                queue.Count, missing.Count, retryItems.Count);
+
+            if (queue.Count == 0)
+            {
+                _logger.Info("DoubanPopulate - Nothing to do");
+                progress?.Report(100.0);
+                return;
+            }
+
+            var stats = new PopulateStats { Total = queue.Count };
+            _populateStats = stats;
+
+            var index = 0;
+
+            try
+            {
+                foreach (var item in queue)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    try
+                    {
+                        await ApplyAsync(item, item is Movie ? "movie" : "tv", null, cancellationToken)
+                            .ConfigureAwait(false);
+
+                        // ApplyAsync 内部吞掉异常，因此以「最终是否拿到豆瓣 ID」判定成败
+                        if (string.IsNullOrEmpty(item.GetProviderId(DoubanProviderId)))
+                        {
+                            RecordRetry(item.InternalId, "no-match");
+                        }
+                        else
+                        {
+                            RemoveRetry(item.InternalId);
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        _logger.Info("DoubanPopulate - Cancelled");
+                        throw;
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Warn("DoubanPopulate - Failed for {0}: {1}", item.Name, e.Message);
+                        RecordRetry(item.InternalId, e.Message);
+                    }
+                    finally
+                    {
+                        index++;
+                        progress?.Report(index * 100.0 / queue.Count);
+                    }
+                }
+            }
+            finally
+            {
+                _populateStats = null;
+                FlushRatings();
+                SaveRetry();
+
+                // 一行分布日志：直接回答「为什么有些条目没有豆瓣评分」
+                _logger.Info(
+                    "DoubanPopulate - Summary: candidates={0} matched={1} noMatch={2} " +
+                    "skipped[locked={3}, language={4}] ratingApplied={5} " +
+                    "ratingSkipped[lookback={6}, fieldNotSelected={7}, overrideOff={8}]",
+                    stats.Total, stats.Matched, stats.NoMatch, stats.SkippedLocked, stats.SkippedLanguage,
+                    stats.RatingApplied, stats.RatingSkippedLookback, stats.RatingSkippedField,
+                    stats.RatingSkippedOverride);
+
+                lock (_retryLock)
+                {
+                    _logger.Info("DoubanPopulate - Retry queue: pending={0}", _retry?.Count ?? 0);
+                }
+            }
+
+            progress?.Report(100.0);
+            _logger.Info("DoubanPopulate - Complete");
+        }
+
+        /// <summary>
         /// 构建缓存：仅预取豆瓣数据落盘（subject + 评分快照），不写回条目。
         /// 已有豆瓣 ID 且缓存未过期的条目直接跳过，不产生网络请求。
         /// </summary>
@@ -479,12 +765,23 @@ namespace StrmAssistant.Provider.Douban
         {
             var options = Plugin.Instance.MetadataEnhanceStore.GetOptions();
 
-            if (!options.DoubanAssist.EnableDoubanAssist || item == null || item.IsLocked) return;
+            if (!options.DoubanAssist.EnableDoubanAssist || item == null) return;
+
+            var stats = _populateStats;
+
+            if (item.IsLocked)
+            {
+                if (stats != null) Interlocked.Increment(ref stats.SkippedLocked);
+                _logger.Debug("DoubanAssist - Skipped (reason=Locked): {0}", item.Name);
+                return;
+            }
 
             var language = ResolveMetadataLanguage(item);
             if (string.IsNullOrEmpty(language) || !language.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
             {
-                _logger.Info("DoubanAssist - Skipped (language={0}): {1}", language ?? "(empty)", item.Name);
+                if (stats != null) Interlocked.Increment(ref stats.SkippedLanguage);
+                _logger.Info("DoubanAssist - Skipped (reason=Language, lang={0}): {1}",
+                    language ?? "(empty)", item.Name);
                 return;
             }
 
@@ -495,10 +792,12 @@ namespace StrmAssistant.Provider.Douban
                 var subject = await FindSubjectAsync(item, suggestType, seasonNumber, cancellationToken).ConfigureAwait(false);
                 if (subject == null)
                 {
+                    if (stats != null) Interlocked.Increment(ref stats.NoMatch);
                     _logger.Info("DoubanAssist - No douban match for: {0}", item.Name);
                     return;
                 }
 
+                if (stats != null) Interlocked.Increment(ref stats.Matched);
                 _logger.Info("DoubanAssist - Matched {0} -> subject {1}", item.Name, subject.SubjectId);
 
                 var changed = false;
@@ -560,17 +859,40 @@ namespace StrmAssistant.Provider.Douban
                     var ratingAllowed = lookbackDays <= 0 || !item.PremiereDate.HasValue ||
                                         item.PremiereDate.Value >= DateTime.UtcNow.AddDays(-lookbackDays);
 
-                    if (ratingAllowed && Math.Abs((item.CommunityRating ?? 0) - subject.Rating.Value) > 0.05)
+                    if (ratingAllowed)
                     {
-                        item.CommunityRating = (float)subject.Rating.Value;
-                        changed = true;
-                        _logger.Info("DoubanAssist - Rating updated for {0}: {1} (douban {2}, votes {3})",
-                            item.Name, subject.Rating.Value, subject.Rating.Value, subject.Votes);
+                        var previousRating = item.CommunityRating;
+
+                        if (Math.Abs((previousRating ?? 0) - subject.Rating.Value) > 0.05)
+                        {
+                            item.CommunityRating = (float)subject.Rating.Value;
+                            changed = true;
+                            _logger.Info("DoubanAssist - Rating updated for {0}: {1} -> {2} (votes {3})",
+                                item.Name, previousRating?.ToString("0.0") ?? "N/A", subject.Rating.Value,
+                                subject.Votes);
+                        }
+
+                        // 走到这里说明 CommunityRating 此刻确为豆瓣分（含「本来就相等、无需改写」）
+                        MarkRatingApplied(subject.SubjectId, true);
+                        if (stats != null) Interlocked.Increment(ref stats.RatingApplied);
                     }
-                    else if (!ratingAllowed)
+                    else
                     {
-                        _logger.Info("DoubanAssist - Rating skipped (outside lookback {0}d): {1}", lookbackDays, item.Name);
+                        if (stats != null) Interlocked.Increment(ref stats.RatingSkippedLookback);
+                        _logger.Info("DoubanAssist - Rating skipped (reason=Lookback, {0}d): {1}", lookbackDays,
+                            item.Name);
                     }
+                }
+                else if (subject.Rating.HasValue)
+                {
+                    if (stats != null)
+                    {
+                        if (!allowRating) Interlocked.Increment(ref stats.RatingSkippedField);
+                        else Interlocked.Increment(ref stats.RatingSkippedOverride);
+                    }
+
+                    _logger.Debug("DoubanAssist - Rating skipped (reason={0}): {1}",
+                        !allowRating ? "FieldNotSelected" : "OverrideOff", item.Name);
                 }
 
                 var ratingInLookback = options.DoubanAssist.RatingUpdateLookbackDays <= 0 || !item.PremiereDate.HasValue ||
@@ -940,7 +1262,7 @@ namespace StrmAssistant.Provider.Douban
             if (cached != null) return cached;
 
             var query = $"SELECT ?doubanId WHERE {{ ?item wdt:P345 \"{imdbId}\" ; wdt:P4529 ?doubanId. " +
-                        "FILTER(ISLITERAL(?doubanId)) }} LIMIT 1";
+                        "FILTER(ISLITERAL(?doubanId)) } LIMIT 1";
             var url = $"{SparqlUrl}?query={Uri.EscapeDataString(query)}&format=json";
 
             var json = await RequestAsync(url, cancellationToken).ConfigureAwait(false);

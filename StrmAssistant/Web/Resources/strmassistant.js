@@ -1,4 +1,55 @@
-﻿define(['connectionManager', 'globalize', 'loading', 'toast', 'confirm', 'dialog'], function (connectionManager, globalize, loading, toast, confirm, dialog) {
+﻿// Emby 4.10 的 AMD 加载器（alameda）配置里没有 paths 映射，裸 id 会被解析成 /web/<id>.js 而 404，
+// 导致整个模块加载失败、导出为空。这里必须与 Emby 自身模块一致，改用相对于本模块路径的依赖。
+define([
+    '../../modules/emby-apiclient/connectionmanager.js',
+    '../../modules/common/globalize.js',
+    '../../modules/loading/loading.js',
+    '../../modules/toast/toast.js',
+    '../../modules/common/dialogs/confirm.js',
+    '../../modules/dialog/dialog.js'
+], function (connectionManager, globalize, loading, toast, confirm, dialog) {
+
+    // Emby 4.10 的模块导出统一挂在 .default 上，Emby 自身模块也是这么取的
+    // （例如 globalize.js 内部写 _connectionmanager.default.xxx）。
+    // 这里统一解包一次，下面所有裸用法即恢复正常。
+    connectionManager = connectionManager && (connectionManager.default || connectionManager);
+    globalize = globalize && (globalize.default || globalize);
+    loading = loading && (loading.default || loading);
+    toast = toast && (toast.default || toast);
+    confirm = confirm && (confirm.default || confirm);
+    dialog = dialog && (dialog.default || dialog);
+
+    // 共享扫描调度：三个子模块（badges / versions / ui）原先各自持有
+    // MutationObserver + 防抖计时器，一次 DOM 变更会触发三次全量扫描。
+    // 现在改为单一 observer + 单一防抖，各子模块通过 registerScan 注册扫描函数。
+    const scanCallbacks = [];
+    let sharedScanTimer = null;
+    let sharedObserverStarted = false;
+
+    function scheduleSharedScan() {
+        if (sharedScanTimer) clearTimeout(sharedScanTimer);
+        sharedScanTimer = setTimeout(function () {
+            sharedScanTimer = null;
+            for (const fn of scanCallbacks) {
+                try {
+                    fn();
+                } catch (e) {
+                    // 单个子模块异常不影响其他模块
+                }
+            }
+        }, 600);
+    }
+
+    function registerScan(fn) {
+        if (scanCallbacks.indexOf(fn) < 0) scanCallbacks.push(fn);
+    }
+
+    function startSharedObserver() {
+        if (sharedObserverStarted || !window.MutationObserver) return;
+        sharedObserverStarted = true;
+        new MutationObserver(scheduleSharedScan).observe(document.body,
+            { childList: true, subtree: true });
+    }
 
     return {
         copy: function (libraryId) {
@@ -190,7 +241,6 @@
         badges: (function () {
             let initialized = false;
             let enabled = null;
-            let scanTimer = null;
 
             function apiClient() {
                 return connectionManager.currentApiClient();
@@ -221,61 +271,101 @@
                 return info && (info.ItemId !== undefined ? info.ItemId : info.itemId);
             }
 
-            function makeDoubanMark() {
-                // 自绘「豆瓣」标识：绿底圆角方块 + 白「豆」字。
-                // 纯 DOM/CSS，不依赖任何外部图片或网络资源。
-                const mark = document.createElement('span');
+            // 豆瓣官方 logo（32x32 PNG，取自 https://www.douban.com/favicon.ico），
+            // 以 data URI 内联，避免运行时依赖外网资源。
+            const DOUBAN_LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAEFSURBVFhH7ZK9CsJAEISt7WzFws7Cwso3shY7QSysJIKN72EhiKCI4iOIEvCnkSAKFmIZsDhZ8I64ExR/siGSga+Z3Z0bQhKJakqFChjSgCENGNJwY3d2VFCibP5eXAAKiAOGNGDcmR+W/At+LMri+dEqsDptVWNsvQXd/KxAzx7A/BV0Exf4nwKh/4TfKpoFNMP1xAQ5l73KWoWn0I4W3fI8AAxGqVs2gaRcuwg7Gpp5Rbd8BwCDkWnmH0Ir/RrsaGjmFd3yHQAMHxZH24SONlOYa2imRTd87gsYPrRmHRPsXl2VrKdhhzyaadEN3/GFG0GLvxcXgALigCENGNKAIQ0YwtwAQLQd2sJ3hRwAAAAASUVORK5CYII=';
+
+            function makeDoubanMark(size, verticalAlign) {
+                const mark = document.createElement('img');
                 mark.className = 'douban-mark';
-                mark.setAttribute('style',
-                    'display:inline-block;width:12px;height:12px;line-height:12px;border-radius:3px;' +
-                    'background:#2E963B;color:#fff;font-size:9px;font-weight:700;text-align:center;' +
-                    'margin-right:4px;vertical-align:1px;font-family:"PingFang SC","Microsoft YaHei",sans-serif;');
-                mark.textContent = '\u8C46';
+                mark.alt = '\u8C46\u74E3';
+                mark.src = DOUBAN_LOGO;
+                mark.setAttribute('style', 'display:inline-block;border-radius:3px;margin-right:4px;' +
+                    'width:' + size + ';height:' + size + ';vertical-align:' + verticalAlign + ';');
                 return mark;
             }
 
-            function makePill(info, floating) {
-                const pill = document.createElement('div');
-                pill.className = 'douban-badge';
-                pill.appendChild(makeDoubanMark());
-                pill.appendChild(document.createTextNode(Number(ratingOf(info)).toFixed(1)));
-                let style = 'z-index:5;background:rgba(0,0,0,.72);color:#ffac2d;font-size:12px;' +
-                    'line-height:16px;padding:0 6px;border-radius:8px;pointer-events:none;white-space:nowrap;';
-                style += floating ? 'position:absolute;top:4px;right:4px;' : 'display:inline-block;vertical-align:middle;';
-                pill.setAttribute('style', style);
-                return pill;
+            // 已确认有豆瓣评分的条目（ItemId -> info），供评分行换图标使用。
+            const doubanIds = {};
+
+            function hashId() {
+                const m = (location.hash || '').match(/[?&]id=(\d+)/);
+                return m ? m[1] : null;
             }
 
+            // 取评分行中「星标图标以外」的文本所显示的数字（详情页可能是 TMDB 分或豆瓣分）。
+            function displayedRating(container, star) {
+                let text = '';
+                for (const node of container.childNodes) {
+                    if (node === star) continue;
+                    text += node.textContent || '';
+                }
+                const m = text.match(/\d+(?:\.\d+)?/);
+                return m ? parseFloat(m[0]) : null;
+            }
+
+            // 评分行：只有后端确认「该条目当前显示的评分确由豆瓣写入」（Applied=true）时，
+            // 才把红五星替换为豆瓣 logo——保证「图标与数字同源」（严格语义）。
+            // 若条目有豆瓣 ID 但 CommunityRating 未写入豆瓣分（超出回看期 / 未勾选评分字段 /
+            // 覆盖开关关闭），Applied 为 false，此时保留红五星，避免「豆瓣图标 + 他源数字」。
+            // 采用全量 DOM 扫描 + 幂等替换：既能覆盖卡片/列表/详情页，
+            // 也不怕「评分行晚于卡片渲染」的时序问题——下一次 scan 会重新命中并替换。
+            function ratingApplied(info) {
+                if (!info) return false;
+                const applied = info.Applied !== undefined ? info.Applied : info.applied;
+                return applied === true;
+            }
+
+            function applyStars() {
+                const detailId = hashId();
+                const containers = document.querySelectorAll('.starRatingContainer');
+                for (const container of containers) {
+                    const star = container.querySelector('.starIcon');
+                    if (!star) continue;
+                    const holder = container.closest('.card[data-id]') || container.closest('[data-id]');
+                    const id = holder ? holder.getAttribute('data-id') : detailId;
+                    if (!id || !doubanIds[id]) continue;
+                    const info = doubanIds[id];
+                    if (!ratingApplied(info)) continue;
+                    const shown = displayedRating(container, star);
+                    const douban = Number(ratingOf(info));
+                    // 二次校验：页面可能缓存着写入前的旧数字
+                    if (shown === null || isNaN(douban) || Math.abs(shown - douban) > 0.05) continue;
+                    container.replaceChild(makeDoubanMark('1.15em', '-0.15em'), star);
+                }
+            }
+
+            // 卡片只登记豆瓣分，供评分行换图标使用；不再往封面右上角盖「豆 7.8」角标：
+            // 详情页评分行已承载「豆瓣 logo + 分数」，卡片再标一次属于信息重复，
+            // 且 absolute 定位会压住竖版海报的标题/年份区域。
             function decorateCard(card, info) {
                 if (card.getAttribute('data-douban-badge')) return;
                 card.setAttribute('data-douban-badge', '1');
-                const host = card.querySelector('.cardScalable') || card.querySelector('.cardBox') || card;
-                if (!host) return;
-                if (host.style.position !== 'absolute' && !host.style.position) host.style.position = 'relative';
-                host.appendChild(makePill(info, true));
+                const cardId = card.getAttribute('data-id');
+                if (cardId) doubanIds[cardId] = info;
             }
 
+            let detailCheckedId = null;
+
             function decorateDetail() {
-                const page = document.querySelector('.itemDetailPage');
-                if (!page || page.getAttribute('data-douban-badge')) return;
+                const id = hashId();
+                if (!id || detailCheckedId === id) return;
+                detailCheckedId = id;
 
-                const match = (location.hash || '').match(/[?&]id=(\d+)/);
-                if (!match) return;
-
-                page.setAttribute('data-douban-badge', '1');
-
-                fetchRatings([match[1]]).then(function (list) {
+                fetchRatings([id]).then(function (list) {
+                    if (hashId() !== id) return;
                     const info = list && list[0];
                     if (!info || !ratingOf(info)) return;
-                    const host = page.querySelector('.itemMiscInfo') || page.querySelector('.mainDetailButtons');
-                    if (!host) return;
-                    host.appendChild(makePill(info, false));
+                    doubanIds[String(idOf(info))] = info;
+                    // 详情页评分行换豆瓣 logo；不再额外追加 pill，避免与评分行重复。
+                    applyStars();
                 }).catch(function () {});
             }
 
             function scan() {
                 try {
                     decorateDetail();
+                    applyStars();
 
                     const cards = Array.prototype.slice.call(
                         document.querySelectorAll('.card[data-id]:not([data-douban-badge])'));
@@ -300,16 +390,13 @@
                             if (info && ratingOf(info)) decorateCard(card, info);
                             else card.setAttribute('data-douban-badge', '1');
                         });
+                        applyStars();
                     }).catch(function () {});
                 } catch (e) {
                     // ignore
                 }
             }
 
-            function scheduleScan() {
-                if (scanTimer) clearTimeout(scanTimer);
-                scanTimer = setTimeout(scan, 600);
-            }
 
             function init() {
                 if (initialized) return;
@@ -318,10 +405,8 @@
                 checkEnabled().then(function (on) {
                     if (!on) return;
                     scan();
-                    if (window.MutationObserver) {
-                        new MutationObserver(scheduleScan).observe(document.body,
-                            { childList: true, subtree: true });
-                    }
+                    registerScan(scan);
+                    startSharedObserver();
                 });
             }
 
@@ -331,7 +416,6 @@
         versions: (function () {
             let initialized = false;
             let enabled = null;
-            let scanTimer = null;
             let currentId = null;
             let currentRes = null;
 
@@ -454,7 +538,8 @@
 
             function scan() {
                 try {
-                    const page = document.querySelector('.itemDetailPage');
+                    // Emby 4.10 已无 .itemDetailPage，详情页根容器为 .itemView（仅 item.html 使用）。
+                    const page = document.querySelector('.itemView');
                     if (!page) return;
 
                     const match = (location.hash || '').match(/[?&]id=(\d+)/);
@@ -485,10 +570,6 @@
                 }
             }
 
-            function scheduleScan() {
-                if (scanTimer) clearTimeout(scanTimer);
-                scanTimer = setTimeout(scan, 600);
-            }
 
             function init() {
                 if (initialized) return;
@@ -497,10 +578,8 @@
                 checkEnabled().then(function (on) {
                     if (!on) return;
                     scan();
-                    if (window.MutationObserver) {
-                        new MutationObserver(scheduleScan).observe(document.body,
-                            { childList: true, subtree: true });
-                    }
+                    registerScan(scan);
+                    startSharedObserver();
                 });
             }
 
@@ -509,7 +588,6 @@
 
         ui: (function () {
             let initialized = false;
-            let scanTimer = null;
             let countCache = {};
             let logReversed = false;
 
@@ -517,10 +595,6 @@
 
             function apiClient() { return connectionManager.currentApiClient(); }
 
-            function scheduleScan() {
-                if (scanTimer) clearTimeout(scanTimer);
-                scanTimer = setTimeout(scan, 500);
-            }
 
             function anyEnabled() {
                 const c = cfg();
@@ -697,10 +771,8 @@
                 if (!anyEnabled()) return;
                 patchSearchMediaInfo();
                 scan();
-                if (window.MutationObserver) {
-                    new MutationObserver(scheduleScan).observe(document.body,
-                        { childList: true, subtree: true });
-                }
+                    registerScan(scan);
+                    startSharedObserver();
             }
 
             return { init: init };
