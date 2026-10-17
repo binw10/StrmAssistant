@@ -95,6 +95,7 @@ namespace StrmAssistant.ScheduledTask
                 progress.Report(completed * 100.0 / targets.Count);
             }
 
+            Plugin.IntroDbApi.LogRequestSummary();
             _logger.Info("IntroDbScrape - Scheduled Task Complete: {0} item(s) marked", marked);
         }
 

@@ -55,6 +55,13 @@ namespace StrmAssistant.Common
         private readonly ConcurrentDictionary<long, byte> _scrapingItems =
             new ConcurrentDictionary<long, byte>();
 
+        // 本次任务周期的请求结果统计：源站覆盖不全/网络抖动时逐集打日志会刷屏，
+        // 逐集降为 Debug，任务收尾聚合一条（LogRequestSummary）。
+        private int _noDataCount;
+        private readonly ConcurrentDictionary<string, int> _requestFailures =
+            new ConcurrentDictionary<string, int>();
+        private bool _firstFailureLogged;
+
         private DateTime _lastRequestTime = DateTime.MinValue;
 
         public IntroDbApi(IHttpClient httpClient, IJsonSerializer jsonSerializer)
@@ -169,6 +176,8 @@ namespace StrmAssistant.Common
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
                     _cache[url] = (DateTime.UtcNow + CacheDuration, null);
+                    Interlocked.Increment(ref _noDataCount);
+                    _logger.Debug("IntroDbScrape - {0} has no data for {1}", provider, url);
                     return null;
                 }
 
@@ -180,7 +189,9 @@ namespace StrmAssistant.Common
 
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    _logger.Warn("IntroDbScrape - Unexpected status {0} for {1}", response.StatusCode, url);
+                    RecordRequestFailure("status " + (int)response.StatusCode);
+                    _logger.Debug("IntroDbScrape - {0} unexpected status {1} for {2}", provider,
+                        (int)response.StatusCode, url);
                     return null;
                 }
 
@@ -196,9 +207,56 @@ namespace StrmAssistant.Common
             }
             catch (Exception e)
             {
-                _logger.Warn("IntroDbScrape - {0} request failed for {1}: {2}", provider, url, e.Message);
+                // 超时/连接失败等网络异常：首条保留 Warn 提示用户，后续逐集降为 Debug，
+                // 任务收尾时由 LogRequestSummary 聚合输出，避免整季刷屏。
+                var reason = ClassifyRequestFailure(e);
+                RecordRequestFailure(reason);
+
+                if (!_firstFailureLogged)
+                {
+                    _firstFailureLogged = true;
+                    _logger.Warn("IntroDbScrape - {0} request failed for {1}: {2} (further failures will be aggregated)",
+                        provider, url, e.Message);
+                }
+                else
+                {
+                    _logger.Debug("IntroDbScrape - {0} request failed ({1}) for {2}", provider, reason, url);
+                }
+
                 return null;
             }
+        }
+
+        private static string ClassifyRequestFailure(Exception e)
+        {
+            var msg = e.Message ?? string.Empty;
+            if (msg.IndexOf("timed out", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                msg.IndexOf("timeout", StringComparison.OrdinalIgnoreCase) >= 0) return "timeout";
+            if (msg.IndexOf("Cancelling connection", StringComparison.OrdinalIgnoreCase) >= 0) return "cancelled";
+            if (msg.IndexOf("No such host", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                msg.IndexOf("Connection refused", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                msg.IndexOf("Connection reset", StringComparison.OrdinalIgnoreCase) >= 0) return "unreachable";
+            return "other";
+        }
+
+        private void RecordRequestFailure(string reason)
+        {
+            _requestFailures.AddOrUpdate(reason, 1, (_, c) => c + 1);
+        }
+
+        /// <summary>任务收尾时输出本次刮削的请求结果汇总（无失败/无空数据则不输出）。</summary>
+        public void LogRequestSummary()
+        {
+            var noData = Interlocked.Exchange(ref _noDataCount, 0);
+            if (noData > 0)
+                _logger.Info("IntroDbScrape - Source coverage: no data for {0} episode request(s) (normal for partially covered sources)", noData);
+
+            if (_requestFailures.IsEmpty) return;
+
+            var detail = string.Join(", ", _requestFailures.Select(kvp => string.Format("{0}={1}", kvp.Key, kvp.Value)));
+            _logger.Info("IntroDbScrape - Request failures: {0}", detail);
+            _requestFailures.Clear();
+            _firstFailureLogged = false;
         }
 
         /// <summary>
@@ -275,6 +333,12 @@ namespace StrmAssistant.Common
                 if (marked > 0)
                 {
                     _logger.Info("IntroDbScrape - Marked {0} episode(s) for {1}", marked, series.Name);
+                }
+                else
+                {
+                    // 一行聚合：源站无数据时不再逐集刷 Warn，改为剧集级汇总
+                    _logger.Info("IntroDbScrape - No markers for {0} ({1} episode(s) checked)",
+                        series.Name, episodes.Count);
                 }
 
                 return marked;
