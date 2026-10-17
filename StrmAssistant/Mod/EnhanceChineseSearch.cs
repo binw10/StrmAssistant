@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 using static StrmAssistant.Mod.PatchManager;
 using static StrmAssistant.Options.Utility;
 
@@ -221,11 +222,9 @@ namespace StrmAssistant.Mod
 
             Initialize();
 
-            if (Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.EnhanceChineseSearch ||
-                Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.EnhanceChineseSearchRestore)
-            {
-                PatchPhase1();
-            }
+            // A simple index can remain after enhancement is disabled. Keep its tokenizer
+            // available to every connection so metadata writes and searches still work.
+            PatchPhase1();
         }
 
         protected override void OnInitialize()
@@ -265,8 +264,11 @@ namespace StrmAssistant.Mod
                         }
                         else if (createConnectionMethods.Length > 1)
                         {
-                            // 如果有多个重载，选择无参数的版本
-                            _createConnection = createConnectionMethods.FirstOrDefault(m => m.GetParameters().Length == 0)
+                            // Prefer the shared checkout overload used by both read and write paths.
+                            _createConnection = createConnectionMethods.FirstOrDefault(m =>
+                                    m.GetParameters().Select(p => p.ParameterType).SequenceEqual(
+                                        new[] { typeof(bool), typeof(CancellationToken) }))
+                                ?? createConnectionMethods.FirstOrDefault(m => m.GetParameters().Length == 0)
                                 ?? createConnectionMethods.FirstOrDefault(m => m.GetParameters().Length == 1);
                             
                             if (Plugin.Instance.DebugMode && _createConnection != null)
@@ -1131,8 +1133,24 @@ namespace StrmAssistant.Mod
                        _cacheIdsFromTextParams, prefix: nameof(CacheIdsFromTextParamsPrefix));
         }
 
+        private static bool HasTokenizerOnConnection(IDatabaseConnection connection)
+        {
+            try
+            {
+                // Pooled wrappers may share a native handle. Probe before registering again.
+                connection.Execute("SELECT simple_query('strmassistant_connection_probe')");
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         private static bool LoadTokenizerExtension(IDatabaseConnection connection)
         {
+            if (HasTokenizerOnConnection(connection)) return true;
+
             try
             {
                 // 检查必需的组件是否存在
@@ -1198,107 +1216,100 @@ namespace StrmAssistant.Mod
         [HarmonyPostfix]
         private static void CreateConnectionPostfix(object __instance, ref IDatabaseConnection __result)
         {
-            // 不再依赖 isReadOnly 参数,因为某些 Emby 版本的 CreateConnection 方法没有此参数
-            // 直接检查是否已初始化和数据库文件路径
-            if (!_patchPhase2Initialized)
+            // Tokenizers are registered per SQLite handle; only phase 2 is once-per-process.
+            lock (_lock)
             {
-                lock (_lock)
+                try
                 {
-                    if (!_patchPhase2Initialized)
+                    // 尝试获取数据库文件路径，如果属性不存在则尝试其他方式
+                    string db = null;
+
+                    if (_dbFilePath != null)
                     {
-                        try
+                        db = _dbFilePath.GetValue(__instance) as string;
+                    }
+                    else
+                    {
+                        // 如果 DbFilePath 属性不存在，尝试通过反射查找其他可能的属性或字段
+                        var instanceType = __instance.GetType();
+
+                        // 尝试查找 DbFilePath 属性（可能名称不同）
+                        var dbFilePathProp = instanceType.GetProperty("DbFilePath",
+                            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                        if (dbFilePathProp != null)
                         {
-                            // 尝试获取数据库文件路径，如果属性不存在则尝试其他方式
-                            string db = null;
-                            
-                            if (_dbFilePath != null)
+                            db = dbFilePathProp.GetValue(__instance) as string;
+                        }
+                        else
+                        {
+                            // 尝试查找 _dbFilePath 字段
+                            var dbFilePathField = instanceType.GetField("_dbFilePath",
+                                BindingFlags.NonPublic | BindingFlags.Instance);
+                            if (dbFilePathField != null)
                             {
-                                db = _dbFilePath.GetValue(__instance) as string;
+                                db = dbFilePathField.GetValue(__instance) as string;
                             }
                             else
                             {
-                                // 如果 DbFilePath 属性不存在，尝试通过反射查找其他可能的属性或字段
-                                var instanceType = __instance.GetType();
-                                
-                                // 尝试查找 DbFilePath 属性（可能名称不同）
-                                var dbFilePathProp = instanceType.GetProperty("DbFilePath", 
-                                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                                if (dbFilePathProp != null)
+                                // 尝试查找 dbFilePath 字段（小写开头）
+                                dbFilePathField = instanceType.GetField("dbFilePath",
+                                    BindingFlags.NonPublic | BindingFlags.Instance);
+                                if (dbFilePathField != null)
                                 {
-                                    db = dbFilePathProp.GetValue(__instance) as string;
-                                }
-                                else
-                                {
-                                    // 尝试查找 _dbFilePath 字段
-                                    var dbFilePathField = instanceType.GetField("_dbFilePath", 
-                                        BindingFlags.NonPublic | BindingFlags.Instance);
-                                    if (dbFilePathField != null)
-                                    {
-                                        db = dbFilePathField.GetValue(__instance) as string;
-                                    }
-                                    else
-                                    {
-                                        // 尝试查找 dbFilePath 字段（小写开头）
-                                        dbFilePathField = instanceType.GetField("dbFilePath", 
-                                            BindingFlags.NonPublic | BindingFlags.Instance);
-                                        if (dbFilePathField != null)
-                                        {
-                                            db = dbFilePathField.GetValue(__instance) as string;
-                                        }
-                                    }
+                                    db = dbFilePathField.GetValue(__instance) as string;
                                 }
                             }
-                            
-                            // 如果无法获取路径，或者路径不是 library.db，则跳过
-                            // 在新版本中，如果无法确定路径，我们仍然尝试加载 tokenizer
-                            // 因为可能只有 library.db 会调用 CreateConnection
-                            if (db != null && !db.EndsWith("library.db", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (Plugin.Instance.DebugMode)
-                                {
-                                    Plugin.Instance.Logger.Debug($"EnhanceChineseSearch: Skipping non-library database: {db}");
-                                }
-                                return;
-                            }
-                            
-                            if (db != null && db.EndsWith("library.db", StringComparison.OrdinalIgnoreCase))
-                            {
-                                _libraryDbPath = db;
-                            }
-
-                            // 如果 db 为 null，可能是新版本中路径获取方式改变了
-                            // 在这种情况下，我们仍然尝试加载，但记录警告
-                            if (db == null && Plugin.Instance.DebugMode)
-                            {
-                                Plugin.Instance.Logger.Debug("EnhanceChineseSearch: Could not determine database path, attempting to load tokenizer anyway");
-                            }
-
-                            var tokenizerLoaded = LoadTokenizerExtension(__result);
-
-                            if (tokenizerLoaded)
-                            {
-                                _patchPhase2Initialized = true;
-                                PatchPhase2(__result);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            // 捕获所有异常，避免影响正常的数据库连接创建
-                            // 只在 Debug 模式下记录详细错误，避免日志噪音
-                            if (Plugin.Instance.DebugMode)
-                            {
-                                Plugin.Instance.Logger.Debug($"EnhanceChineseSearch: CreateConnectionPostfix error: {ex.Message}");
-                                Plugin.Instance.Logger.Debug($"Exception type: {ex.GetType().Name}");
-                                Plugin.Instance.Logger.Debug(ex.StackTrace);
-                                if (ex.InnerException != null)
-                                {
-                                    Plugin.Instance.Logger.Debug($"Inner exception: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
-                                }
-                            }
-                            // 对于非关键错误，不记录警告，避免日志噪音
-                            // 只有在真正影响功能时才记录警告
                         }
                     }
+
+                    // 如果无法获取路径，或者路径不是 library.db，则跳过
+                    // 在新版本中，如果无法确定路径，我们仍然尝试加载 tokenizer
+                    // 因为可能只有 library.db 会调用 CreateConnection
+                    if (db != null && !db.EndsWith("library.db", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (Plugin.Instance.DebugMode)
+                        {
+                            Plugin.Instance.Logger.Debug($"EnhanceChineseSearch: Skipping non-library database: {db}");
+                        }
+                        return;
+                    }
+
+                    if (db != null && db.EndsWith("library.db", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _libraryDbPath = db;
+                    }
+
+                    // 如果 db 为 null，可能是新版本中路径获取方式改变了
+                    // 在这种情况下，我们仍然尝试加载，但记录警告
+                    if (db == null && Plugin.Instance.DebugMode)
+                    {
+                        Plugin.Instance.Logger.Debug("EnhanceChineseSearch: Could not determine database path, attempting to load tokenizer anyway");
+                    }
+
+                    var tokenizerLoaded = LoadTokenizerExtension(__result);
+
+                    if (tokenizerLoaded && !_patchPhase2Initialized)
+                    {
+                        _patchPhase2Initialized = true;
+                        PatchPhase2(__result);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // 捕获所有异常，避免影响正常的数据库连接创建
+                    // 只在 Debug 模式下记录详细错误，避免日志噪音
+                    if (Plugin.Instance.DebugMode)
+                    {
+                        Plugin.Instance.Logger.Debug($"EnhanceChineseSearch: CreateConnectionPostfix error: {ex.Message}");
+                        Plugin.Instance.Logger.Debug($"Exception type: {ex.GetType().Name}");
+                        Plugin.Instance.Logger.Debug(ex.StackTrace);
+                        if (ex.InnerException != null)
+                        {
+                            Plugin.Instance.Logger.Debug($"Inner exception: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+                        }
+                    }
+                    // 对于非关键错误，不记录警告，避免日志噪音
+                    // 只有在真正影响功能时才记录警告
                 }
             }
         }
