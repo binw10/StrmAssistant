@@ -2,19 +2,24 @@ using MediaBrowser.Controller;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
+using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Configuration;
 using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
+using StrmAssistant.Options;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace StrmAssistant.Common
 {
     /// <summary>
-    /// 视频截图后处理：对截图生成的图片做居中裁剪（海报竖图 2:3 / 集图 16:9）。
+    /// 视频截图后处理：对截图生成的图片做居中裁剪（海报竖图 2:3 / 集图 16:9），
+    /// 并按需从截帧额外生成背景图（Backdrop）。
     /// 仅处理 Emby 内部元数据目录中的服务器生成图片，不碰用户本地图片。
     /// </summary>
     public class ImagePostProcessor
@@ -22,12 +27,17 @@ namespace StrmAssistant.Common
         private static readonly TimeSpan ProcessTimeout = TimeSpan.FromSeconds(30);
 
         private readonly IFfmpegManager _ffmpegManager;
+        private readonly IProviderManager _providerManager;
+        private readonly IFileSystem _fileSystem;
         private readonly ILogger _logger;
 
-        public ImagePostProcessor(IFfmpegManager ffmpegManager)
+        public ImagePostProcessor(IFfmpegManager ffmpegManager, IProviderManager providerManager,
+            IFileSystem fileSystem)
         {
             _logger = Plugin.Instance.Logger;
             _ffmpegManager = ffmpegManager;
+            _providerManager = providerManager;
+            _fileSystem = fileSystem;
         }
 
         public void CropToPortrait(string imagePath)
@@ -41,12 +51,37 @@ namespace StrmAssistant.Common
         }
 
         /// <summary>
-        /// 按条目处理截图后处理：非集条目的主图按海报竖图 2:3 裁剪，集的主图/缩略图按 16:9 裁剪。
+        /// Emby 把元数据目录内的图片路径以 `%MetadataPath%` 占位符持久化（便于整目录迁移），
+        /// 字段本身不是可直接访问的绝对路径，必须先还原才能做 File.Exists 与前缀判断。
+        /// </summary>
+        private static string ResolveImagePath(string path, string internalMetadataPath)
+        {
+            if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(internalMetadataPath)) return path;
+
+            return path.StartsWith("%MetadataPath%", StringComparison.OrdinalIgnoreCase)
+                ? internalMetadataPath + path.Substring("%MetadataPath%".Length)
+                : path;
+        }
+
+        /// <summary>
+        /// 按条目处理截图后处理：非集条目的主图按海报竖图 2:3 裁剪，集的主图/缩略图按 16:9 裁剪，
+        /// 并按需从截帧额外生成背景图。
         /// 仅处理 Emby 内部元数据目录中服务器生成的图片，用户本地图片不受影响。
         /// </summary>
-        public void ProcessItem(BaseItem item, bool forcePortraitPoster, bool ensureEpisode16x9)
+        public void ProcessItem(BaseItem item, string postProcessModes)
         {
-            if (item == null || (!forcePortraitPoster && !ensureEpisode16x9)) return;
+            if (item == null || string.IsNullOrWhiteSpace(postProcessModes)) return;
+
+            var modes = postProcessModes
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(m => m.Trim())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var forcePortraitPoster = modes.Contains(nameof(ImageCaptureOptions.ImageCapturePostProcess.EnsureAspect2By3));
+            var ensureEpisode16x9 = modes.Contains(nameof(ImageCaptureOptions.ImageCapturePostProcess.EnsureAspect16By9));
+            var generateBackdrop = modes.Contains(nameof(ImageCaptureOptions.ImageCapturePostProcess.GenerateBackdrop));
+
+            if (!forcePortraitPoster && !ensureEpisode16x9 && !generateBackdrop) return;
 
             var internalMetadataPath =
                 (Plugin.Instance.ApplicationPaths as IServerApplicationPaths)?.InternalMetadataPath;
@@ -59,7 +94,7 @@ namespace StrmAssistant.Common
             {
                 try
                 {
-                    var path = imageInfo.Path;
+                    var path = ResolveImagePath(imageInfo.Path, internalMetadataPath);
 
                     if (string.IsNullOrEmpty(path) || !File.Exists(path)) continue;
                     if (path.StartsWith("http", StringComparison.OrdinalIgnoreCase)) continue;
@@ -94,6 +129,77 @@ namespace StrmAssistant.Common
                 {
                     _logger.Warn("ImagePostProcess - ProcessItem failed for {0}: {1}", item.Name, e.Message);
                 }
+            }
+
+            if (generateBackdrop && !isEpisode)
+            {
+                GenerateBackdropFromPrimary(item, internalMetadataPath);
+            }
+        }
+
+        /// <summary>
+        /// 从截帧生成背景图：仅当条目尚无背景图时，把内部元数据目录中的主图复制一份裁剪为 16:9 后登记为 Backdrop。
+        /// </summary>
+        private void GenerateBackdropFromPrimary(BaseItem item, string internalMetadataPath)
+        {
+            try
+            {
+                if (item.ImageInfos.Any(i => i.Type == ImageType.Backdrop)) return;
+
+                string primaryPath = null;
+
+                foreach (var info in item.ImageInfos.Where(i => i.Type == ImageType.Primary))
+                {
+                    var candidate = ResolveImagePath(info.Path, internalMetadataPath);
+
+                    if (string.IsNullOrEmpty(candidate) ||
+                        candidate.StartsWith("http", StringComparison.OrdinalIgnoreCase) ||
+                        !candidate.StartsWith(internalMetadataPath, StringComparison.OrdinalIgnoreCase) ||
+                        !File.Exists(candidate))
+                    {
+                        continue;
+                    }
+
+                    primaryPath = candidate;
+                    break;
+                }
+
+                if (primaryPath == null)
+                {
+                    // 剧集/季等条目本就（几乎）不会有元数据内的截帧主图，每次刷新都会走到这里，
+                    // 用 Debug 避免刷屏；生成成功仍以 Info 记录。
+                    _logger.Debug(
+                        "ImagePostProcess - No captured primary image under metadata folder for {0}, skip backdrop",
+                        item.Name);
+                    return;
+                }
+
+                var tempPath = Path.Combine(Path.GetDirectoryName(primaryPath) ?? string.Empty,
+                    Path.GetFileNameWithoutExtension(primaryPath) + ".backdrop" +
+                    Path.GetExtension(primaryPath));
+
+                File.Copy(primaryPath, tempPath, true);
+                CropImage(tempPath, 16.0 / 9.0, true);
+
+                try
+                {
+                    var libraryOptions = Plugin.LibraryManager.GetLibraryOptions(item);
+                    var directoryService = new DirectoryService(_logger, _fileSystem);
+
+                    _providerManager.SaveImage(item, libraryOptions, tempPath, ImageType.Backdrop, null,
+                            Array.Empty<long>(), directoryService, false, CancellationToken.None)
+                        .GetAwaiter().GetResult();
+
+                    _logger.Info("ImagePostProcess - Generated backdrop from captured image for {0}", item.Name);
+                }
+                finally
+                {
+                    if (File.Exists(tempPath)) File.Delete(tempPath);
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.Warn("ImagePostProcess - Failed to generate backdrop for {0}: {1}", item.Name, e.Message);
             }
         }
 

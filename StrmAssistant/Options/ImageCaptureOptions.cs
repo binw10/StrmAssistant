@@ -1,7 +1,10 @@
 using Emby.Web.GenericEdit;
+using Emby.Web.GenericEdit.Common;
 using MediaBrowser.Model.Attributes;
 using MediaBrowser.Model.LocalizationAttributes;
 using StrmAssistant.Properties;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
@@ -29,20 +32,54 @@ namespace StrmAssistant.Options
         [VisibleCondition(nameof(EnableImageCapture), SimpleCondition.IsTrue)]
         public int ImageCapturePosition { get; set; } = 10;
 
-        [DisplayNameL("MediaInfoExtractOptions_ForcePortraitPoster_Force_Portrait_Poster", typeof(Resources))]
-        [DescriptionL("MediaInfoExtractOptions_ForcePortraitPoster_Crop_the_captured_primary_image_to_2_3_portrait_after_refresh__Default_is_OFF_", typeof(Resources))]
-        [Required]
+        [Browsable(false)]
+        public List<EditorSelectOption> ImageCapturePostProcessModeList { get; set; } = new List<EditorSelectOption>();
+
+        [DisplayNameL("MediaInfoExtractOptions_ImageCapturePostProcessMode_Image_Capture_Post_Processing", typeof(Resources))]
+        [DescriptionL("MediaInfoExtractOptions_ImageCapturePostProcessMode_Generate_additional_images_after_capture__Default_is_OFF_", typeof(Resources))]
+        [EditMultilSelect]
+        [SelectItemsSource(nameof(ImageCapturePostProcessModeList))]
         [VisibleCondition(nameof(EnableImageCapture), SimpleCondition.IsTrue)]
+        public string ImageCapturePostProcessMode { get; set; } = string.Empty;
+
+        // 3.0.0.56 前为 ForcePortraitPoster / EnsureEpisode16x9 两个独立开关，现已合并进
+        // ImageCapturePostProcessMode。保留为隐藏属性仅供升级时一次性迁移读取，迁移后恒为 false。
+        [Browsable(false)]
         public bool ForcePortraitPoster { get; set; } = false;
 
-        [DisplayNameL("MediaInfoExtractOptions_EnsureEpisode16x9_Ensure_Episode_Image_16x9", typeof(Resources))]
-        [DescriptionL("MediaInfoExtractOptions_EnsureEpisode16x9_Crop_episode_stills_to_16_9_when_the_source_ratio_differs__Default_is_OFF_", typeof(Resources))]
-        [Required]
-        [VisibleCondition(nameof(EnableImageCapture), SimpleCondition.IsTrue)]
+        [Browsable(false)]
         public bool EnsureEpisode16x9 { get; set; } = false;
 
         [Browsable(false)]
         public string ImageCaptureExcludeMediaContainers { get; set; } = string.Empty;
+
+        /// <summary>截图后处理模式（对齐 PRO 的 ImageCapturePostProcess）。</summary>
+        public enum ImageCapturePostProcess
+        {
+            [DescriptionL("ImageCapturePostProcess_EnsureAspect16By9_Ensure_Aspect_16x9", typeof(Resources))]
+            EnsureAspect16By9,
+
+            [DescriptionL("ImageCapturePostProcess_GenerateBackdrop_Generate_Backdrop", typeof(Resources))]
+            GenerateBackdrop,
+
+            [DescriptionL("ImageCapturePostProcess_EnsureAspect2By3_Ensure_Aspect_2x3", typeof(Resources))]
+            EnsureAspect2By3
+        }
+
+        public void Initialize()
+        {
+            ImageCapturePostProcessModeList.Clear();
+
+            foreach (Enum item in Enum.GetValues(typeof(ImageCapturePostProcess)))
+            {
+                ImageCapturePostProcessModeList.Add(new EditorSelectOption
+                {
+                    Value = item.ToString(),
+                    Name = Utility.GetEnumDescription(item),
+                    IsEnabled = true,
+                });
+            }
+        }
 
         [Browsable(false)]
         public bool IsModSupported =>

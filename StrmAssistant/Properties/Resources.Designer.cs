@@ -893,6 +893,51 @@ namespace StrmAssistant.Properties {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Ensure 16:9.
+        /// </summary>
+        public static string ImageCapturePostProcess_EnsureAspect16By9_Ensure_Aspect_16x9 {
+            get {
+                return ResourceManager.GetString("ImageCapturePostProcess_EnsureAspect16By9_Ensure_Aspect_16x9", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Generate Backdrop.
+        /// </summary>
+        public static string ImageCapturePostProcess_GenerateBackdrop_Generate_Backdrop {
+            get {
+                return ResourceManager.GetString("ImageCapturePostProcess_GenerateBackdrop_Generate_Backdrop", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Ensure 2:3.
+        /// </summary>
+        public static string ImageCapturePostProcess_EnsureAspect2By3_Ensure_Aspect_2x3 {
+            get {
+                return ResourceManager.GetString("ImageCapturePostProcess_EnsureAspect2By3_Ensure_Aspect_2x3", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Image Capture Post Processing.
+        /// </summary>
+        public static string MediaInfoExtractOptions_ImageCapturePostProcessMode_Image_Capture_Post_Processing {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_ImageCapturePostProcessMode_Image_Capture_Post_Processing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Post-process images captured for videos: crop episode stills to 16:9, crop posters to 2:3, or additionally generate a backdrop from the captured frame. Server-generated images only. Default is OFF..
+        /// </summary>
+        public static string MediaInfoExtractOptions_ImageCapturePostProcessMode_Generate_additional_images_after_capture__Default_is_OFF_ {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_ImageCapturePostProcessMode_Generate_additional_images_after_capture__Default_is_OFF_", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Douban Assist Scraping.
         /// </summary>
         public static string MetadataEnhanceOptions_EnableDoubanAssist_Douban_Assist_Scraping {

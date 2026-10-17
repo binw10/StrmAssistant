@@ -78,6 +78,7 @@ namespace StrmAssistant.Options
         public void Initialize(ILibraryManager libraryManager)
         {
             ExtractionScope.Initialize(libraryManager);
+            ImageCapture.Initialize();
             MediaInfoPersist.Initialize();
             ExtractionPerformance.Initialize();
         }

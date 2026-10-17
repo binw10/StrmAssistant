@@ -1121,6 +1121,21 @@
   <data name="MediaInfoExtractOptions_EnsureEpisode16x9_Crop_episode_stills_to_16_9_when_the_source_ratio_differs__Default_is_OFF_" xml:space="preserve">
     <value>Crop episode stills to 16:9 when the source ratio differs. Server-generated images only. Default is OFF.</value>
   </data>
+  <data name="ImageCapturePostProcess_EnsureAspect16By9_Ensure_Aspect_16x9" xml:space="preserve">
+    <value>Ensure 16:9</value>
+  </data>
+  <data name="ImageCapturePostProcess_GenerateBackdrop_Generate_Backdrop" xml:space="preserve">
+    <value>Generate Backdrop</value>
+  </data>
+  <data name="ImageCapturePostProcess_EnsureAspect2By3_Ensure_Aspect_2x3" xml:space="preserve">
+    <value>Ensure 2:3</value>
+  </data>
+  <data name="MediaInfoExtractOptions_ImageCapturePostProcessMode_Image_Capture_Post_Processing" xml:space="preserve">
+    <value>Image Capture Post Processing</value>
+  </data>
+  <data name="MediaInfoExtractOptions_ImageCapturePostProcessMode_Generate_additional_images_after_capture__Default_is_OFF_" xml:space="preserve">
+    <value>Post-process images captured for videos: crop episode stills to 16:9, crop posters to 2:3, or additionally generate a backdrop from the captured frame. Server-generated images only. Default is OFF.</value>
+  </data>
   <data name="MetadataEnhanceOptions_EnableDoubanAssist_Douban_Assist_Scraping" xml:space="preserve">
     <value>Douban Assist Scraping</value>
   </data>

@@ -325,7 +325,7 @@ namespace StrmAssistant
                 itemRepository, jsonSerializer, libraryMonitor);
             ChapterApi = new ChapterApi(libraryManager, itemRepository);
             IntroDbApi = new IntroDbApi(httpClient, jsonSerializer);
-            ImagePostProcessor = new ImagePostProcessor(ffmpegManager);
+            ImagePostProcessor = new ImagePostProcessor(ffmpegManager, providerManager, fileSystem);
             DoubanAssist = new global::StrmAssistant.Provider.Douban.DoubanAssist(httpClient, jsonSerializer,
                 providerManager, fileSystem);
             FingerprintApi = new FingerprintApi(libraryManager, fileSystem, applicationPaths, ffmpegManager,
@@ -422,14 +422,14 @@ namespace StrmAssistant
             }
 
             var mediaInfoOptions = MediaInfoExtractStore.GetOptions();
+            var imageCaptureOptions = mediaInfoOptions.ImageCapture;
+            var postProcessMode = imageCaptureOptions.ImageCapturePostProcessMode;
 
-            if (mediaInfoOptions.ImageCapture.EnableImageCapture &&
-                (mediaInfoOptions.ImageCapture.ForcePortraitPoster || mediaInfoOptions.ImageCapture.EnsureEpisode16x9))
+            if (imageCaptureOptions.EnableImageCapture && !string.IsNullOrWhiteSpace(postProcessMode))
             {
                 var refreshedItem = e.Argument.Item;
 
-                _ = Task.Run(() => ImagePostProcessor.ProcessItem(refreshedItem,
-                    mediaInfoOptions.ImageCapture.ForcePortraitPoster, mediaInfoOptions.ImageCapture.EnsureEpisode16x9));
+                _ = Task.Run(() => ImagePostProcessor.ProcessItem(refreshedItem, postProcessMode));
             }
 
             if (MetadataEnhanceStore.GetOptions().DoubanAssist.EnableDoubanAssist)

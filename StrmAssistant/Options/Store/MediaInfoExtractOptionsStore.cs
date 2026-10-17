@@ -166,6 +166,10 @@ namespace StrmAssistant.Options.Store
                 _logger.Info("ImageCapturePosition is set to {0}", options.ImageCapture.ImageCapturePosition);
                 _logger.Info("ForcePortraitPoster is set to {0}", options.ImageCapture.ForcePortraitPoster);
                 _logger.Info("EnsureEpisode16x9 is set to {0}", options.ImageCapture.EnsureEpisode16x9);
+                _logger.Info("ImageCapturePostProcessMode is set to {0}",
+                    string.IsNullOrEmpty(options.ImageCapture.ImageCapturePostProcessMode)
+                        ? "EMPTY"
+                        : options.ImageCapture.ImageCapturePostProcessMode);
                 _logger.Info("ExclusiveExtract is set to {0}", options.ExtractionPerformance.ExclusiveExtract);
                 _logger.Info("ClearEmbeddedMetadata is set to {0}", options.MediaInfoPersist.ClearEmbeddedMetadata);
 

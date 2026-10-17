@@ -1,7 +1,9 @@
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace StrmAssistant.Options.Store
 {
@@ -13,6 +15,7 @@ namespace StrmAssistant.Options.Store
     internal static class MediaInfoExtractOptionsMigration
     {
         private const string FlagFileName = "StrmAssistant_MediaInfoExtractOptions_grouped_v1.flag";
+        private const string PostProcessFlagFileName = "StrmAssistant_MediaInfoExtractOptions_postprocess_v2.flag";
 
         /// <summary>
         /// 旧字段 → 新分组 的映射表（Group 取新分组属性名，用 nameof 保证编译期同步）。
@@ -56,6 +59,12 @@ namespace StrmAssistant.Options.Store
         };
 
         public static void MigrateIfNeeded(string optionsFilePath, IJsonSerializer jsonSerializer, ILogger logger)
+        {
+            MigrateToGroupedLayout(optionsFilePath, jsonSerializer, logger);
+            MigrateImageCapturePostProcess(optionsFilePath, jsonSerializer, logger);
+        }
+
+        private static void MigrateToGroupedLayout(string optionsFilePath, IJsonSerializer jsonSerializer, ILogger logger)
         {
             try
             {
@@ -103,6 +112,77 @@ namespace StrmAssistant.Options.Store
             }
         }
 
+        /// <summary>
+        /// 3.0.0.56 前「截图后处理」是 ForcePortraitPoster / EnsureEpisode16x9 两个独立开关，
+        /// 之后合并为多选 ImageCapturePostProcessMode。此处把已嵌套的旧开关折叠进新字段，
+        /// 避免升级后两个开关保持 true 与用户在新的多选里取消勾选的结果互相冲突。
+        /// </summary>
+        private static void MigrateImageCapturePostProcess(string optionsFilePath, IJsonSerializer jsonSerializer,
+            ILogger logger)
+        {
+            try
+            {
+                var directory = Path.GetDirectoryName(optionsFilePath);
+
+                if (string.IsNullOrEmpty(directory)) return;
+
+                var flagPath = Path.Combine(directory, PostProcessFlagFileName);
+
+                if (File.Exists(flagPath) || !File.Exists(optionsFilePath)) return;
+
+                var text = File.ReadAllText(optionsFilePath);
+
+                if (!text.Contains("\"ForcePortraitPoster\"") && !text.Contains("\"EnsureEpisode16x9\""))
+                {
+                    File.WriteAllText(flagPath, DateTime.UtcNow.ToString("O"));
+                    return;
+                }
+
+                var options = jsonSerializer.DeserializeFromString<MediaInfoExtractOptions>(text);
+                var imageCapture = options.ImageCapture;
+
+                var modes = (imageCapture.ImageCapturePostProcessMode ?? string.Empty)
+                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+
+                if (imageCapture.ForcePortraitPoster &&
+                    !modes.Contains(nameof(ImageCaptureOptions.ImageCapturePostProcess.EnsureAspect2By3)))
+                {
+                    modes.Add(nameof(ImageCaptureOptions.ImageCapturePostProcess.EnsureAspect2By3));
+                }
+
+                if (imageCapture.EnsureEpisode16x9 &&
+                    !modes.Contains(nameof(ImageCaptureOptions.ImageCapturePostProcess.EnsureAspect16By9)))
+                {
+                    modes.Add(nameof(ImageCaptureOptions.ImageCapturePostProcess.EnsureAspect16By9));
+                }
+
+                imageCapture.ImageCapturePostProcessMode = string.Join(",", modes);
+                imageCapture.ForcePortraitPoster = false;
+                imageCapture.EnsureEpisode16x9 = false;
+
+                byte[] bytes;
+
+                using (var stream = new MemoryStream())
+                {
+                    jsonSerializer.SerializeToStream(options, stream, new JsonSerializerOptions { Indent = true });
+                    bytes = stream.ToArray();
+                }
+
+                var backupPath = optionsFilePath + ".postprocess.bak";
+                File.WriteAllText(backupPath, text);
+                File.WriteAllBytes(optionsFilePath, bytes);
+                File.WriteAllText(flagPath, DateTime.UtcNow.ToString("O"));
+
+                logger.Info(
+                    "MediaInfoExtractOptions: migrated image post-process flags to ImageCapturePostProcessMode. Backup: {0}",
+                    backupPath);
+            }
+            catch (Exception e)
+            {
+                logger.Warn("MediaInfoExtractOptions image post-process migration failed: " + e.Message);
+            }
+        }
+
         private static bool IsGroupedLayout(string text)
         {
             foreach (var key in GroupKeys)
@@ -139,8 +219,8 @@ namespace StrmAssistant.Options.Store
             var imageCapture = options.ImageCapture;
             imageCapture.EnableImageCapture = legacy.EnableImageCapture;
             imageCapture.ImageCapturePosition = legacy.ImageCapturePosition;
-            imageCapture.ForcePortraitPoster = legacy.ForcePortraitPoster;
-            imageCapture.EnsureEpisode16x9 = legacy.EnsureEpisode16x9;
+            imageCapture.ImageCapturePostProcessMode = BuildPostProcessMode(legacy.ForcePortraitPoster,
+                legacy.EnsureEpisode16x9);
             imageCapture.ImageCaptureExcludeMediaContainers = legacy.ImageCaptureExcludeMediaContainers ?? string.Empty;
 
             var isoTool = options.IsoTool;
@@ -160,6 +240,16 @@ namespace StrmAssistant.Options.Store
             performance.ImageExtractionTimeoutMultiplier = legacy.ImageExtractionTimeoutMultiplier;
             performance.ExclusiveExtract = legacy.ExclusiveExtract;
             performance.ExclusiveControlFeatures = legacy.ExclusiveControlFeatures ?? string.Empty;
+        }
+
+        private static string BuildPostProcessMode(bool forcePortraitPoster, bool ensureEpisode16x9)
+        {
+            var modes = new List<string>();
+
+            if (forcePortraitPoster) modes.Add(nameof(ImageCaptureOptions.ImageCapturePostProcess.EnsureAspect2By3));
+            if (ensureEpisode16x9) modes.Add(nameof(ImageCaptureOptions.ImageCapturePostProcess.EnsureAspect16By9));
+
+            return string.Join(",", modes);
         }
 
         /// <summary>
