@@ -35,8 +35,9 @@ namespace StrmAssistant.Options
 
         /// <summary>
         /// 显示用版本号：只返回程序集版本（如 3.0.0.55），不再拼接 git commit hash。
+        /// 供品牌区（BrandOptions）与关于页共用。
         /// </summary>
-        private static string GetVersion()
+        internal static string GetVersion()
         {
             return NormalizeVersion(Assembly.GetExecutingAssembly().GetName().Version?.ToString()) ?? "0.0.0.0";
         }
@@ -45,13 +46,7 @@ namespace StrmAssistant.Options
         {
             VersionInfoList.Clear();
 
-            VersionInfoList.Add(
-                new GenericListItem
-                {
-                    PrimaryText = GetVersion(),
-                    Icon = IconNames.info,
-                    IconMode = ItemListIconMode.SmallRegular
-                });
+            // 版本号已移至基础设置页顶部的品牌区（BrandOptions），此处仅保留链接。
 
             VersionInfoList.Add(
                 new GenericListItem

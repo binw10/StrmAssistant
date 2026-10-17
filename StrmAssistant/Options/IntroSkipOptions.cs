@@ -18,17 +18,17 @@ namespace StrmAssistant.Options
         [DisplayNameL("PluginOptions_IntroSkipOptions_Intro_Credits_Detection", typeof(Resources))]
         public override string EditorTitle => Resources.PluginOptions_IntroSkipOptions_Intro_Credits_Detection;
 
-        /// <summary>检测与指纹：解锁内置检测、指纹时长、并行计算、生效库范围与黑名单。</summary>
+        /// <summary>声纹探测：解锁内置检测、指纹时长、并行计算、生效库范围与黑名单。</summary>
         [DisplayNameL("IntroSkipOptions_Group_Fingerprint", typeof(Resources))]
         public IntroSkipFingerprintOptions Fingerprint { get; set; } = new IntroSkipFingerprintOptions();
+
+        /// <summary>行为探测：启用跳过、时长上限、生效范围、跳过偏好与清除标记。</summary>
+        [DisplayNameL("IntroSkipOptions_Group_Playback", typeof(Resources))]
+        public IntroSkipPlaybackOptions Playback { get; set; } = new IntroSkipPlaybackOptions();
 
         /// <summary>在线刮削：从 TheIntroDB / TIDB 拉取标记（只补缺失）。</summary>
         [DisplayNameL("IntroSkipOptions_Group_Scrape", typeof(Resources))]
         public IntroSkipScrapeOptions Scrape { get; set; } = new IntroSkipScrapeOptions();
-
-        /// <summary>播放与跳过：启用跳过、时长上限、生效范围、跳过偏好与清除标记。</summary>
-        [DisplayNameL("IntroSkipOptions_Group_Playback", typeof(Resources))]
-        public IntroSkipPlaybackOptions Playback { get; set; } = new IntroSkipPlaybackOptions();
 
         /// <summary>Store 在保存时用于判断 patch 是否可用（与各组内的同名 helper 独立）。</summary>
         [Browsable(false)]

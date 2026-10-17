@@ -124,10 +124,10 @@ namespace StrmAssistant
             ApplicationHost = applicationHost;
             ApplicationPaths = applicationPaths;
 
-            if (ApplicationHost.ApplicationVersion < new Version("4.9.1.0"))
+            if (ApplicationHost.ApplicationVersion < new Version(MinRequiredEmbyVersion))
             {
                 throw new NotSupportedException(
-                    $"StrmAssistant requires Emby >= 4.9.1.0, current: {ApplicationHost.ApplicationVersion}");
+                    $"StrmAssistant requires Emby >= {MinRequiredEmbyVersion}, current: {ApplicationHost.ApplicationVersion}");
             }
             
             // 初始化核心架构组件
@@ -902,6 +902,16 @@ namespace StrmAssistant
         public override string Description => "Extract MediaInfo and Enable IntroSkip";
 
         public override Guid Id => _id;
+
+        /// <summary>
+        /// 插件要求的最低 Emby 版本，<see cref="Initialize"/> 的准入检查使用。
+        /// </summary>
+        public const string MinRequiredEmbyVersion = "4.9.1.0";
+
+        /// <summary>
+        /// 品牌区「Support x.x.x.x +」对外展示的基准版本（与准入检查解耦）。
+        /// </summary>
+        public const string AdvertisedEmbyVersion = "4.10.1.0";
 
         public sealed override string Name => "StrmAssistantPlus";
 

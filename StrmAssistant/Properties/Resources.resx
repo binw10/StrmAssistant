@@ -123,7 +123,7 @@
     <value>Shared by mediainfo extract, image capture, video thumbnail and fingerprint extract tasks. It must be between 1 to 20. Default is 1.</value>
   </data>
   <data name="PluginOptions_EditorTitle_Strm_Extract" xml:space="preserve">
-    <value>MediaInfo Extract</value>
+    <value>Media Info</value>
   </data>
   <data name="PluginOptions_LibraryScope_Library_Scope" xml:space="preserve">
     <value>Library Scope</value>
@@ -162,7 +162,7 @@
     <value>Max Credits Duration (Seconds), Default is 360</value>
   </data>
   <data name="PluginOptions_IntroSkipOptions_Intro_Credits_Detection" xml:space="preserve">
-    <value>Intro and Credits Detection</value>
+    <value>Intro &amp; Credits</value>
   </data>
   <data name="IntroSkipOptions_LibraryScope_Library_Scope" xml:space="preserve">
     <value>Intro Skip Detection Library Scope</value>
@@ -198,7 +198,7 @@
     <value>{0} - {1} - Credits marker updated</value>
   </data>
   <data name="GeneralOptions_EditorTitle_General_Options" xml:space="preserve">
-    <value>General</value>
+    <value></value>
   </data>
   <data name="GeneralOptions_MergeMultiVersion_Merge_Multiple_Versions" xml:space="preserve">
     <value>Auto Merge Multi-version</value>
@@ -360,7 +360,7 @@
     <value>Auto generate pinyin initials as sort title. Default is OFF.</value>
   </data>
   <data name="PluginOptions_MetadataEnhanceOptions_Metadata_Enhance" xml:space="preserve">
-    <value>Metadata Enhance</value>
+    <value>Metadata</value>
   </data>
   <data name="MetadataEnhanceOptions_EnhanceNfoMetadata_Nfo_Metadata_Import_Enhanced" xml:space="preserve">
     <value>Nfo Metadata Import Enhanced</value>
@@ -1425,13 +1425,13 @@
     <value>Performance &amp; Exclusive</value>
   </data>
   <data name="IntroSkipOptions_Group_Fingerprint" xml:space="preserve">
-    <value>Detection &amp; Fingerprint</value>
+    <value>Fingerprint Detection</value>
   </data>
   <data name="IntroSkipOptions_Group_Scrape" xml:space="preserve">
     <value>Online Scraping</value>
   </data>
   <data name="IntroSkipOptions_Group_Playback" xml:space="preserve">
-    <value>Playback &amp; Skip</value>
+    <value>Behavior Detection</value>
   </data>
   <data name="ExperienceEnhanceOptions_Group_VersionMerge" xml:space="preserve">
     <value>Version Merge</value>
@@ -1446,7 +1446,7 @@
     <value>Notification</value>
   </data>
   <data name="GeneralOptions_Group_TaskConcurrency" xml:space="preserve">
-    <value>Tasks &amp; Concurrency</value>
+    <value>Task Concurrency</value>
   </data>
   <data name="GeneralOptions_Group_Memory" xml:space="preserve">
     <value>Memory</value>
@@ -1455,7 +1455,7 @@
     <value>Status &amp; Maintenance</value>
   </data>
   <data name="ModOptions_Group_ChineseSearch" xml:space="preserve">
-    <value>Matching &amp; Scope</value>
+    <value></value>
   </data>
   <data name="PluginOptions_EditorTitle_Basic_Settings" xml:space="preserve">
     <value>Basic Settings</value>
@@ -1464,9 +1464,9 @@
     <value>Enable Plugin</value>
   </data>
   <data name="PluginOptions_EnablePlugin_Description" xml:space="preserve">
-    <value>Disables all patches, scheduled tasks and web endpoints. Requires a server restart to take effect. Default is ON.</value>
+    <value>Disables all plugin behavior. Requires a server restart to take effect. Default is ON.</value>
   </data>
   <data name="NetworkProxyOptions_EditorTitle_Network_Direct_Link" xml:space="preserve">
-    <value>Network &amp; Direct Link</value>
+    <value>Network Proxy</value>
   </data>
 </root>

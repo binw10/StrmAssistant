@@ -36,7 +36,7 @@
     <value>媒体信息提取，视频截图，预览缩略图，声纹提取任务共享，必须在 1 至 20 之间，默认为 1。</value>
   </data>
   <data name="PluginOptions_EditorTitle_Strm_Extract" xml:space="preserve">
-    <value>媒体信息提取</value>
+    <value>媒体信息</value>
   </data>
   <data name="PluginOptions_LibraryScope_Library_Scope" xml:space="preserve">
     <value>媒体库范围</value>
@@ -75,7 +75,7 @@
     <value>最大片头时长 (秒)，默认为 150</value>
   </data>
   <data name="PluginOptions_IntroSkipOptions_Intro_Credits_Detection" xml:space="preserve">
-    <value>片头片尾探测</value>
+    <value>片头片尾</value>
   </data>
   <data name="IntroSkipOptions_LibraryScope_Library_Scope" xml:space="preserve">
     <value>片头跳过检测媒体库范围</value>
@@ -111,7 +111,7 @@
     <value>{0} - {1} - 片尾标记已更新</value>
   </data>
   <data name="GeneralOptions_EditorTitle_General_Options" xml:space="preserve">
-    <value>通用</value>
+    <value></value>
   </data>
   <data name="GeneralOptions_MergeMultiVersion_Merge_Multiple_Versions" xml:space="preserve">
     <value>自动合并多版本</value>
@@ -273,7 +273,7 @@
     <value>自动把标题中的中文转换为拼音首字母作为排序标题，默认关闭。</value>
   </data>
   <data name="PluginOptions_MetadataEnhanceOptions_Metadata_Enhance" xml:space="preserve">
-    <value>元数据增强</value>
+    <value>元数据</value>
   </data>
   <data name="MetadataEnhanceOptions_EnhanceNfoMetadata_Nfo_Metadata_Import_Enhanced" xml:space="preserve">
     <value>NFO 元数据导入增强</value>
@@ -1338,13 +1338,13 @@
     <value>性能与独占</value>
   </data>
   <data name="IntroSkipOptions_Group_Fingerprint" xml:space="preserve">
-    <value>检测与指纹</value>
+    <value>声纹探测</value>
   </data>
   <data name="IntroSkipOptions_Group_Scrape" xml:space="preserve">
     <value>在线刮削</value>
   </data>
   <data name="IntroSkipOptions_Group_Playback" xml:space="preserve">
-    <value>播放与跳过</value>
+    <value>行为探测</value>
   </data>
   <data name="ExperienceEnhanceOptions_Group_VersionMerge" xml:space="preserve">
     <value>多版本合并</value>
@@ -1359,7 +1359,7 @@
     <value>通知</value>
   </data>
   <data name="GeneralOptions_Group_TaskConcurrency" xml:space="preserve">
-    <value>任务与并发</value>
+    <value>任务并发</value>
   </data>
   <data name="GeneralOptions_Group_Memory" xml:space="preserve">
     <value>内存管理</value>
@@ -1368,7 +1368,7 @@
     <value>运行状态与维护</value>
   </data>
   <data name="ModOptions_Group_ChineseSearch" xml:space="preserve">
-    <value>匹配与范围</value>
+    <value></value>
   </data>
   <data name="PluginOptions_EditorTitle_Basic_Settings" xml:space="preserve">
     <value>基础设置</value>
@@ -1377,9 +1377,9 @@
     <value>启用插件</value>
   </data>
   <data name="PluginOptions_EnablePlugin_Description" xml:space="preserve">
-    <value>关闭后插件不执行任何行为（不加载补丁、不跑定时任务、不响应网页请求）。修改后需重启服务器生效，默认开启。</value>
+    <value>关闭后插件不执行任何行为。修改后需重启服务器生效，默认开启。</value>
   </data>
   <data name="NetworkProxyOptions_EditorTitle_Network_Direct_Link" xml:space="preserve">
-    <value>网络与直链</value>
+    <value>网络代理</value>
   </data>
 </root>

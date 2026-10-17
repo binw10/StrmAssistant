@@ -36,13 +36,17 @@ namespace StrmAssistant.Options.View
             {
                 Name = "Settings",
                 EnableInMainMenu = true,
-                DisplayName = Resources.ResourceManager.GetString("PluginOptions_EditorTitle_Basic_Settings",
+                // DisplayName 会同时用作侧边栏菜单项名字，保持品牌名；
+                // Tab 标题由 _tabPages 各自提供（首页 Tab 为「基础设置」）。
+                DisplayName = Resources.ResourceManager.GetString("PluginOptions_EditorTitle_Strm_Assistant",
                     Plugin.Instance.DefaultUICulture),
                 MenuIcon = "video_settings",
                 IsMainConfigPage = false,
             };
 
             // Tab 顺序按使用频率排列：高级功能紧跟基础设置，其后是三大日常功能。
+            // 注：Emby 强制渲染主页为第一个 Tab（标题=PageInfo.DisplayName），与侧边栏
+            // 菜单名无法分离；曾实测显式注册主页 Tab，结果出现 7 个且重复，已回滚。
             _tabPages.Add(new TabPageController(pluginInfo, nameof(ExperienceEnhancePageView),
                 Resources.ResourceManager.GetString("ExperienceEnhanceOptions_EditorTitle_Experience_Enhance",
                     Plugin.Instance.DefaultUICulture),
