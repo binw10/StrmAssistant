@@ -1,5 +1,7 @@
 using Emby.Web.GenericEdit;
 using Emby.Web.GenericEdit.Common;
+using Emby.Web.GenericEdit.Elements;
+using Emby.Web.GenericEdit.Elements.List;
 using MediaBrowser.Model.Attributes;
 using MediaBrowser.Model.LocalizationAttributes;
 using StrmAssistant.Properties;
@@ -86,6 +88,16 @@ namespace StrmAssistant.Options
         [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
         [Required]
         public bool DoubanPosterFallback { get; set; } = false;
+
+        [DisplayNameL("MetadataEnhanceOptions_ClearSeasonMapButton_Clear_Season_Map", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_ClearSeasonMapButton_Remove_cached_series_season_mappings_so_season_items_are_matched_again__Useful_after_a_wrong_season_match_", typeof(Resources))]
+        [VisibleCondition(nameof(EnableDoubanAssist), SimpleCondition.IsTrue)]
+        public ButtonItem ClearSeasonMapButton =>
+            new ButtonItem(Resources.MetadataEnhanceOptions_ClearSeasonMapButton_Clear_Season_Map)
+            {
+                Icon = IconNames.delete_sweep, Data1 = "ClearSeasonMap",
+                ConfirmationPrompt = Resources.AreYouSureToContinue
+            };
 
         public void Initialize()
         {

@@ -257,15 +257,28 @@ namespace StrmAssistant.Provider.Douban
         private readonly string _cachePath;
         private readonly string _ratingsPath;
         private readonly string _retryPath;
+        private readonly string _seasonsPath;
         private readonly object _cacheLock = new object();
         private readonly object _ratingsLock = new object();
         private readonly object _retryLock = new object();
+        private readonly object _seasonsLock = new object();
         private readonly object _requestLock = new object();
         private readonly ConcurrentDictionary<long, byte> _inFlight = new ConcurrentDictionary<long, byte>();
 
         private Dictionary<string, CacheEntry> _cache;
         private Dictionary<string, DoubanRatingSnapshot> _ratings;
         private Dictionary<string, RetryEntry> _retry;
+
+        /// <summary>
+        /// 季级映射表：剧集豆瓣 ID → { 季号 → 季豆瓣 ID }。
+        ///
+        /// 豆瓣把每个季拆成独立 subject（如「庆余年 第二季」），剧集条目本身只有一个 ID，
+        /// 季条目必须另行解析。若每个季都靠标题搜索，既慢又易错配（不同剧同名季）。
+        /// 这里按剧集缓存映射：同一剧集的季条目直接查表，未命中才搜索并回填。
+        /// 等价 PRO 的 UpdateSeasonMap 思路（按剧集聚合季号集合后批量建立）。
+        /// </summary>
+        private Dictionary<string, Dictionary<string, SeasonMapEntry>> _seasons;
+
         private DateTime _lastRequestTime = DateTime.MinValue;
         private DateTime _breakerUntil = DateTime.MinValue;
         private int _consecutiveBlocked;
@@ -280,6 +293,16 @@ namespace StrmAssistant.Provider.Douban
             public string LastError { get; set; }
             public DateTime LastAt { get; set; }
         }
+
+        /// <summary>季映射表的一条记录：季豆瓣 ID + 建立时间（用于过期判定）。</summary>
+        private class SeasonMapEntry
+        {
+            public string SubjectId { get; set; }
+            public DateTime Updated { get; set; }
+        }
+
+        /// <summary>季映射的存活期：与豆瓣条目缓存一致（7 天）。过期后重新解析，避免季被改名/下架后长期错配。</summary>
+        private static readonly TimeSpan SeasonMapTtl = TimeSpan.FromDays(7);
 
         private DateTime _lastRatingsSave = DateTime.MinValue;
         private static readonly TimeSpan RatingsSaveThrottle = TimeSpan.FromSeconds(10);
@@ -317,6 +340,8 @@ namespace StrmAssistant.Provider.Douban
                 "strmassistant_douban_ratings.json");
             _retryPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath,
                 "strmassistant_douban_retry.json");
+            _seasonsPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath,
+                "strmassistant_douban_seasons.json");
         }
 
         /// <summary>
@@ -536,6 +561,125 @@ namespace StrmAssistant.Provider.Douban
             }
         }
 
+        // ===== 季级映射（剧集豆瓣 ID → 季号 → 季豆瓣 ID）=====
+
+        private void EnsureSeasonsLoaded()
+        {
+            if (_seasons != null) return;
+
+            _seasons = new Dictionary<string, Dictionary<string, SeasonMapEntry>>();
+
+            try
+            {
+                if (File.Exists(_seasonsPath))
+                {
+                    var persisted =
+                        _jsonSerializer.DeserializeFromFile<Dictionary<string, Dictionary<string, SeasonMapEntry>>>(
+                            _seasonsPath);
+                    if (persisted != null) _seasons = persisted;
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.Debug("DoubanAssist - Season map load failed: {0}", e.Message);
+            }
+        }
+
+        private void SaveSeasons()
+        {
+            try
+            {
+                _jsonSerializer.SerializeToFile(_seasons, _seasonsPath);
+            }
+            catch (Exception e)
+            {
+                _logger.Debug("DoubanAssist - Season map save failed: {0}", e.Message);
+            }
+        }
+
+        /// <summary>查季映射：命中且未过期才返回，过期视为未命中（触发重新解析）。</summary>
+        private string TryGetSeasonSubject(string seriesSubjectId, int seasonNumber)
+        {
+            if (string.IsNullOrEmpty(seriesSubjectId)) return null;
+
+            lock (_seasonsLock)
+            {
+                EnsureSeasonsLoaded();
+
+                if (!_seasons.TryGetValue(seriesSubjectId, out var bySeason)) return null;
+                if (!bySeason.TryGetValue(seasonNumber.ToString(), out var entry)) return null;
+                if (string.IsNullOrEmpty(entry?.SubjectId)) return null;
+
+                if (DateTime.UtcNow - entry.Updated > SeasonMapTtl)
+                {
+                    _logger.Debug("DoubanAssist - Season map expired for series {0} S{1}", seriesSubjectId,
+                        seasonNumber);
+                    return null;
+                }
+
+                return entry.SubjectId;
+            }
+        }
+
+        /// <summary>
+        /// 清空季映射表（设置页按钮调用）。用于季条目匹配错误后立即重试，
+        /// 无需等待 7 天 TTL 过期或手工删除 json 文件。
+        /// </summary>
+        public int ClearSeasonMap()
+        {
+            lock (_seasonsLock)
+            {
+                EnsureSeasonsLoaded();
+
+                var seriesCount = _seasons.Count;
+                var seasonCount = _seasons.Values.Sum(m => m.Count);
+
+                _seasons.Clear();
+                SaveSeasons();
+
+                _logger.Info("DoubanAssist - Season map cleared: {0} series, {1} season(s)",
+                    seriesCount, seasonCount);
+
+                return seasonCount;
+            }
+        }
+
+        /// <summary>写入季映射并落盘（条目数很少，不做写盘节流）。</summary>
+        private void RememberSeason(string seriesSubjectId, int seasonNumber, string seasonSubjectId)        {
+            if (string.IsNullOrEmpty(seriesSubjectId) || string.IsNullOrEmpty(seasonSubjectId)) return;
+
+            lock (_seasonsLock)
+            {
+                EnsureSeasonsLoaded();
+
+                if (!_seasons.TryGetValue(seriesSubjectId, out var bySeason))
+                {
+                    bySeason = new Dictionary<string, SeasonMapEntry>();
+                    _seasons[seriesSubjectId] = bySeason;
+                }
+
+                var key = seasonNumber.ToString();
+                var existing = bySeason.TryGetValue(key, out var e) ? e : null;
+
+                // 值未变则只刷新时间戳，避免反复写盘
+                if (existing != null && existing.SubjectId == seasonSubjectId &&
+                    DateTime.UtcNow - existing.Updated < TimeSpan.FromHours(1))
+                {
+                    return;
+                }
+
+                bySeason[key] = new SeasonMapEntry
+                {
+                    SubjectId = seasonSubjectId,
+                    Updated = DateTime.UtcNow
+                };
+
+                SaveSeasons();
+                _logger.Info("DoubanAssist - Season map updated: series {0} S{1} -> {2}", seriesSubjectId,
+                    seasonNumber, seasonSubjectId);
+            }
+        }
+
         /// <summary>
         /// 电影刷新完成后调用：匹配豆瓣条目并填充缺失字段。重复触发、锁定条目与非中文库直接跳过。
         /// </summary>
@@ -593,7 +737,8 @@ namespace StrmAssistant.Provider.Douban
         {
             var missing = Plugin.LibraryManager.GetItemList(new InternalItemsQuery
             {
-                IncludeItemTypes = new[] { nameof(Movie), nameof(Series) }
+                // Season 必须包含：豆瓣把季拆成独立 subject，季条目需要单独匹配（季级映射表的数据来源）。
+                IncludeItemTypes = new[] { nameof(Movie), nameof(Series), nameof(Season) }
             }).Where(i => string.IsNullOrEmpty(i.GetProviderId(DoubanProviderId))).ToList();
 
             // 上次失败的条目优先重试；顺带清理已从库中消失或已补上 ID 的记录
@@ -644,7 +789,10 @@ namespace StrmAssistant.Provider.Douban
 
                     try
                     {
-                        await ApplyAsync(item, item is Movie ? "movie" : "tv", null, cancellationToken)
+                        // 季条目必须带季号走季分支，否则会匹配到剧集主条目（豆瓣季是独立 subject）。
+                        var seasonNumber = (item as Season)?.IndexNumber;
+
+                        await ApplyAsync(item, item is Movie ? "movie" : "tv", seasonNumber, cancellationToken)
                             .ConfigureAwait(false);
 
                         // ApplyAsync 内部吞掉异常，因此以「最终是否拿到豆瓣 ID」判定成败
@@ -728,7 +876,11 @@ namespace StrmAssistant.Provider.Douban
 
             try
             {
-                var subject = await FindSubjectAsync(item, suggestType, null, cancellationToken).ConfigureAwait(false);
+                // 季条目必须带季号，否则会按剧集主条目解析（豆瓣季是独立 subject）。
+                var seasonNumber = (item as Season)?.IndexNumber;
+
+                var subject = await FindSubjectAsync(item, suggestType, seasonNumber, cancellationToken)
+                    .ConfigureAwait(false);
                 return subject != null;
             }
             catch (OperationCanceledException)
@@ -1114,6 +1266,7 @@ namespace StrmAssistant.Provider.Douban
             var cachedId = item.GetProviderId(DoubanProviderId);
             if (!string.IsNullOrEmpty(cachedId))
             {
+                _logger.Debug("DoubanAssist - match path=cached-id: {0} -> {1}", item.Name, cachedId);
                 return await FetchSubjectAsync(cachedId, cancellationToken).ConfigureAwait(false);
             }
 
@@ -1126,31 +1279,82 @@ namespace StrmAssistant.Provider.Douban
 
                 if (string.IsNullOrEmpty(seriesTitle)) return null;
 
+                // ① 季映射表优先：父剧集已有豆瓣 ID 时直接查表。
+                // 同一部剧的多个季只需解析一次，后续季条目零网络请求即可命中。
+                var seriesSubjectId = season.Series.GetProviderId(DoubanProviderId);
+                var mappedId = TryGetSeasonSubject(seriesSubjectId, seasonNumber.Value);
+
+                if (!string.IsNullOrEmpty(mappedId))
+                {
+                    var byMap = await FetchSubjectAsync(mappedId, cancellationToken).ConfigureAwait(false);
+                    if (byMap != null)
+                    {
+                        _logger.Info("DoubanAssist - match path=season-map: {0} S{1} -> {2}",
+                            seriesTitle, seasonNumber.Value, mappedId);
+                        return byMap;
+                    }
+
+                    // 映射指向的豆瓣条目已失效（下架/改 ID）→ 继续走搜索并回填
+                    _logger.Info("DoubanAssist - Season map stale for series {0} S{1} -> {2}, searching again",
+                        seriesSubjectId, seasonNumber.Value, mappedId);
+                }
+
                 var candidates = new List<string> { $"{seriesTitle} 第{seasonNumber.Value}季" };
                 var chinese = ToChineseSeasonNumber(seasonNumber.Value);
                 if (!chinese.Contains(seasonNumber.Value.ToString())) candidates.Add($"{seriesTitle} {chinese}");
 
                 foreach (var query in candidates)
                 {
-                    var subject = await SearchByTitleAsync(query, null, suggestType, seasonNumber, cancellationToken)
+                    // 传 seriesTitle 作为「剧名主体」校验基准：候选季标题必须与剧名一致，
+                    // 否则豆瓣对「重器 第1季」返回的「大国重器 第一季」会被误当成本剧的季。
+                    var subject = await SearchByTitleAsync(query, null, suggestType, seasonNumber, cancellationToken,
+                            seriesTitle)
                         .ConfigureAwait(false);
-                    if (subject != null) return subject;
+                    if (subject != null)
+                    {
+                        RememberSeason(seriesSubjectId, seasonNumber.Value, subject.SubjectId);
+                        _logger.Debug("DoubanAssist - match path=season-search ({0}) for {1} S{2}", query,
+                            seriesTitle, seasonNumber.Value);
+                        return subject;
+                    }
                 }
 
-                // 第三策略：按剧名搜索，从全部 tv 建议里找标题带季标记的条目
+                // 第三策略：按剧名搜索，从全部影视建议里找标题带「目标季号」的条目。
+                // 除季号外还必须校验「剧名主体」一致——豆瓣对「重器 第1季」只返回「大国重器 第一季」，
+                // 仅靠季号会把不同作品当成同一部剧（剧名主体不同即放弃，交由第四策略回退剧集 ID）。
                 var suggestions = await GetSuggestionsAsync(seriesTitle, cancellationToken).ConfigureAwait(false);
 
+                var markers = BuildSeasonMarkers(seasonNumber.Value);
+                var seriesKey = NormalizeTitle(seriesTitle);
+
                 var seasonMatch = suggestions?
-                    .Where(s => s.type == suggestType && !string.IsNullOrEmpty(s.id) &&
+                    .Where(s => IsVideoSuggestType(s.type) && !string.IsNullOrEmpty(s.id) &&
                                 !string.Equals(s.title, seriesTitle, StringComparison.OrdinalIgnoreCase))
                     .FirstOrDefault(s => s.title != null &&
-                                         (s.title.Contains("季", StringComparison.Ordinal) ||
-                                          s.title.Contains("Season", StringComparison.OrdinalIgnoreCase) ||
-                                          s.title.Contains("Part", StringComparison.OrdinalIgnoreCase)));
+                                         markers.Any(m => s.title.Contains(m, StringComparison.OrdinalIgnoreCase)) &&
+                                         NormalizeTitle(s.title) == seriesKey);
 
                 if (seasonMatch != null)
                 {
-                    return await FetchSubjectAsync(seasonMatch.id, cancellationToken).ConfigureAwait(false);
+                    var subject = await FetchSubjectAsync(seasonMatch.id, cancellationToken).ConfigureAwait(false);
+                    if (subject != null) RememberSeason(seriesSubjectId, seasonNumber.Value, seasonMatch.id);
+                    _logger.Debug("DoubanAssist - match path=season-scan ({0}) for {1} S{2}", seasonMatch.title,
+                        seriesTitle, seasonNumber.Value);
+                    return subject;
+                }
+
+                // 第四策略：单季剧在豆瓣没有独立季条目——剧集主条目本身就是第一季页面。
+                // 仅对 S1 生效；S2+ 若搜不到就是真的没有（不能拿主条目冒充）。
+                if (seasonNumber.Value == 1 && !string.IsNullOrEmpty(seriesSubjectId))
+                {
+                    var bySeries = await FetchSubjectAsync(seriesSubjectId, cancellationToken).ConfigureAwait(false);
+                    if (bySeries != null)
+                    {
+                        RememberSeason(seriesSubjectId, 1, seriesSubjectId);
+                        _logger.Info("DoubanAssist - Season S1 of {0} falls back to series subject {1}",
+                            seriesTitle, seriesSubjectId);
+                        return bySeries;
+                    }
                 }
 
                 return null;
@@ -1196,21 +1400,44 @@ namespace StrmAssistant.Provider.Douban
         }
 
         private async Task<DoubanSubject> SearchByTitleAsync(string title, int? year, string suggestType,
-            int? seasonNumber, CancellationToken cancellationToken)
+            int? seasonNumber, CancellationToken cancellationToken, string expectedSeriesTitle = null)
         {
             var suggestions = await GetSuggestionsAsync(title, cancellationToken).ConfigureAwait(false);
 
+            // 豆瓣 suggest 把剧集和季也标成 movie（实测「庆余年 第二季」→ type=movie），
+            // 原先按 suggestType 严格过滤会把剧集/季候选全部丢掉——这是「第 1 季」匹配全失败的根因。
+            // 这里只排除非影视类型（人物/游戏/书籍等）。
             var matches = suggestions?
-                .Where(s => s.type == suggestType && !string.IsNullOrEmpty(s.id))
+                .Where(s => !string.IsNullOrEmpty(s.id) && IsVideoSuggestType(s.type))
                 .ToList();
 
             var match = matches?.FirstOrDefault();
 
-            // 季级匹配优先选标题带「季」的条目，避免命中的是剧集主条目
+            // 季级匹配：候选标题必须同时满足
+            //   ① 带「目标季号」标记（避免第 2 季匹配到第一季/第三季）；
+            //   ② 剧名主体一致（去掉季标记与标点后相等）。
+            // ② 是必需的：豆瓣对「重器 第1季」只返回「大国重器 第一季」，
+            // 仅校验季号会把完全不同的作品当成同一部剧。
             if (seasonNumber.HasValue && matches != null)
             {
-                match = matches.FirstOrDefault(s => s.title != null && s.title.Contains("季", StringComparison.Ordinal))
-                        ?? match;
+                var markers = BuildSeasonMarkers(seasonNumber.Value);
+                var seriesKey = string.IsNullOrEmpty(expectedSeriesTitle)
+                    ? null
+                    : NormalizeTitle(expectedSeriesTitle);
+
+                match = matches.FirstOrDefault(s =>
+                {
+                    if (s.title == null) return false;
+                    if (!markers.Any(m => s.title.Contains(m, StringComparison.OrdinalIgnoreCase))) return false;
+                    return seriesKey == null || NormalizeTitle(s.title) == seriesKey;
+                });
+
+                if (match == null && seriesKey != null)
+                {
+                    _logger.Info(
+                        "DoubanAssist - Season {0} of {1}: no candidate with matching title body (rejected unrelated titles)",
+                        seasonNumber.Value, expectedSeriesTitle);
+                }
             }
 
             if (match == null) return null;
@@ -1223,6 +1450,58 @@ namespace StrmAssistant.Provider.Douban
             }
 
             return await FetchSubjectAsync(match.id, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// 标题归一化：用于判断「候选标题主体」是否与剧名一致。
+        /// 去掉季/部标记、空白与常见标点——「天才，女友」与「我的天才女友 第一季」归一化后不同，
+        /// 会走 S1 回退（结果仍正确）；「庆余年」与「庆余年 第二季」归一化后相同，正常接受。
+        /// </summary>
+        private static string NormalizeTitle(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+
+            var s = value.Trim();
+
+            // 季/部标记（中英文）
+            s = Regex.Replace(s, @"第[0-9一二三四五六七八九十百千]+季", string.Empty);
+            s = Regex.Replace(s, @"第[0-9一二三四五六七八九十百千]+部", string.Empty);
+            s = Regex.Replace(s, @"(?i)\bseason\s*\d+", string.Empty);
+            s = Regex.Replace(s, @"(?i)\bpart\s*\d+", string.Empty);
+            s = Regex.Replace(s, @"(?i)\bs\d{1,2}\b", string.Empty);
+
+            // 空白与标点
+            s = Regex.Replace(s, @"[\s\u3000]", string.Empty);
+            s = Regex.Replace(s, @"[，。、·・:：;；\-—_~～!！?？\.\(\)（）\[\]【】《》<>""'“”‘’]", string.Empty);
+
+            return s.Trim();
+        }
+
+        /// <summary>豆瓣 suggest 的影视类型：movie（含剧集/季）与 tv。其余（person/game/book 等）一律排除。</summary>
+        private static bool IsVideoSuggestType(string type)
+        {
+            return string.Equals(type, "movie", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(type, "tv", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 生成某季的标题标记集合，覆盖豆瓣常见命名：
+        /// 「第2季」「第二季」「Season 2」「Part 2」「第2部」「第2章」。
+        /// </summary>
+        private static List<string> BuildSeasonMarkers(int seasonNumber)
+        {
+            var markers = new List<string>
+            {
+                $"第{seasonNumber}季",
+                $"Season {seasonNumber}",
+                $"Part {seasonNumber}",
+                $"第{seasonNumber}部"
+            };
+
+            var chinese = ToChineseSeasonNumber(seasonNumber);
+            if (!markers.Contains(chinese)) markers.Add(chinese);
+
+            return markers;
         }
 
         private async Task<List<DoubanSuggest>> GetSuggestionsAsync(string query, CancellationToken cancellationToken)
