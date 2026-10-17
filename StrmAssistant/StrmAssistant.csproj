@@ -67,7 +67,7 @@
   </ItemGroup>
   <PropertyGroup>
     <!-- 可通过 /p:StrmAssistantPluginOutputDir=... 覆盖部署目录 -->
-    <StrmAssistantPluginOutputDir Condition="'$(StrmAssistantPluginOutputDir)'=='' and '$(OS)'=='Windows_NT'">D:\下载\embyserver-win-x64-4.10.1.0\programdata\plugins</StrmAssistantPluginOutputDir>
+    <StrmAssistantPluginOutputDir Condition="'$(StrmAssistantPluginOutputDir)'=='' and '$(OS)'=='Windows_NT'">D:\Downloads\embyserver\programdata\plugins</StrmAssistantPluginOutputDir>
 
     <!-- 显式拼接输出目录，避免 Build 目标里 TargetPath/TargetDir 为空 -->
     <StrmAssistantBuildOutputDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(TargetFramework)\</StrmAssistantBuildOutputDir>
@@ -77,6 +77,15 @@
     <ILRepackExe Condition="'$(ILRepackExe)'=='' and '$(NuGetPackageRoot)'!=''">$(NuGetPackageRoot)ilrepack\2.0.42\tools\ILRepack.exe</ILRepackExe>
     <ILRepackExe Condition="'$(ILRepackExe)'=='' and '$(UserProfile)'!=''">$(UserProfile)\.nuget\packages\ilrepack\2.0.42\tools\ILRepack.exe</ILRepackExe>
   </PropertyGroup>
+
+  <!-- 资源键一致性校验：Emby 的 DisplayNameL/DescriptionL 走反射查 Resources 公共静态属性，
+       而 Resources.Designer.cs 不会由 dotnet build 重新生成。忘记同步会导致设置页 500。
+       ContinueOnError：只提示不阻断构建（本地无 python 时也不影响编译）。 -->
+  <Target Name="CheckResxKeys" BeforeTargets="Build"
+          Condition="Exists('$(MSBuildProjectDirectory)\..\tools\check_resx_keys.py')">
+    <Exec Command="python &quot;$(MSBuildProjectDirectory)\..\tools\check_resx_keys.py&quot; --quiet"
+          ContinueOnError="true" StandardOutputImportance="high" StandardErrorImportance="high" />
+  </Target>
 
   <Target Name="PostBuildMerge" AfterTargets="Build" Condition="'$(TargetFramework)' != ''">
     <Message Importance="high" Text="StrmAssistant: build output dir -> $(StrmAssistantBuildOutputDir)" />
