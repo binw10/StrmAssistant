@@ -1,5 +1,8 @@
 # PRO 更新日志对照 × 项目现状 × 移植优化方案（v9）
 
+> ⚠️ **已被 `PRO更新日志对照与移植优化方案-v10.md` 取代**（2026-10-20）。
+> v10 更新点：PRO 基准升到 `.56`（实证与 `.55` 功能面零变化）；项目基线升到 `6b29c60`；v9 的 7 项真缺口已闭环 4 项，**仅剩 3 项（全 P3）**。本文件保留作历史追溯。
+
 > **基准**：PRO `StrmAssistantPro.dll` **3.0.0.55+3abcae8**（`BuildTimeUtc 2026-10-15T03:46:09Z`，`netcoreapp6.0` / MonoMod）
 > **对照方**：社区版 `D:\下载\AI\StrmAssistant-myp015`（`net6.0` / `Lib.Harmony 2.4.2`，`AssemblyVersion 3.0.55`）
 > **对照素材**：① GitHub Releases 正文全文（v3.0.0.45 → v3.0.0.55）② 双版本反编译树 `_pro_tmp/decompiled`(3.0.0.53) 与 `decompiled_v2`(3.0.0.55) ③ 项目源码 + 631 条提交历史
