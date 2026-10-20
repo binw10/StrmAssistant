@@ -864,7 +864,7 @@
     <value>Enable ISO Extraction</value>
   </data>
   <data name="MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__Windows_native_OS_mount__Linux_Docker_in_process_UDF_read_with_custom_ffprobe__Default_is_OFF_" xml:space="preserve">
-    <value>Include local .iso files and strm/http remote ISO streams in media info extraction. On Windows the main title is resolved via OS mount; on Linux/Docker the plugin parses it with the built-in UDF reader (a custom ffprobe is required). Default is OFF.</value>
+    <value>Include local .iso files and strm/http remote ISO streams in media info extraction. On Windows the main title is resolved via OS mount; on Linux/Docker the plugin parses it with the built-in UDF reader (a custom ffprobe is required). Chapters are read from the MPLS playlist for both local and remote ISOs (remote reads on demand over HTTP Range). Remote ISO image capture is not supported. Default is OFF.</value>
   </data>
   <data name="MediaInfoExtractOptions_ClearEmbeddedMetadata_Clear_Embedded_Metadata" xml:space="preserve">
     <value>Clear Embedded Metadata</value>

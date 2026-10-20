@@ -777,7 +777,7 @@
     <value>啟用 ISO 擷取</value>
   </data>
   <data name="MediaInfoExtractOptions_EnableIsoExtraction_Include_ISO_images_in_media_info_extraction__Windows_native_OS_mount__Linux_Docker_in_process_UDF_read_with_custom_ffprobe__Default_is_OFF_" xml:space="preserve">
-    <value>將本機 .iso 檔案與 strm/http 遠端 ISO 串流納入媒體資訊擷取。Windows 由系統掛載定位正片；Linux/Docker 由外掛內建 UDF 解析（需配合自訂 ffprobe）。預設關閉。</value>
+    <value>將本機 .iso 檔案與 strm/http 遠端 ISO 串流納入媒體資訊擷取。Windows 由系統掛載定位正片；Linux/Docker 由外掛內建 UDF 解析（需配合自訂 ffprobe）。本機與遠端 ISO 都會從 MPLS 播放清單補寫章節（遠端按需 HTTP Range 讀取）；遠端 ISO 不支援截圖。預設關閉。</value>
   </data>
   <data name="MediaInfoExtractOptions_ClearEmbeddedMetadata_Clear_Embedded_Metadata" xml:space="preserve">
     <value>清除內嵌中繼資料</value>
