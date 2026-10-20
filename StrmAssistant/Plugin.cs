@@ -860,10 +860,15 @@ namespace StrmAssistant
                 if (options.ModOptions.ChineseSearch.EnhanceChineseSearch)
                 {
                     options.ModOptions.ChineseSearch.EnhanceChineseSearch = false;
+
+                    // 升级关闭时**排程还原**：把 fts_search9 重建回 Emby 默认分词器（unicode61）。
+                    // 否则会留下「索引用 simple + 选项已关闭」的半吊状态：索引永久依赖插件自带的
+                    // libsimple 扩展，一旦扩展加载不上（插件目录不完整 / 架构不符 / Emby 内部变化），
+                    // 每次元数据写入都会整体回滚。还原后索引不再依赖扩展，关闭就是真的关闭。
+                    options.ModOptions.ChineseSearch.EnhanceChineseSearchRestore = true;
                     changed = true;
                 }
-
-                if (options.ModOptions.ChineseSearch.EnhanceChineseSearchRestore)
+                else if (options.ModOptions.ChineseSearch.EnhanceChineseSearchRestore)
                 {
                     options.ModOptions.ChineseSearch.EnhanceChineseSearchRestore = false;
                     changed = true;
@@ -873,7 +878,9 @@ namespace StrmAssistant
                 {
                     MainOptionsStore.SavePluginOptionsSuppress();
                     Logger.Info(
-                        $"EnhanceChineseSearch has been disabled after upgrade ({previousVersion} -> {currentVersion}). User must re-enable it manually to trigger rebuild.");
+                        $"EnhanceChineseSearch has been disabled after upgrade ({previousVersion} -> {currentVersion}), " +
+                        "index restore to default tokenizer queued (runs shortly after startup). " +
+                        "User must re-enable it manually to trigger rebuild.");
                 }
                 else
                 {
