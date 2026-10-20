@@ -1,6 +1,5 @@
 using Emby.Web.GenericEdit;
 using Emby.Web.GenericEdit.Elements;
-using Emby.Web.GenericEdit.Elements.List;
 using Emby.Web.GenericEdit.Validation;
 using MediaBrowser.Model.Attributes;
 using MediaBrowser.Model.LocalizationAttributes;
@@ -24,12 +23,9 @@ namespace StrmAssistant.Options
             Icon = IconNames.privacy_tip, Data1 = "DisclaimerDialog"
         };
 
-        /// <summary>
-        /// 品牌信息：版本行（自动读取程序集版本）+ 支持版本，样式对齐 Pro（小钻石图标）。
-        /// 直接挂在页面顶层、不包组：包在 <c>BrandOptions</c> 组里时列表项会多一层缩进，
-        /// 视觉上比下方的「启用插件」更靠右，对不齐。
-        /// </summary>
-        public GenericItemList BrandItemList { get; set; } = new GenericItemList();
+        /// <summary>品牌信息：插件名组头 + 版本/支持版本行，位于免责声明之下、总开关之上。</summary>
+        [DisplayNameL("PluginOptions_EditorTitle_Strm_Assistant", typeof(Resources))]
+        public BrandOptions BrandOptions { get; set; } = new BrandOptions();
 
         /// <summary>
         /// 插件总开关。关闭后 <c>Plugin.Initialize</c> 会整段跳过（不 patch、不订阅事件、
@@ -102,15 +98,7 @@ namespace StrmAssistant.Options
 
         public void Initialize()
         {
-            BrandItemList.Clear();
-            BrandItemList.Add(new GenericListItem
-            {
-                PrimaryText = "版本：v" + AboutOptions.GetVersion() +
-                              " 💎 Support " + Plugin.AdvertisedEmbyVersion + " +",
-                // 对齐 Pro 样式：无左侧图标，蓝色钻石 emoji 直接嵌在文本中间
-                IconMode = ItemListIconMode.NoIcons
-            });
-
+            BrandOptions.Initialize();
             DisclaimerButton.Caption = Resources.DisclaimerButtonText;
 
             if (ShowConflictPluginLoadedStatus)
