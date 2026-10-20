@@ -917,6 +917,12 @@
   <data name="PluginOptions_CatchupMinWaitMinutes_Minutes_to_wait_after_an_item_enters_the_library_before_catch_up_processes_it__letting_initial_scraping_finish__Default_is_0_" xml:space="preserve">
     <value>媒体入库后等待指定分钟再进行追更处理，让初始刮削先完成。默认 0。</value>
   </data>
+  <data name="PluginOptions_CatchupMinWaitSeconds_Min_Wait_After_Library_Insert__Seconds_" xml:space="preserve">
+    <value>入库后最小等待（秒）</value>
+  </data>
+  <data name="PluginOptions_CatchupMinWaitSeconds_Seconds_to_wait_after_an_item_enters_the_library_before_catch_up_processes_it__letting_initial_scraping_finish__Default_is_0_" xml:space="preserve">
+    <value>条目入库后等待多少秒再让追更任务处理，先让首轮刮削完成。秒级粒度，最大 7200（2 小时）。默认 0。</value>
+  </data>
   <data name="PluginOptions_EnableMemoryAutoRestart_Auto_Restart_On_Memory_Limit" xml:space="preserve">
     <value>内存超限自动重启</value>
   </data>
@@ -1264,6 +1270,12 @@
   </data>
   <data name="MetadataEnhanceOptions_MetadataCacheRootFolder_Description" xml:space="preserve">
     <value>本地 TMDB 缓存/覆盖目录的根目录，模式非“关闭”时必填。</value>
+  </data>
+  <data name="MetadataEnhanceOptions_ClearRecentTmdbCacheOnStartup_Clear_TMDB_Cache_On_Startup" xml:space="preserve">
+    <value>启动时清空 TMDB 缓存</value>
+  </data>
+  <data name="MetadataEnhanceOptions_ClearRecentTmdbCacheOnStartup_Description" xml:space="preserve">
+    <value>每次启动清空被动 TMDB 缓存（&lt;root&gt;\cache），用户 override 与合并补丁会保留。适用于 TMDB 侧修正了某部片信息后，让下次刮削立刻拿到新数据，而不是命中旧缓存。默认关闭。</value>
   </data>
   <data name="MetadataCacheOption_None_None" xml:space="preserve">
     <value>关闭</value>

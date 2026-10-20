@@ -162,26 +162,33 @@ namespace StrmAssistant.Common
         /// <summary>
         /// 追更最小等待：入库不足设定时间的条目重新入队，下个节流周期再试，
         /// 避免在初始刮削完成前就跑媒体信息提取/声纹/刷新。
+        ///
+        /// 粒度是**秒**。容差固定 1 秒：旧实现留 5 秒容差，在秒级设置下会把
+        /// 5 秒以内的设置完全吃掉（等于设了没用）。
         /// </summary>
         private static List<T> FilterByCatchupMinWait<T>(List<T> items, Action<T> requeue) where T : BaseItem
         {
-            var minWaitMinutes = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.CatchupMinWaitMinutes;
+            var minWaitSeconds = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency
+                .EffectiveCatchupMinWaitSeconds;
 
-            if (minWaitMinutes <= 0 || items.Count == 0) return items;
+            if (minWaitSeconds <= 0 || items.Count == 0) return items;
 
+            var minWait = TimeSpan.FromSeconds(minWaitSeconds);
+            var tolerance = TimeSpan.FromSeconds(1);
             var ready = new List<T>();
 
             foreach (var item in items)
             {
-                var wait = TimeSpan.FromMinutes(minWaitMinutes) - (DateTime.UtcNow - item.DateCreated);
+                var wait = minWait - (DateTime.UtcNow - item.DateCreated);
 
-                if (wait > TimeSpan.FromSeconds(5)) requeue(item);
+                if (wait > tolerance) requeue(item);
                 else ready.Add(item);
             }
 
             if (ready.Count < items.Count)
             {
-                Logger.Info($"Catchup - {items.Count - ready.Count} item(s) within min wait time ({minWaitMinutes} min), deferred");
+                Logger.Info(
+                    $"Catchup - {items.Count - ready.Count} item(s) within min wait time ({minWaitSeconds} s), deferred");
             }
 
             return ready;

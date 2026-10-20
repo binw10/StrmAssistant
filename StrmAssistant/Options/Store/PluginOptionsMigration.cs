@@ -90,7 +90,9 @@ namespace StrmAssistant.Options.Store
         {
             var task = options.GeneralOptions.TaskConcurrency;
             task.CatchupMode = legacy.GeneralOptions.CatchupMode;
-            task.CatchupMinWaitMinutes = legacy.GeneralOptions.CatchupMinWaitMinutes;
+            // 旧版是分钟粒度；新版改为秒，换算后 minutes 置 0（避免重复换算）
+            task.CatchupMinWaitSeconds = Math.Min(7200, Math.Max(0, legacy.GeneralOptions.CatchupMinWaitMinutes) * 60);
+            task.CatchupMinWaitMinutes = 0;
             task.CatchupTaskScope = string.IsNullOrEmpty(legacy.GeneralOptions.CatchupTaskScope)
                 ? TaskConcurrencyOptions.CatchupTask.MediaInfo.ToString()
                 : legacy.GeneralOptions.CatchupTaskScope;

@@ -4302,5 +4302,41 @@ namespace StrmAssistant.Properties {
             }
         }
 
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string MetadataEnhanceOptions_ClearRecentTmdbCacheOnStartup_Clear_TMDB_Cache_On_Startup {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_ClearRecentTmdbCacheOnStartup_Clear_TMDB_Cache_On_Startup", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string MetadataEnhanceOptions_ClearRecentTmdbCacheOnStartup_Description {
+            get {
+                return ResourceManager.GetString("MetadataEnhanceOptions_ClearRecentTmdbCacheOnStartup_Description", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string PluginOptions_CatchupMinWaitSeconds_Min_Wait_After_Library_Insert__Seconds_ {
+            get {
+                return ResourceManager.GetString("PluginOptions_CatchupMinWaitSeconds_Min_Wait_After_Library_Insert__Seconds_", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string PluginOptions_CatchupMinWaitSeconds_Seconds_to_wait_after_an_item_enters_the_library_before_catch_up_processes_it__letting_initial_scraping_finish__Default_is_0_ {
+            get {
+                return ResourceManager.GetString("PluginOptions_CatchupMinWaitSeconds_Seconds_to_wait_after_an_item_enters_the_library_before_catch_up_processes_it__letting_initial_scraping_finish__Default_is_0_", resourceCulture);
+            }
+        }
+
     }
 }

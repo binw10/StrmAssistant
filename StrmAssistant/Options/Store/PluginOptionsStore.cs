@@ -175,7 +175,8 @@ namespace StrmAssistant.Options.Store
                     var catchupTaskScope = GetSelectedCatchupTaskDescription();
                     _logger.Info("CatchupTaskScope is set to {0}",
                         string.IsNullOrEmpty(catchupTaskScope) ? "EMPTY" : catchupTaskScope);
-                    _logger.Info("CatchupMinWaitMinutes is set to {0}", options.GeneralOptions.TaskConcurrency.CatchupMinWaitMinutes);
+                    _logger.Info("CatchupMinWaitSeconds is set to {0}",
+                        options.GeneralOptions.TaskConcurrency.EffectiveCatchupMinWaitSeconds);
                     _logger.Info("EnableMemoryAutoRestart is set to {0}", options.GeneralOptions.Memory.EnableMemoryAutoRestart);
                     _logger.Info("MemoryAutoRestartThresholdMB is set to {0}", options.GeneralOptions.Memory.MemoryAutoRestartThresholdMB);
 

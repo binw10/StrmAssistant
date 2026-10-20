@@ -50,6 +50,15 @@ namespace StrmAssistant.Options
         public string MetadataCacheRootFolder { get; set; } = string.Empty;
 
         /// <summary>
+        /// 启动时清空被动缓存（<c>&lt;root&gt;\cache</c>），保留 override 与 patches。
+        /// 场景：TMDB 侧修正了某部片的信息，希望下次刮削立刻拿到新数据，而不是等缓存过期。
+        /// </summary>
+        [DisplayNameL("MetadataEnhanceOptions_ClearRecentTmdbCacheOnStartup_Clear_TMDB_Cache_On_Startup", typeof(Resources))]
+        [DescriptionL("MetadataEnhanceOptions_ClearRecentTmdbCacheOnStartup_Description", typeof(Resources))]
+        [VisibleCondition(nameof(MetadataCacheMode), ValueCondition.IsNotEqual, MetadataCacheOption.None)]
+        public bool ClearRecentTmdbCacheOnStartup { get; set; } = false;
+
+        /// <summary>
         /// 图像缺失时可跳过的图像类型（逗号分隔，如 Logo,Backdrop）：只要提供了主海报就不再请求图像 API。
         /// </summary>
         [Browsable(false)]

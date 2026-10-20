@@ -1004,6 +1004,12 @@
   <data name="PluginOptions_CatchupMinWaitMinutes_Minutes_to_wait_after_an_item_enters_the_library_before_catch_up_processes_it__letting_initial_scraping_finish__Default_is_0_" xml:space="preserve">
     <value>Minutes to wait after an item enters the library before catch-up processes it, letting initial scraping finish. Default is 0.</value>
   </data>
+  <data name="PluginOptions_CatchupMinWaitSeconds_Min_Wait_After_Library_Insert__Seconds_" xml:space="preserve">
+    <value>Min Wait After Library Insert (Seconds)</value>
+  </data>
+  <data name="PluginOptions_CatchupMinWaitSeconds_Seconds_to_wait_after_an_item_enters_the_library_before_catch_up_processes_it__letting_initial_scraping_finish__Default_is_0_" xml:space="preserve">
+    <value>Seconds to wait after an item enters the library before catch up processes it, letting initial scraping finish. Second-level granularity, up to 7200 (2 hours). Default is 0.</value>
+  </data>
   <data name="PluginOptions_EnableMemoryAutoRestart_Auto_Restart_On_Memory_Limit" xml:space="preserve">
     <value>Auto Restart On Memory Limit</value>
   </data>
@@ -1351,6 +1357,12 @@
   </data>
   <data name="MetadataEnhanceOptions_MetadataCacheRootFolder_Description" xml:space="preserve">
     <value>Root folder for the local TMDB cache/override directories. Required when the mode is not OFF.</value>
+  </data>
+  <data name="MetadataEnhanceOptions_ClearRecentTmdbCacheOnStartup_Clear_TMDB_Cache_On_Startup" xml:space="preserve">
+    <value>Clear TMDB cache on startup</value>
+  </data>
+  <data name="MetadataEnhanceOptions_ClearRecentTmdbCacheOnStartup_Description" xml:space="preserve">
+    <value>Clear the passive TMDB cache (&lt;root&gt;\cache) at every startup. User overrides and merge patches are kept. Useful right after TMDB corrected a title: the next scrape fetches fresh data instead of hitting the stale cache. Default is OFF.</value>
   </data>
   <data name="MetadataCacheOption_None_None" xml:space="preserve">
     <value>OFF</value>

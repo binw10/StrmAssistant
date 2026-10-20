@@ -353,6 +353,29 @@ namespace StrmAssistant
                 Logger.Info(cacheOk
                     ? $"MetadataCache - initialized at {LocalMetadataCache.Root} (mode={metadataCacheOptions.MetadataCache.MetadataCacheMode})"
                     : $"MetadataCache - root invalid ({cacheError}): {metadataCacheOptions.MetadataCache.MetadataCacheRootFolder}");
+
+                // 启动时清被动缓存：TMDB 侧改了数据后，避免一直命中旧缓存
+                if (cacheOk && metadataCacheOptions.MetadataCache.ClearRecentTmdbCacheOnStartup)
+                {
+                    var removed = LocalMetadataCache.ClearPassiveCache();
+
+                    Logger.Info(removed >= 0
+                        ? $"MetadataCache - passive cache cleared on startup ({removed} file(s) removed)"
+                        : "MetadataCache - passive cache clear skipped: cache root not initialized");
+                }
+            }
+
+            // 旧版分钟级「追更最小等待」→ 秒级（一次性换算并落盘，避免两份值长期并存）。
+            // 注意：GeneralOptions.Initialize() 只在设置页加载时调用，启动阶段必须自己处理。
+            var taskConcurrency = MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency;
+            if (taskConcurrency.CatchupMinWaitSeconds <= 0 && taskConcurrency.CatchupMinWaitMinutes > 0)
+            {
+                taskConcurrency.CatchupMinWaitSeconds = Math.Min(7200, taskConcurrency.CatchupMinWaitMinutes * 60);
+                taskConcurrency.CatchupMinWaitMinutes = 0;
+                MainOptionsStore.SavePluginOptionsSuppress();
+
+                Logger.Info(
+                    $"TaskConcurrency - migrated CatchupMinWaitMinutes to CatchupMinWaitSeconds ({taskConcurrency.CatchupMinWaitSeconds} s)");
             }
 
             if (MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.CatchupMode) QueueManager.Initialize();

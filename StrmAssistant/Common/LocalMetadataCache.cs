@@ -2,6 +2,7 @@ using MediaBrowser.Common.Net;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -158,6 +159,56 @@ namespace StrmAssistant.Common
         public static void Reset()
         {
             lock (_lock) { _root = null; }
+        }
+
+        /// <summary>
+        /// 清空**被动缓存**（<c>&lt;root&gt;\cache</c>），保留用户 <c>override</c> 与合并补丁 <c>patches</c>。
+        ///
+        /// 用途：TMDB 侧修正了某部片的信息后，希望下次刮削立刻拿到新数据，而不是等缓存命中旧值。
+        /// 只删文件、顺带清理空目录，但保留 <c>cache</c> 根与三个类型目录（避免下次写入前目录缺失）。
+        /// 返回删除的文件数；根目录未初始化返回 -1。
+        /// </summary>
+        public static int ClearPassiveCache()
+        {
+            var root = _root;
+            if (string.IsNullOrEmpty(root)) return -1;
+
+            var cacheDir = Path.Combine(root, "cache");
+            if (!Directory.Exists(cacheDir)) return 0;
+
+            var removed = 0;
+
+            lock (_lock)
+            {
+                foreach (var file in Directory.EnumerateFiles(cacheDir, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        File.Delete(file);
+                        removed++;
+                    }
+                    catch (Exception)
+                    {
+                        // 单个文件被占用：跳过，下次启动再试
+                    }
+                }
+
+                // 由深到浅删空目录（字符串长度倒序近似层级倒序）
+                foreach (var dir in Directory.EnumerateDirectories(cacheDir, "*", SearchOption.AllDirectories)
+                             .OrderByDescending(d => d.Length))
+                {
+                    try
+                    {
+                        if (!Directory.EnumerateFileSystemEntries(dir).Any()) Directory.Delete(dir);
+                    }
+                    catch (Exception)
+                    {
+                        // 忽略
+                    }
+                }
+            }
+
+            return removed;
         }
 
         /// <summary>

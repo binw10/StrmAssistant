@@ -25,11 +25,27 @@ namespace StrmAssistant.Options
         [Required]
         public bool CatchupMode { get; set; } = false;
 
-        [DisplayNameL("PluginOptions_CatchupMinWaitMinutes_Min_Wait_After_Library_Insert", typeof(Resources))]
-        [DescriptionL("PluginOptions_CatchupMinWaitMinutes_Minutes_to_wait_after_an_item_enters_the_library_before_catch_up_processes_it__letting_initial_scraping_finish__Default_is_0_", typeof(Resources))]
-        [Required, MinValue(0), MaxValue(120)]
+        [DisplayNameL("PluginOptions_CatchupMinWaitSeconds_Min_Wait_After_Library_Insert__Seconds_", typeof(Resources))]
+        [DescriptionL("PluginOptions_CatchupMinWaitSeconds_Seconds_to_wait_after_an_item_enters_the_library_before_catch_up_processes_it__letting_initial_scraping_finish__Default_is_0_", typeof(Resources))]
+        [Required, MinValue(0), MaxValue(MaxCatchupMinWaitSeconds)]
         [VisibleCondition(nameof(CatchupMode), SimpleCondition.IsTrue)]
+        public int CatchupMinWaitSeconds { get; set; } = 0;
+
+        /// <summary>
+        /// 旧版分钟级字段：仅用于升级时把已有配置换算成秒（UI 不展示）。
+        /// 归一化后会被置 0，之后只用 <see cref="CatchupMinWaitSeconds"/>。
+        /// </summary>
+        [Browsable(false)]
         public int CatchupMinWaitMinutes { get; set; } = 0;
+
+        /// <summary>生效值（秒）：新字段优先，回退旧分钟字段 ×60。</summary>
+        [Browsable(false)]
+        public int EffectiveCatchupMinWaitSeconds =>
+            CatchupMinWaitSeconds > 0
+                ? CatchupMinWaitSeconds
+                : Math.Max(0, CatchupMinWaitMinutes) * 60;
+
+        private const int MaxCatchupMinWaitSeconds = 7200;
 
         public enum CatchupTask
         {
@@ -79,6 +95,13 @@ namespace StrmAssistant.Options
 
         public void Initialize()
         {
+            // 旧版分钟级配置 → 秒级（一次性归一化，之后 minutes 归零）
+            if (CatchupMinWaitSeconds <= 0 && CatchupMinWaitMinutes > 0)
+            {
+                CatchupMinWaitSeconds = Math.Min(MaxCatchupMinWaitSeconds, CatchupMinWaitMinutes * 60);
+                CatchupMinWaitMinutes = 0;
+            }
+
             CatchupTaskList.Clear();
 
             foreach (Enum item in Enum.GetValues(typeof(CatchupTask)))
