@@ -16,6 +16,10 @@
 用法：
   python tools/check_resx_keys.py            # 有差异时返回码 1
   python tools/check_resx_keys.py --quiet    # 仅打印问题
+  python tools/check_resx_keys.py --fix      # 自动把缺失的属性补进 Designer（构建时默认启用）
+
+`--fix` 只做一件事：把「代码引用、resx 有、但 Designer 缺」的属性按 VS 生成器格式追加进去。
+它不会新增 resx 键、也不会编造译文 —— 那两类问题仍然报错。
 """
 import io
 import os
@@ -73,13 +77,64 @@ def designer_props():
     return set(DESIGNER_PROP.findall(read(DESIGNER)))
 
 
+PROP_BLOCK = '''
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string {name} {{
+            get {{
+                return ResourceManager.GetString("{name}", resourceCulture);
+            }}
+        }}
+'''
+
+
+def append_missing_props(missing):
+    """把缺失的属性按 VS 生成器格式追加到 Designer 类的末尾（类闭合前）。
+
+    只追加属性，不动 ResourceManager / Culture 等既有成员；幂等（已存在则跳过）。
+    返回实际追加的键列表。
+    """
+    if not missing or not os.path.exists(DESIGNER):
+        return []
+
+    text = io.open(DESIGNER, encoding='utf-8-sig').read()
+
+    # 定位类闭合：文件以 "        }\n    }\n}\n" 结束，插入点在内层 "    }" 之前
+    marker = '\n    }\n}'
+    index = text.rfind(marker)
+    if index < 0:
+        return []
+
+    block = ''.join(PROP_BLOCK.format(name=name) for name in missing)
+    patched = text[:index] + block + text[index:]
+
+    # 保留 BOM：VS 生成的 Designer 带 BOM，去掉会让人以为文件被重写过
+    with io.open(DESIGNER, 'w', encoding='utf-8-sig', newline='') as handle:
+        handle.write(patched)
+
+    return list(missing)
+
+
 def main():
     quiet = '--quiet' in sys.argv
+    fix = '--fix' in sys.argv
     used = code_keys()
     base = resx_keys(RESX_FILES['base'])
     zh = resx_keys(RESX_FILES['zh'])
     hant = resx_keys(RESX_FILES['zh-hant'])
     props = designer_props()
+
+    # 2) 代码引用但 Designer 缺属性（DisplayNameL/DescriptionL 会解析失败 → 设置页 500）
+    #    构建时默认 --fix：自动补齐，彻底消除「忘了同步 Designer」这一类 500。
+    missing_props = sorted(used - props)
+    if missing_props and fix:
+        fixed = append_missing_props(missing_props)
+        if fixed:
+            print('[FIX] auto-added %d missing property(ies) to Resources.Designer.cs: %s'
+                  % (len(fixed), ', '.join(fixed)))
+            props = designer_props()
+            missing_props = sorted(used - props)
 
     problems = []
 
@@ -90,10 +145,8 @@ def main():
             problems.append('代码引用但 %s.resx 缺失 %d 个键:\n    %s'
                             % (tag, len(missing), '\n    '.join(missing)))
 
-    # 2) 代码引用但 Designer 缺属性（DisplayNameL/DescriptionL 会解析失败 → 设置页 500）
-    missing_props = sorted(used - props)
     if missing_props:
-        problems.append('代码引用但 Resources.Designer.cs 缺属性 %d 个（必须手工同步）:\n    %s'
+        problems.append('代码引用但 Resources.Designer.cs 缺属性 %d 个（用 --fix 可自动补齐）:\n    %s'
                         % (len(missing_props), '\n    '.join(missing_props)))
 
     # 3) resx 之间有键差异（缺翻译会回退英文，仅提示）
@@ -104,16 +157,16 @@ def main():
                             % (tag, len(diff), '\n    '.join(diff)))
 
     if not quiet:
-        print('代码引用键: %d | base: %d | zh: %d | zh-hant: %d | Designer 属性: %d'
+        print('code keys: %d | base: %d | zh: %d | zh-hant: %d | designer props: %d'
               % (len(used), len(base), len(zh), len(hant), len(props)))
 
     if problems:
-        print('\n[FAIL] 发现 %d 类问题:\n' % len(problems))
+        print('\n[FAIL] %d problem group(s) found:\n' % len(problems))
         for p in problems:
             print(' - ' + p + '\n')
         return 1
 
-    print('[OK] 资源键一致')
+    print('[OK] resx keys consistent')
     return 0
 
 

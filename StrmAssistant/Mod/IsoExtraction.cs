@@ -281,7 +281,9 @@ namespace StrmAssistant.Mod
             }
             catch (Exception e)
             {
-                Plugin.Instance.Logger.Debug("IsoExtraction - chapter injection failed: " + e.Message);
+                // 章节注入失败 = 用户看不到章节，但探测本身已成功；用 Warn 让它可被定位
+                Plugin.Instance.Logger.Warn("IsoExtraction - chapter injection failed: " + e.Message);
+                Plugin.Instance.Logger.Debug(e.StackTrace);
             }
 
             return mediaInfo;

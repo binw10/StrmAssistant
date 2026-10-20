@@ -79,12 +79,14 @@
     <ILRepackExe Condition="'$(ILRepackExe)'=='' and '$(UserProfile)'!=''">$(UserProfile)\.nuget\packages\ilrepack\2.0.42\tools\ILRepack.exe</ILRepackExe>
   </PropertyGroup>
 
-  <!-- 资源键一致性校验：Emby 的 DisplayNameL/DescriptionL 走反射查 Resources 公共静态属性，
+  <!-- 资源键一致性校验 + 自动修复：Emby 的 DisplayNameL/DescriptionL 走反射查 Resources 公共静态属性，
        而 Resources.Designer.cs 不会由 dotnet build 重新生成。忘记同步会导致设置页 500。
+       传 fix 开关：把「代码引用 + resx 有 + Designer 缺」的属性自动补进 Designer（幂等）；
+       其余问题（resx 缺键、缺译文）仍然打印 [FAIL] 提示。
        ContinueOnError：只提示不阻断构建（本地无 python 时也不影响编译）。 -->
-  <Target Name="CheckResxKeys" BeforeTargets="Build"
+  <Target Name="CheckResxKeys" BeforeTargets="CoreCompile"
           Condition="Exists('$(MSBuildProjectDirectory)\..\tools\check_resx_keys.py')">
-    <Exec Command="python &quot;$(MSBuildProjectDirectory)\..\tools\check_resx_keys.py&quot; --quiet"
+    <Exec Command="python &quot;$(MSBuildProjectDirectory)\..\tools\check_resx_keys.py&quot; --quiet --fix"
           ContinueOnError="true" StandardOutputImportance="high" StandardErrorImportance="high" />
   </Target>
 

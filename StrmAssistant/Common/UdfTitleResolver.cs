@@ -745,8 +745,9 @@ namespace StrmAssistant.Common
                         .Select(Normalize)
                         .ToArray();
                 }
-                catch
+                catch (Exception e)
                 {
+                    Log($"list {relativeDir} failed: {e.Message}");
                     return Array.Empty<string>();
                 }
             }
@@ -757,8 +758,9 @@ namespace StrmAssistant.Common
                 {
                     return _udf.GetFileLength(relativePath);
                 }
-                catch
+                catch (Exception e)
                 {
+                    Log($"length of {relativePath} failed: {e.Message}");
                     return 0;
                 }
             }

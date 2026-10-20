@@ -285,6 +285,8 @@ namespace StrmAssistant.Common
                     if (response.StatusCode != HttpStatusCode.PartialContent)
                     {
                         // 服务器忽略了 Range（回 200 全量）：读放大不可控，直接放弃
+                        Plugin.Instance?.Logger?.Debug(
+                            $"HttpRangeStream - block {index} ignored Range (status {(int)response.StatusCode})");
                         return null;
                     }
 
@@ -307,9 +309,16 @@ namespace StrmAssistant.Common
                     Buffer.BlockCopy(buffer, 0, trimmed, 0, read);
                     return trimmed;
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    if (attempt == MaxAttempts) return null;
+                    if (attempt == MaxAttempts)
+                    {
+                        // 不吞掉原因：解析失败时靠这条 Debug 定位是超时、断流还是代理拒绝
+                        Plugin.Instance?.Logger?.Debug(
+                            $"HttpRangeStream - block {index} failed after {attempt} attempts: {e.Message}");
+                        return null;
+                    }
+
                     Thread.Sleep(200 * attempt);
                 }
             }
