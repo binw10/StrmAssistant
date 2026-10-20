@@ -4338,5 +4338,32 @@ namespace StrmAssistant.Properties {
             }
         }
 
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string ItemDisplayOptions_EditorTitle_Item_Display {
+            get {
+                return ResourceManager.GetString("ItemDisplayOptions_EditorTitle_Item_Display", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string LibraryOrderOptions_EditorTitle_Library_and_Order {
+            get {
+                return ResourceManager.GetString("LibraryOrderOptions_EditorTitle_Library_and_Order", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string SearchLogOptions_EditorTitle_Search_and_Logs {
+            get {
+                return ResourceManager.GetString("SearchLogOptions_EditorTitle_Search_and_Logs", resourceCulture);
+            }
+        }
+
     }
 }

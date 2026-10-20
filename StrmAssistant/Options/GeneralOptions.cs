@@ -23,14 +23,9 @@ namespace StrmAssistant.Options
         [DisplayNameL("GeneralOptions_Group_Memory", typeof(Resources))]
         public MemoryOptions Memory { get; set; } = new MemoryOptions();
 
-        /// <summary>运行状态与维护：只读状态列表 + 维护操作按钮。</summary>
-        [DisplayNameL("GeneralOptions_Group_RuntimeStatus", typeof(Resources))]
-        public RuntimeStatusOptions RuntimeStatus { get; set; } = new RuntimeStatusOptions();
-
         public void Initialize()
         {
             TaskConcurrency.Initialize();
-            RuntimeStatus.Initialize();
         }
 
         protected override void Validate(ValidationContext context)

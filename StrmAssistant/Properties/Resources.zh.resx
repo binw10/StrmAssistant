@@ -111,7 +111,7 @@
     <value>{0} - {1} - 片尾标记已更新</value>
   </data>
   <data name="GeneralOptions_EditorTitle_General_Options" xml:space="preserve">
-    <value></value>
+    <value>任务与内存</value>
   </data>
   <data name="GeneralOptions_MergeMultiVersion_Merge_Multiple_Versions" xml:space="preserve">
     <value>自动合并多版本</value>
@@ -120,7 +120,7 @@
     <value>扫库时自动合并电影和电视节目为多版本，不需符合官方严格的命名规范，默认关闭。</value>
   </data>
   <data name="PluginOptions_ModOptions_Mod_Features" xml:space="preserve">
-    <value>中文搜索</value>
+    <value>搜索</value>
   </data>
   <data name="ModOptions_ChineseMovieDb_Chinese_MovieDb" xml:space="preserve">
     <value>自定义 TMDB 备选语言</value>
@@ -292,6 +292,15 @@
   </data>
   <data name="UIFunctionOptions_EditorTitle_UI_Functions" xml:space="preserve">
     <value>UI 功能</value>
+  </data>
+  <data name="ItemDisplayOptions_EditorTitle_Item_Display" xml:space="preserve">
+    <value>条目显示</value>
+  </data>
+  <data name="LibraryOrderOptions_EditorTitle_Library_and_Order" xml:space="preserve">
+    <value>媒体库与排序</value>
+  </data>
+  <data name="SearchLogOptions_EditorTitle_Search_and_Logs" xml:space="preserve">
+    <value>搜索与日志</value>
   </data>
   <data name="UIFunctionOptions_BeautifyMissingMetadata_Beautify_Missing_Metadata" xml:space="preserve">
     <value>美化标题显示</value>
@@ -1395,7 +1404,7 @@
     <value>运行状态与维护</value>
   </data>
   <data name="ModOptions_Group_ChineseSearch" xml:space="preserve">
-    <value></value>
+    <value>中文搜索</value>
   </data>
   <data name="PluginOptions_EditorTitle_Basic_Settings" xml:space="preserve">
     <value>基础设置</value>

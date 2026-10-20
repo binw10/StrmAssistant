@@ -49,6 +49,15 @@ namespace StrmAssistant.Options
         [DisplayNameL("PluginOptions_ModOptions_Mod_Features", typeof(Resources))]
         public ModOptions ModOptions { get; set; } = new ModOptions();
 
+        /// <summary>
+        /// 运行状态与维护（只读状态 + 清内存/重建索引/优化索引/重启）。
+        /// 独立于 <see cref="GeneralOptions"/> 挂在页面末尾：按「危险操作居末」的约定，
+        /// 重启服务器这类按钮不应夹在配置项中间。
+        /// 该组没有用户配置（列表是运行时生成的），所以搬家不需要配置迁移。
+        /// </summary>
+        [DisplayNameL("GeneralOptions_Group_RuntimeStatus", typeof(Resources))]
+        public RuntimeStatusOptions RuntimeStatus { get; set; } = new RuntimeStatusOptions();
+
         [DisplayNameL("AboutOptions_EditorTitle_About", typeof(Resources))]
         public AboutOptions AboutOptions { get; set; } = new AboutOptions();
 

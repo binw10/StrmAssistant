@@ -198,7 +198,7 @@
     <value>{0} - {1} - Credits marker updated</value>
   </data>
   <data name="GeneralOptions_EditorTitle_General_Options" xml:space="preserve">
-    <value></value>
+    <value>Tasks &amp; Memory</value>
   </data>
   <data name="GeneralOptions_MergeMultiVersion_Merge_Multiple_Versions" xml:space="preserve">
     <value>Auto Merge Multi-version</value>
@@ -207,7 +207,7 @@
     <value>While library scan, auto merge movies and series to multi versions, bypass naming convention. Default is OFF.</value>
   </data>
   <data name="PluginOptions_ModOptions_Mod_Features" xml:space="preserve">
-    <value>Chinese Search</value>
+    <value>Search</value>
   </data>
   <data name="ModOptions_ChineseMovieDb_Chinese_MovieDb" xml:space="preserve">
     <value>Customize MovieDb Fallback Language</value>
@@ -379,6 +379,15 @@
   </data>
   <data name="UIFunctionOptions_EditorTitle_UI_Functions" xml:space="preserve">
     <value>UI Functions</value>
+  </data>
+  <data name="ItemDisplayOptions_EditorTitle_Item_Display" xml:space="preserve">
+    <value>Item Display</value>
+  </data>
+  <data name="LibraryOrderOptions_EditorTitle_Library_and_Order" xml:space="preserve">
+    <value>Libraries &amp; Ordering</value>
+  </data>
+  <data name="SearchLogOptions_EditorTitle_Search_and_Logs" xml:space="preserve">
+    <value>Search &amp; Logs</value>
   </data>
   <data name="UIFunctionOptions_BeautifyMissingMetadata_Beautify_Missing_Metadata" xml:space="preserve">
     <value>Beautify Title Display</value>
@@ -1482,7 +1491,7 @@
     <value>Status &amp; Maintenance</value>
   </data>
   <data name="ModOptions_Group_ChineseSearch" xml:space="preserve">
-    <value></value>
+    <value>Chinese Search</value>
   </data>
   <data name="PluginOptions_EditorTitle_Basic_Settings" xml:space="preserve">
     <value>Basic Settings</value>
