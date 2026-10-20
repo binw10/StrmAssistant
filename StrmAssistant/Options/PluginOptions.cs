@@ -1,5 +1,7 @@
 using Emby.Web.GenericEdit;
 using Emby.Web.GenericEdit.Elements;
+using Emby.Web.GenericEdit.Elements.List;
+using Emby.Web.GenericEdit.Validation;
 using MediaBrowser.Model.Attributes;
 using MediaBrowser.Model.LocalizationAttributes;
 using StrmAssistant.Mod;
@@ -22,9 +24,12 @@ namespace StrmAssistant.Options
             Icon = IconNames.privacy_tip, Data1 = "DisclaimerDialog"
         };
 
-        /// <summary>品牌信息：插件名组头 + 版本/支持版本行，位于免责声明之下、总开关之上。</summary>
-        [DisplayNameL("PluginOptions_EditorTitle_Strm_Assistant", typeof(Resources))]
-        public BrandOptions BrandOptions { get; set; } = new BrandOptions();
+        /// <summary>
+        /// 品牌信息：版本行（自动读取程序集版本）+ 支持版本，样式对齐 Pro（小钻石图标）。
+        /// 直接挂在页面顶层、不包组：包在 <c>BrandOptions</c> 组里时列表项会多一层缩进，
+        /// 视觉上比下方的「启用插件」更靠右，对不齐。
+        /// </summary>
+        public GenericItemList BrandItemList { get; set; } = new GenericItemList();
 
         /// <summary>
         /// 插件总开关。关闭后 <c>Plugin.Initialize</c> 会整段跳过（不 patch、不订阅事件、
@@ -43,16 +48,33 @@ namespace StrmAssistant.Options
         [VisibleCondition(nameof(IsModSuccess), SimpleCondition.IsFalse)]
         public StatusItem ModStatus { get; set; } = new StatusItem();
 
-        [DisplayNameL("GeneralOptions_EditorTitle_General_Options", typeof(Resources))]
-        public GeneralOptions GeneralOptions { get; set; } = new GeneralOptions();
+        // ---- 分组直接挂在页面根上（不再套 GeneralOptions / ModOptions 两层容器）----
+        // 之前的结构是「任务与内存 → 任务并发 → 6 项」，三层嵌套只为一个标题；
+        // 拍平后变成「任务并发 → 6 项」，页面层级从 3 层降到 2 层。
 
-        [DisplayNameL("PluginOptions_ModOptions_Mod_Features", typeof(Resources))]
-        public ModOptions ModOptions { get; set; } = new ModOptions();
+        [DisplayNameL("GeneralOptions_Group_TaskConcurrency", typeof(Resources))]
+        public TaskConcurrencyOptions TaskConcurrency { get; set; } = new TaskConcurrencyOptions();
+
+        [DisplayNameL("GeneralOptions_Group_Memory", typeof(Resources))]
+        public MemoryOptions Memory { get; set; } = new MemoryOptions();
+
+        [DisplayNameL("ModOptions_Group_ChineseSearch", typeof(Resources))]
+        public ChineseSearchOptions ChineseSearch { get; set; } = new ChineseSearchOptions();
+
+        /// <summary>
+        /// 旧版容器，仅用于把已存在的配置读进来后拍平（见 <c>Plugin.Initialize</c> 的 FlattenOptions）。
+        /// **没有初始化器**：JSON 里没有该节点时保持 null，据此判断要不要迁移。
+        /// </summary>
+        [Browsable(false)]
+        public GeneralOptions GeneralOptions { get; set; }
+
+        /// <inheritdoc cref="GeneralOptions"/>
+        [Browsable(false)]
+        public ModOptions ModOptions { get; set; }
 
         /// <summary>
         /// 运行状态与维护（只读状态 + 清内存/重建索引/优化索引/重启）。
-        /// 独立于 <see cref="GeneralOptions"/> 挂在页面末尾：按「危险操作居末」的约定，
-        /// 重启服务器这类按钮不应夹在配置项中间。
+        /// 挂在页面末尾：按「危险操作居末」的约定，重启服务器这类按钮不应夹在配置项中间。
         /// 该组没有用户配置（列表是运行时生成的），所以搬家不需要配置迁移。
         /// </summary>
         [DisplayNameL("GeneralOptions_Group_RuntimeStatus", typeof(Resources))]
@@ -70,9 +92,25 @@ namespace StrmAssistant.Options
                 .Select(a => a.GetName().Name)
                 .Any(n => n == "StrmExtract" || n == "InfuseSync");
 
+        /// <summary>
+        /// 拍平后子组校验需要手动委派：Emby 不会自动调用嵌套选项的 Validate。
+        /// </summary>
+        protected override void Validate(ValidationContext context)
+        {
+            ValidateChildGroup(context, nameof(TaskConcurrency));
+        }
+
         public void Initialize()
         {
-            BrandOptions.Initialize();
+            BrandItemList.Clear();
+            BrandItemList.Add(new GenericListItem
+            {
+                PrimaryText = "版本：v" + AboutOptions.GetVersion() +
+                              " 💎 Support " + Plugin.AdvertisedEmbyVersion + " +",
+                // 对齐 Pro 样式：无左侧图标，蓝色钻石 emoji 直接嵌在文本中间
+                IconMode = ItemListIconMode.NoIcons
+            });
+
             DisclaimerButton.Caption = Resources.DisclaimerButtonText;
 
             if (ShowConflictPluginLoadedStatus)

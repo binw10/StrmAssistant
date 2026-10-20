@@ -119,7 +119,7 @@ namespace StrmAssistant.Common
 
                         if (_audioFingerprintManager != null && _timeoutMs != null)
                         {
-                            PatchTimeout(Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount);
+                            PatchTimeout(Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.MaxConcurrentCount);
                         }
                     }
                 }

@@ -44,9 +44,9 @@ namespace StrmAssistant.Options
         public static void InitializeOptionCache()
         {
             UpdateExclusiveControlFeatures(Plugin.Instance.MediaInfoExtractStore.GetOptions());
-            UpdateCatchupScope(Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.CatchupTaskScope);
+            UpdateCatchupScope(Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.CatchupTaskScope);
             UpdateIntroSkipPreferences(Plugin.Instance.IntroSkipStore.GetOptions().Playback.IntroSkipPreferences);
-            UpdateSearchScope(Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.SearchScope);
+            UpdateSearchScope(Plugin.Instance.MainOptionsStore.GetOptions().ChineseSearch.SearchScope);
         }
 
         public static void UpdateExclusiveControlFeatures(MediaInfoExtractOptions options)

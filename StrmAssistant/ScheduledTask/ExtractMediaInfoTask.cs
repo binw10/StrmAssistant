@@ -22,10 +22,10 @@ namespace StrmAssistant.ScheduledTask
 
             _logger.Info("MediaInfoExtract - Scheduled Task Execute");
 
-            var maxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount;
+            var maxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.MaxConcurrentCount;
             _logger.Info("Master Max Concurrent Count: " + maxConcurrentCount);
             var cooldownSeconds = maxConcurrentCount == 1
-                ? Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.CooldownDurationSeconds
+                ? Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.CooldownDurationSeconds
                 : (int?)null;
             if (cooldownSeconds.HasValue) _logger.Info("Cooldown Duration Seconds: " + cooldownSeconds.Value);
 

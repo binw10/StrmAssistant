@@ -40,7 +40,7 @@ namespace StrmAssistant.Mod
 
         public EnableImageCapture()
         {
-            SemaphoreFFmpegMaxCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount;
+            SemaphoreFFmpegMaxCount = Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.MaxConcurrentCount;
 
             Initialize();
 
@@ -355,11 +355,11 @@ namespace StrmAssistant.Mod
                 if (codes[i].opcode == OpCodes.Ldc_I4_1)
                 {
                     codes[i] = new CodeInstruction(OpCodes.Ldc_I4_S,
-                        (sbyte)Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount);
+                        (sbyte)Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.MaxConcurrentCount);
                     if (i + 1 < codes.Count && codes[i + 1].opcode == OpCodes.Ldc_I4_1)
                     {
                         codes[i + 1] = new CodeInstruction(OpCodes.Ldc_I4_S,
-                            (sbyte)Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount);
+                            (sbyte)Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.MaxConcurrentCount);
                     }
                     break;
                 }
@@ -439,7 +439,7 @@ namespace StrmAssistant.Mod
             var timeoutProperty = Traverse.Create(__instance).Property("TotalTimeoutMs");
             var origTimeout = timeoutProperty.GetValue<int>();
             var newTimeout = origTimeout *
-                             Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount;
+                             Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.MaxConcurrentCount;
 
             if (ExtractVideoThumbnailTask.IsRunning)
             {

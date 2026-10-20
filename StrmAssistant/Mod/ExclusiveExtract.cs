@@ -175,7 +175,7 @@ namespace StrmAssistant.Mod
         {
             if (ExclusiveItem.Value != 0)
             {
-                timeoutMs = 60000 * Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount;
+                timeoutMs = 60000 * Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.MaxConcurrentCount;
             }
         }
 

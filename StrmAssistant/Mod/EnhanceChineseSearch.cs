@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using MediaBrowser.Controller.Entities;
 using SQLitePCL.pretty;
 using StrmAssistant.Common;
@@ -553,7 +553,7 @@ namespace StrmAssistant.Mod
 
                 var tokenizerUnknown = string.Equals(CurrentTokenizerName, "unknown", StringComparison.Ordinal);
 
-                if (Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.EnhanceChineseSearchRestore)
+                if (Plugin.Instance.MainOptionsStore.GetOptions().ChineseSearch.EnhanceChineseSearchRestore)
                 {
                     if (tokenizerUnknown)
                     {
@@ -573,7 +573,7 @@ namespace StrmAssistant.Mod
                     }
                     ResetOptions();
                 }
-                else if (Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.EnhanceChineseSearch)
+                else if (Plugin.Instance.MainOptionsStore.GetOptions().ChineseSearch.EnhanceChineseSearch)
                 {
                     patchSearchFunctionsResult = PatchSearchFunctions();
 
@@ -744,7 +744,7 @@ namespace StrmAssistant.Mod
                 ApplySimplifiedSweep(connection, ftsTableName);
 
                 // MixedChineseVariants：在简繁归一化之上再做变体归一化（全角/标点变体等）。
-                if (Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.MixedChineseVariants)
+                if (Plugin.Instance.MainOptionsStore.GetOptions().ChineseSearch.MixedChineseVariants)
                 {
                     ApplyVariantsSweep(connection, ftsTableName);
                 }
@@ -847,7 +847,7 @@ namespace StrmAssistant.Mod
         {
             try
             {
-                return Plugin.Instance?.MainOptionsStore?.GetOptions()?.ModOptions?.ChineseSearch?.MixedChineseVariants == true;
+                return Plugin.Instance?.MainOptionsStore?.GetOptions()?.ChineseSearch?.MixedChineseVariants == true;
             }
             catch
             {
@@ -1233,7 +1233,7 @@ namespace StrmAssistant.Mod
 
         private static void ResetOptions()
         {
-            Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.EnhanceChineseSearch = false;
+            Plugin.Instance.MainOptionsStore.GetOptions().ChineseSearch.EnhanceChineseSearch = false;
             Plugin.Instance.MainOptionsStore.SavePluginOptionsSuppress();
         }
 
@@ -1522,7 +1522,7 @@ namespace StrmAssistant.Mod
 
             if (!string.IsNullOrEmpty(query.SearchTerm) && __result.Contains("match @SearchTerm"))
             {
-                if (!Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.ExcludeOriginalTitleFromSearch)
+                if (!Plugin.Instance.MainOptionsStore.GetOptions().ChineseSearch.ExcludeOriginalTitleFromSearch)
                 {
                     __result = __result.Replace("match @SearchTerm", "match simple_query(@SearchTerm)");
                 }
@@ -1559,7 +1559,7 @@ namespace StrmAssistant.Mod
 
             if (!string.IsNullOrEmpty(query.SearchTerm) && resultString.Contains("match @SearchTerm"))
             {
-                if (!Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.ExcludeOriginalTitleFromSearch)
+                if (!Plugin.Instance.MainOptionsStore.GetOptions().ChineseSearch.ExcludeOriginalTitleFromSearch)
                 {
                     resultString = resultString.Replace("match @SearchTerm", "match simple_query(@SearchTerm)");
                     modified = true;
@@ -1659,7 +1659,7 @@ namespace StrmAssistant.Mod
                 // DigitsAsTmdbId（PRO 同构）：纯数字搜索词直接当作 TMDB ID 精确匹配。
                 // 仅当已开启该开关、且前面的 provider 前缀匹配未命中时生效；匹配后不再走分词查询。
                 if (!string.IsNullOrEmpty(query.SearchTerm) &&
-                    Plugin.Instance.MainOptionsStore.GetOptions().ModOptions.ChineseSearch.DigitsAsTmdbId)
+                    Plugin.Instance.MainOptionsStore.GetOptions().ChineseSearch.DigitsAsTmdbId)
                 {
                     var digits = query.SearchTerm.Trim();
                     if (digits.Length > 0 && digits.All(char.IsDigit))

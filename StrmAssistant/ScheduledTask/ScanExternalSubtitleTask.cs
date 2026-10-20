@@ -28,7 +28,7 @@ namespace StrmAssistant.ScheduledTask
 
             _logger.Info("ExternalSubtitle - Scheduled Task Execute");
             _logger.Info("Tier2 Max Concurrent Count: " +
-                         Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.Tier2MaxConcurrentCount);
+                         Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.Tier2MaxConcurrentCount);
 
             await Task.Yield();
             progress.Report(0);

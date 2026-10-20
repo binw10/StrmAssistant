@@ -95,7 +95,7 @@ namespace StrmAssistant.Options.Store
                     if (options.ImageCapture.EnableImageCapture)
                     {
                         PatchManager.EnableImageCapture.Patch();
-                        if (Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.MaxConcurrentCount !=
+                        if (Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.MaxConcurrentCount !=
                             EnableImageCapture.SemaphoreFFmpegMaxCount)
                         {
                             Plugin.Instance.ApplicationHost.NotifyPendingRestart();

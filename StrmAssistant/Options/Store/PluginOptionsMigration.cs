@@ -88,7 +88,7 @@ namespace StrmAssistant.Options.Store
 
         private static void MapLegacyValues(LegacyPluginOptions legacy, PluginOptions options)
         {
-            var task = options.GeneralOptions.TaskConcurrency;
+            var task = options.TaskConcurrency;
             task.CatchupMode = legacy.GeneralOptions.CatchupMode;
             // 旧版是分钟粒度；新版改为秒，换算后 minutes 置 0（避免重复换算）
             task.CatchupMinWaitSeconds = Math.Min(7200, Math.Max(0, legacy.GeneralOptions.CatchupMinWaitMinutes) * 60);
@@ -100,13 +100,13 @@ namespace StrmAssistant.Options.Store
             task.CooldownDurationSeconds = legacy.GeneralOptions.CooldownDurationSeconds;
             task.Tier2MaxConcurrentCount = legacy.GeneralOptions.Tier2MaxConcurrentCount;
 
-            var memory = options.GeneralOptions.Memory;
+            var memory = options.Memory;
             memory.EnableMemoryAutoRestart = legacy.GeneralOptions.EnableMemoryAutoRestart;
             memory.MemoryAutoRestartThresholdMB = legacy.GeneralOptions.MemoryAutoRestartThresholdMB;
             memory.EnableMemoryCleanup = legacy.GeneralOptions.EnableMemoryCleanup;
             memory.MemoryCleanupIntervalMinutes = legacy.GeneralOptions.MemoryCleanupIntervalMinutes;
 
-            var search = options.ModOptions.ChineseSearch;
+            var search = options.ChineseSearch;
             search.EnhanceChineseSearch = legacy.ModOptions.EnhanceChineseSearch;
             search.EnhanceChineseSearchRestore = legacy.ModOptions.EnhanceChineseSearchRestore;
             search.SearchScope = string.IsNullOrEmpty(legacy.ModOptions.SearchScope)

@@ -1,4 +1,4 @@
-using MediaBrowser.Common;
+﻿using MediaBrowser.Common;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Common.Plugins;
@@ -299,8 +299,8 @@ namespace StrmAssistant
             // 启动定期内存清理器（按配置启停，防止 Emby 内存持续增长）
             try
             {
-                var memOpts = MainOptionsStore.GetOptions().GeneralOptions;
-                MemoryCleaner.ApplySettings(Logger, memOpts.Memory.EnableMemoryCleanup, memOpts.Memory.MemoryCleanupIntervalMinutes);
+                var memOpts = MainOptionsStore.GetOptions().Memory;
+                MemoryCleaner.ApplySettings(Logger, memOpts.EnableMemoryCleanup, memOpts.MemoryCleanupIntervalMinutes);
             }
             catch (Exception ex)
             {
@@ -365,9 +365,38 @@ namespace StrmAssistant
                 }
             }
 
+            // 拍平旧版容器：TaskConcurrency / Memory 原本包在 GeneralOptions 里、
+            // ChineseSearch 包在 ModOptions 里，页面上会多出一层只有标题的容器（任务与内存 / 搜索）。
+            // 这里把已有配置提到顶层并落盘，之后 JSON 里不再有这两个节点。
+            var flattened = false;
+
+            if (MainOptionsStore.GetOptions().GeneralOptions != null)
+            {
+                var legacyGeneral = MainOptionsStore.GetOptions().GeneralOptions;
+                MainOptionsStore.GetOptions().TaskConcurrency =
+                    legacyGeneral.TaskConcurrency ?? new TaskConcurrencyOptions();
+                MainOptionsStore.GetOptions().Memory = legacyGeneral.Memory ?? new MemoryOptions();
+                MainOptionsStore.GetOptions().GeneralOptions = null;
+                flattened = true;
+            }
+
+            if (MainOptionsStore.GetOptions().ModOptions != null)
+            {
+                MainOptionsStore.GetOptions().ChineseSearch =
+                    MainOptionsStore.GetOptions().ModOptions.ChineseSearch ?? new ChineseSearchOptions();
+                MainOptionsStore.GetOptions().ModOptions = null;
+                flattened = true;
+            }
+
+            if (flattened)
+            {
+                MainOptionsStore.SavePluginOptionsSuppress();
+                Logger.Info("PluginOptions - flattened GeneralOptions/ModOptions containers into top-level groups");
+            }
+
             // 旧版分钟级「追更最小等待」→ 秒级（一次性换算并落盘，避免两份值长期并存）。
-            // 注意：GeneralOptions.Initialize() 只在设置页加载时调用，启动阶段必须自己处理。
-            var taskConcurrency = MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency;
+            // 注意：选项的 Initialize() 只在设置页加载时调用，启动阶段必须自己处理。
+            var taskConcurrency = MainOptionsStore.GetOptions().TaskConcurrency;
             if (taskConcurrency.CatchupMinWaitSeconds <= 0 && taskConcurrency.CatchupMinWaitMinutes > 0)
             {
                 taskConcurrency.CatchupMinWaitSeconds = Math.Min(7200, taskConcurrency.CatchupMinWaitMinutes * 60);
@@ -378,12 +407,12 @@ namespace StrmAssistant
                     $"TaskConcurrency - migrated CatchupMinWaitMinutes to CatchupMinWaitSeconds ({taskConcurrency.CatchupMinWaitSeconds} s)");
             }
 
-            if (MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.CatchupMode) QueueManager.Initialize();
+            if (MainOptionsStore.GetOptions().TaskConcurrency.CatchupMode) QueueManager.Initialize();
             if (IntroSkipStore.GetOptions().Playback.EnableIntroSkip) PlaySessionMonitor.Initialize();
             if (ExperienceEnhanceStore.GetOptions().Playback.EnableAutoMarkWatched) AutoMarkWatched.Initialize();
             MemoryGuard.Apply(Logger,
-                MainOptionsStore.GetOptions().GeneralOptions.Memory.EnableMemoryAutoRestart,
-                MainOptionsStore.GetOptions().GeneralOptions.Memory.MemoryAutoRestartThresholdMB);
+                MainOptionsStore.GetOptions().Memory.EnableMemoryAutoRestart,
+                MainOptionsStore.GetOptions().Memory.MemoryAutoRestartThresholdMB);
 
             MigrateImageCaptureExcludeContainers();
 
@@ -563,7 +592,7 @@ namespace StrmAssistant
                     }
                 }
 
-                if ((e.Item is Video || e.Item is Audio) && MainOptionsStore.PluginOptions.GeneralOptions.TaskConcurrency.CatchupMode)
+                if ((e.Item is Video || e.Item is Audio) && MainOptionsStore.PluginOptions.TaskConcurrency.CatchupMode)
                 {
                     if (IntroSkipStore.IntroSkipOptions.Fingerprint.UnlockIntroSkip &&
                         IsCatchupTaskSelected(CatchupTask.Fingerprint) &&
@@ -755,13 +784,13 @@ namespace StrmAssistant
         {
             if (e.UserData.IsFavorite)
             {
-                if (MainOptionsStore.PluginOptions.GeneralOptions.TaskConcurrency.CatchupMode &&
+                if (MainOptionsStore.PluginOptions.TaskConcurrency.CatchupMode &&
                     IntroSkipStore.IntroSkipOptions.Fingerprint.UnlockIntroSkip && IsCatchupTaskSelected(CatchupTask.Fingerprint) &&
                     FingerprintApi.IsLibraryInScope(e.Item) && (e.Item is Series || e.Item is Episode))
                 {
                     QueueManager.FingerprintItemQueue.Enqueue(e.Item);
                 }
-                else if (MainOptionsStore.PluginOptions.GeneralOptions.TaskConcurrency.CatchupMode &&
+                else if (MainOptionsStore.PluginOptions.TaskConcurrency.CatchupMode &&
                          IsCatchupTaskSelected(CatchupTask.MediaInfo))
                 {
                     QueueManager.MediaInfoExtractItemQueue.Enqueue(e.Item);
@@ -771,7 +800,7 @@ namespace StrmAssistant
 
         public override void OnUninstalling()
         {
-            if (MainOptionsStore.GetOptions().ModOptions.ChineseSearch.EnhanceChineseSearch)
+            if (MainOptionsStore.GetOptions().ChineseSearch.EnhanceChineseSearch)
             {
                 _ = NotificationApi.SendMessageToAdmins(
                     $"[{Resources.PluginOptions_EditorTitle_Strm_Assistant}] {Resources.Uninstall_Warning}", 10000);
@@ -880,20 +909,20 @@ namespace StrmAssistant
                 var options = MainOptionsStore.GetOptions();
                 var changed = false;
 
-                if (options.ModOptions.ChineseSearch.EnhanceChineseSearch)
+                if (options.ChineseSearch.EnhanceChineseSearch)
                 {
-                    options.ModOptions.ChineseSearch.EnhanceChineseSearch = false;
+                    options.ChineseSearch.EnhanceChineseSearch = false;
 
                     // 升级关闭时**排程还原**：把 fts_search9 重建回 Emby 默认分词器（unicode61）。
                     // 否则会留下「索引用 simple + 选项已关闭」的半吊状态：索引永久依赖插件自带的
                     // libsimple 扩展，一旦扩展加载不上（插件目录不完整 / 架构不符 / Emby 内部变化），
                     // 每次元数据写入都会整体回滚。还原后索引不再依赖扩展，关闭就是真的关闭。
-                    options.ModOptions.ChineseSearch.EnhanceChineseSearchRestore = true;
+                    options.ChineseSearch.EnhanceChineseSearchRestore = true;
                     changed = true;
                 }
-                else if (options.ModOptions.ChineseSearch.EnhanceChineseSearchRestore)
+                else if (options.ChineseSearch.EnhanceChineseSearchRestore)
                 {
-                    options.ModOptions.ChineseSearch.EnhanceChineseSearchRestore = false;
+                    options.ChineseSearch.EnhanceChineseSearchRestore = false;
                     changed = true;
                 }
 

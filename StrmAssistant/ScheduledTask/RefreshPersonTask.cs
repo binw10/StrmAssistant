@@ -57,7 +57,7 @@ namespace StrmAssistant.ScheduledTask
             }
 
             var tier2MaxConcurrentCount =
-                Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.TaskConcurrency.Tier2MaxConcurrentCount;
+                Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.Tier2MaxConcurrentCount;
             _logger.Info("Tier2 Max Concurrent Count: " + tier2MaxConcurrentCount);
 
             var personQuery = new InternalItemsQuery

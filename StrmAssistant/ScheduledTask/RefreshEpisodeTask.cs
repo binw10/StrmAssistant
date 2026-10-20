@@ -1,4 +1,4 @@
-using MediaBrowser.Model.Logging;
+﻿using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Tasks;
 using StrmAssistant.Common;
 using StrmAssistant.Properties;
@@ -22,8 +22,7 @@ namespace StrmAssistant.ScheduledTask
             if (!Plugin.IsPluginEnabled) return;
 
             _logger.Info("EpisodeRefresh - Scheduled Task Execute");
-            var tier2MaxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions
-                .TaskConcurrency.Tier2MaxConcurrentCount;
+            var tier2MaxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.Tier2MaxConcurrentCount;
             _logger.Info("Tier2 Max Concurrent Count: " + tier2MaxConcurrentCount);
 
             await Task.Yield();

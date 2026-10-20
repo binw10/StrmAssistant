@@ -94,7 +94,7 @@ namespace StrmAssistant.Core
 
                         await Task.Delay(TimeSpan.FromSeconds(RestartCountdownSeconds)).ConfigureAwait(false);
 
-                        if (!Plugin.Instance.MainOptionsStore.GetOptions().GeneralOptions.Memory.EnableMemoryAutoRestart)
+                        if (!Plugin.Instance.MainOptionsStore.GetOptions().Memory.EnableMemoryAutoRestart)
                         {
                             _logger?.Info("MemoryGuard - Option disabled during countdown, restart cancelled");
                             _restarting = false;

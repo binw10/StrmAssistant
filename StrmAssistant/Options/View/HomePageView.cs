@@ -1,4 +1,4 @@
-using Emby.Media.Common.Extensions;
+﻿using Emby.Media.Common.Extensions;
 using Emby.Web.GenericEdit.Elements;
 using Emby.Web.GenericEdit.Elements.List;
 using MediaBrowser.Controller.Session;
@@ -38,8 +38,8 @@ namespace StrmAssistant.Options.View
             ContentData = store.GetOptions();
 
             PluginOptions.Initialize();
-            PluginOptions.GeneralOptions.Initialize();
-            PluginOptions.ModOptions.Initialize();
+            PluginOptions.TaskConcurrency.Initialize();
+            PluginOptions.ChineseSearch.Initialize();
             PluginOptions.AboutOptions.Initialize();
 
             PopulateRuntimeStatus(PluginOptions);
@@ -205,7 +205,7 @@ namespace StrmAssistant.Options.View
         {
             if (ContentData is PluginOptions options)
             {
-                options.GeneralOptions.ValidateOrThrow();
+                options.ValidateOrThrow();
             }
 
             _store.SetOptions(PluginOptions);
