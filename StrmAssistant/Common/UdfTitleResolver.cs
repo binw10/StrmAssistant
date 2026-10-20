@@ -120,14 +120,34 @@ namespace StrmAssistant.Common
                 using var stream = new FileStream(isoPath, FileMode.Open, FileAccess.Read,
                     FileShare.ReadWrite | FileShare.Delete, 64 * 1024, FileOptions.SequentialScan);
 
-                using (var udf = new UdfReader(stream))
-                {
-                    return Resolve(new UdfDiscFs(udf));
-                }
+                return Resolve(stream, isoPath);
             }
             catch (Exception e)
             {
                 Log($"resolve failed for {isoPath}: {e.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 用任意可 Seek 的流解析正片（本地文件 / <see cref="HttpRangeStream"/> 远程 ISO）。
+        ///
+        /// 关键约束：<c>UdfReader</c> 构造时会校验分区长度 ≤ 流长度，流的 <c>Length</c> 必须是真实总长，
+        /// 否则直接抛 <c>Substream extends beyond end of parent stream</c>。
+        /// 流由调用方拥有，本方法不负责释放。
+        /// </summary>
+        public static TitleInfo Resolve(Stream stream, string label)
+        {
+            if (stream == null || !stream.CanSeek) return null;
+
+            try
+            {
+                using var udf = new UdfReader(stream);
+                return Resolve(new UdfDiscFs(udf));
+            }
+            catch (Exception e)
+            {
+                Log($"resolve failed for {label}: {e.Message}");
                 return null;
             }
         }

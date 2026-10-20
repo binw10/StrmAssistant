@@ -170,6 +170,10 @@ namespace StrmAssistant.Mod
                         logger.Info($"IsoExtraction - remote iso window unavailable; leaving input unchanged: {isoUrl}");
                     }
 
+                    // 章节：远程 ISO 走 Range 流 + 进程内 UDF（不落盘、按需取 UDF 元数据区）。
+                    // 失败（不支持 Range / 无 mpls / 超时）静默回退，不影响探测本身。
+                    __state = BuildRemoteChapterState(isoUrl);
+
                     return;
                 }
 
@@ -210,11 +214,30 @@ namespace StrmAssistant.Mod
         /// </summary>
         private static List<ChapterInfo> BuildChapterState(string isoKey)
         {
-            if (!IsoMounter.TryGetTitleChapters(isoKey, out var chapterSeconds) ||
-                chapterSeconds == null || chapterSeconds.Count == 0)
+            if (!IsoMounter.TryGetTitleChapters(isoKey, out var chapterSeconds))
             {
                 return null;
             }
+
+            return ToChapterInfos(chapterSeconds);
+        }
+
+        /// <summary>
+        /// 远程 ISO（strm → http）的章节：走 Range 流 + 进程内 UDF，失败静默返回 null。
+        /// </summary>
+        private static List<ChapterInfo> BuildRemoteChapterState(string isoUrl)
+        {
+            if (!IsoMounter.TryGetRemoteChapters(isoUrl, out var chapterSeconds))
+            {
+                return null;
+            }
+
+            return ToChapterInfos(chapterSeconds);
+        }
+
+        private static List<ChapterInfo> ToChapterInfos(List<double> chapterSeconds)
+        {
+            if (chapterSeconds == null || chapterSeconds.Count == 0) return null;
 
             return chapterSeconds
                 .Where(seconds => seconds >= 0)

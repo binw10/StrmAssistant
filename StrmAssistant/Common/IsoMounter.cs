@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using StrmAssistant.Core;
 
 namespace StrmAssistant.Common
 {
@@ -527,6 +528,87 @@ namespace StrmAssistant.Common
             return true;
         }
 
+        private sealed class RemoteChapterEntry
+        {
+            public List<double> Chapters;
+            public DateTime LastUsedUtc;
+        }
+
+        private static readonly ConcurrentDictionary<string, RemoteChapterEntry> RemoteChapters =
+            new ConcurrentDictionary<string, RemoteChapterEntry>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// 远程 ISO（strm → http）的章节解析：用 <see cref="HttpRangeStream"/> 提供真实长度的可 Seek 流，
+        /// 交给 <see cref="UdfTitleResolver"/> 走进程内 UDF → MPLS PlayListMark。
+        ///
+        /// 与本地 ISO 的差别：本地走「挂载 + 真实文件系统」，远程只能走进程内 UDF（不落盘、按需 Range）。
+        /// 结果按 URL 缓存 <see cref="RemoteCacheTtl"/>，避免每次刷新都重新解析。
+        /// **任何失败都返回 false 并静默回退**（拿不到章节不能影响探测本身）。
+        /// </summary>
+        public static bool TryGetRemoteChapters(string isoUrl, out List<double> chapters)
+        {
+            chapters = null;
+            if (string.IsNullOrEmpty(isoUrl)) return false;
+
+            if (RemoteChapters.TryGetValue(isoUrl, out var cached) &&
+                DateTime.UtcNow - cached.LastUsedUtc < RemoteCacheTtl)
+            {
+                cached.LastUsedUtc = DateTime.UtcNow;
+                chapters = cached.Chapters;
+                return chapters != null && chapters.Count > 0;
+            }
+
+            try
+            {
+                using (PerfProbe.Measure("IsoMounter.RemoteChapters", 3000))
+                {
+                    if (!HttpRangeStream.TryOpen(isoUrl, out var stream, out var error))
+                    {
+                        Plugin.Instance?.Logger?.Info(
+                            $"IsoExtraction - remote iso does not support Range, chapters skipped: {error}");
+
+                        RemoteChapters[isoUrl] = new RemoteChapterEntry { Chapters = null, LastUsedUtc = DateTime.UtcNow };
+                        return false;
+                    }
+
+                    using (stream)
+                    {
+                        var info = UdfTitleResolver.Resolve(stream, isoUrl);
+                        var resolved = info?.Chapters;
+
+                        if (resolved != null && resolved.Count > 0)
+                        {
+                            Plugin.Instance?.Logger?.Info(
+                                $"IsoExtraction - remote playlist chapters resolved for {SafeShorten(isoUrl)}: " +
+                                $"{resolved.Count} (first={resolved[0]:F3}s, last={resolved[resolved.Count - 1]:F3}s)");
+                        }
+                        else
+                        {
+                            Plugin.Instance?.Logger?.Info(
+                                $"IsoExtraction - remote iso has no resolvable playlist chapters: {SafeShorten(isoUrl)}");
+                        }
+
+                        RemoteChapters[isoUrl] = new RemoteChapterEntry
+                        {
+                            Chapters = resolved,
+                            LastUsedUtc = DateTime.UtcNow
+                        };
+
+                        chapters = resolved;
+                        return chapters != null && chapters.Count > 0;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Plugin.Instance?.Logger?.Warn(
+                    $"IsoExtraction - remote chapter resolution failed: {e.Message}");
+
+                RemoteChapters[isoUrl] = new RemoteChapterEntry { Chapters = null, LastUsedUtc = DateTime.UtcNow };
+                return false;
+            }
+        }
+
         /// <summary>
         /// 该路径是否为「本地 ISO 挂载出的正片」——即 <c>&lt;盘符&gt;:\BDMV\STREAM\*.m2ts</c>。
         ///
@@ -678,6 +760,13 @@ namespace StrmAssistant.Common
 
                     TryDelete(kv.Value.TempFile);
                     RemoteIsos.TryRemove(kv.Key, out _);
+                }
+
+                // 远程 ISO 章节缓存：超过 TTL 清理
+                foreach (var kv in RemoteChapters.ToArray())
+                {
+                    if (DateTime.UtcNow - kv.Value.LastUsedUtc < RemoteCacheTtl) continue;
+                    RemoteChapters.TryRemove(kv.Key, out _);
                 }
             }
             catch
