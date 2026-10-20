@@ -2464,7 +2464,7 @@ namespace StrmAssistant.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Store or load media info and chapters to/from JSON file and also restore video thumbnail BIF..
+        ///   Looks up a localized string similar to Back up media info and chapter markers to JSON files. The extraction task can auto-restore from JSON, or run "Restore Media Info" separately..
         /// </summary>
         public static string MediaInfoExtractOptions_PersistMediaInfo_Persist_media_info_in_JSON_file__Default_is_OFF_ {
             get {
@@ -2474,7 +2474,7 @@ namespace StrmAssistant.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to MediaInfo Persist.
+        ///   Looks up a localized string similar to Backup Media Info.
         /// </summary>
         public static string MediaInfoExtractOptions_PersistMediaInfo_Persist_MediaInfo {
             get {
@@ -3727,7 +3727,7 @@ namespace StrmAssistant.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Export media info and chapter markers to JSON files.
+        ///   Looks up a localized string similar to Back up media info and chapter markers to JSON files for items that already have MediaInfo; skip items without MediaInfo.
         /// </summary>
         public static string PersistMediaInfoTask_Description_Persists_media_info_to_json_file {
             get {
@@ -3736,11 +3736,29 @@ namespace StrmAssistant.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Persist MediaInfo.
+        ///   Looks up a localized string similar to Backup Media Info.
         /// </summary>
         public static string PersistMediaInfoTask_Name_Persist_MediaInfo {
             get {
                 return ResourceManager.GetString("PersistMediaInfoTask_Name_Persist_MediaInfo", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Restore media info from JSON files; skip items without JSON.
+        /// </summary>
+        public static string RestoreMediaInfoTask_Description_Restores_media_info_from_JSON_file {
+            get {
+                return ResourceManager.GetString("RestoreMediaInfoTask_Description_Restores_media_info_from_JSON_file", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Restore Media Info.
+        /// </summary>
+        public static string RestoreMediaInfoTask_Name_Restore_MediaInfo {
+            get {
+                return ResourceManager.GetString("RestoreMediaInfoTask_Name_Restore_MediaInfo", resourceCulture);
             }
         }
         

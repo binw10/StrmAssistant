@@ -375,10 +375,10 @@
     <value>替代 TMDB API 密钥无效</value>
   </data>
   <data name="MediaInfoExtractOptions_PersistMediaInfo_Persist_MediaInfo" xml:space="preserve">
-    <value>媒体信息持久化</value>
+    <value>备份媒体信息</value>
   </data>
   <data name="MediaInfoExtractOptions_PersistMediaInfo_Persist_media_info_in_JSON_file__Default_is_OFF_" xml:space="preserve">
-    <value>保存或加载媒体信息和章节片头片尾标记至/自 JSON 文件，以及恢复预览缩略图 BIF。</value>
+    <value>备份媒体信息和章节片头片尾标记到 JSON 文件；提取任务可自动恢复，也可单独运行「恢复媒体信息」。</value>
   </data>
   <data name="UIFunctionOptions_EnhanceMissingEpisodes_Missing_Episodes_Enhanced" xml:space="preserve">
     <value>查看缺少的集增强</value>
@@ -411,10 +411,16 @@
     <value>提取视频和音频的媒体信息，以及视频截图</value>
   </data>
   <data name="PersistMediaInfoTask_Name_Persist_MediaInfo" xml:space="preserve">
-    <value>持久化媒体信息</value>
+    <value>备份媒体信息</value>
   </data>
   <data name="PersistMediaInfoTask_Description_Persists_media_info_to_json_file" xml:space="preserve">
-    <value>导出媒体信息，章节片头片尾标记至 JSON 文件</value>
+    <value>将媒体库已存在媒体信息的影音导出为 JSON，无媒体信息则跳过</value>
+  </data>
+  <data name="RestoreMediaInfoTask_Name_Restore_MediaInfo" xml:space="preserve">
+    <value>恢复媒体信息</value>
+  </data>
+  <data name="RestoreMediaInfoTask_Description_Restores_media_info_from_JSON_file" xml:space="preserve">
+    <value>媒体库存在 JSON 文件则恢复对应媒体信息，不存在 JSON 文件则跳过</value>
   </data>
   <data name="RefreshPersonTask_Name_Refresh_Chinese_Actor" xml:space="preserve">
     <value>刷新演员信息</value>

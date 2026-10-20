@@ -98,7 +98,6 @@ namespace StrmAssistant.Options
 
         public void Initialize()
         {
-            BrandOptions.Initialize();
             DisclaimerButton.Caption = Resources.DisclaimerButtonText;
 
             if (ShowConflictPluginLoadedStatus)

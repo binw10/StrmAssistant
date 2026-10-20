@@ -462,10 +462,10 @@
     <value>Alternative MovieDb Api Key is invalid</value>
   </data>
   <data name="MediaInfoExtractOptions_PersistMediaInfo_Persist_MediaInfo" xml:space="preserve">
-    <value>MediaInfo Persist</value>
+    <value>Backup Media Info</value>
   </data>
   <data name="MediaInfoExtractOptions_PersistMediaInfo_Persist_media_info_in_JSON_file__Default_is_OFF_" xml:space="preserve">
-    <value>Store or load media info and chapters to/from JSON file and also restore video thumbnail BIF.</value>
+    <value>Back up media info and chapter markers to JSON files. The extraction task can auto-restore from JSON, or run "Restore Media Info" separately.</value>
   </data>
   <data name="UIFunctionOptions_EnhanceMissingEpisodes_Missing_Episodes_Enhanced" xml:space="preserve">
     <value>View Missing Episodes Enhanced</value>
@@ -498,10 +498,16 @@
     <value>Extracts media info from videos and audios, and image capture</value>
   </data>
   <data name="PersistMediaInfoTask_Name_Persist_MediaInfo" xml:space="preserve">
-    <value>Persist MediaInfo</value>
+    <value>Backup Media Info</value>
   </data>
   <data name="PersistMediaInfoTask_Description_Persists_media_info_to_json_file" xml:space="preserve">
-    <value>Export media info and chapter markers to JSON files</value>
+    <value>Back up media info and chapter markers to JSON files for items that already have MediaInfo; skip items without MediaInfo</value>
+  </data>
+  <data name="RestoreMediaInfoTask_Name_Restore_MediaInfo" xml:space="preserve">
+    <value>Restore Media Info</value>
+  </data>
+  <data name="RestoreMediaInfoTask_Description_Restores_media_info_from_JSON_file" xml:space="preserve">
+    <value>Restore media info from JSON files; skip items without JSON</value>
   </data>
   <data name="RefreshPersonTask_Name_Refresh_Chinese_Actor" xml:space="preserve">
     <value>Refresh Chinese Actor</value>

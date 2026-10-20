@@ -603,7 +603,7 @@ namespace StrmAssistant.Common
             {
                 var itemsQuery = new InternalItemsQuery
                 {
-                    HasPath = true, HasAudioStream = true,
+                    HasPath = true,
                     MediaTypes = includeAudio ? new[] { MediaType.Video, MediaType.Audio } : new[] { MediaType.Video }
                 };
 
@@ -627,6 +627,7 @@ namespace StrmAssistant.Common
             var combined = favoritesWithExtra.Concat(itemsWithExtras)
                 .GroupBy(i => i.InternalId)
                 .Select(g => g.First())
+                .Where(HasMediaInfo)
                 .ToList();
             var results = OrderByDescending(combined);
 

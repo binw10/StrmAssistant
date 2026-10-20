@@ -76,7 +76,7 @@ namespace StrmAssistant
                             return;
                         }
 
-                        var result = await Plugin.MediaInfoApi.SerializeMediaInfo(taskItem.InternalId, directoryService, false,
+                        var result = await Plugin.MediaInfoApi.SerializeMediaInfo(taskItem.InternalId, directoryService, true,
                             "Persist MediaInfo Task").ConfigureAwait(false);
 
                         if (!result) Interlocked.Increment(ref skip);
