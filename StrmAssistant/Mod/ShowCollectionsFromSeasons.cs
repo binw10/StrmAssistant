@@ -33,7 +33,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions.ShowCollectionsFromSeasons)
+            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().ItemDisplay.ShowCollectionsFromSeasons)
             {
                 Patch();
             }

@@ -13,6 +13,8 @@ namespace StrmAssistant.Options.Store
     internal static class ExperienceEnhanceOptionsMigration
     {
         private const string FlagFileName = "StrmAssistant_ExperienceEnhanceOptions_grouped_v1.flag";
+        private const string UiGroupsFlagFileName = "StrmAssistant_ExperienceEnhanceOptions_ui_groups_v2.flag";
+        private const string LegacyUiGroupKey = "UIFunctionOptions";
 
         private static readonly (string Group, string[] Keys)[] Layout =
         {
@@ -158,8 +160,111 @@ namespace StrmAssistant.Options.Store
             notification.EnhanceNotificationSystem = legacy.EnhanceNotificationSystem;
             notification.MetadataUpdateTrackedFields = legacy.MetadataUpdateTrackedFields ?? string.Empty;
 
-            // 「界面功能」原本就是嵌套对象，原样沿用
-            if (legacy.UIFunctionOptions != null) options.UIFunctionOptions = legacy.UIFunctionOptions;
+            // 「界面功能」原本就是嵌套对象，按新分组重新分发（v2 起拆成 3 组）
+            if (legacy.UIFunctionOptions != null) ApplyLegacyUi(legacy.UIFunctionOptions, options);
+        }
+
+        /// <summary>
+        /// 把旧的「界面功能」整组（<c>UIFunctionOptions</c>）按作用面拆到 3 个新分组：
+        /// 条目显示 / 媒体库与排序 / 搜索与日志。
+        /// </summary>
+        private static void ApplyLegacyUi(LegacyUiFunctionOptions legacy, ExperienceEnhanceOptions options)
+        {
+            var itemDisplay = options.ItemDisplay;
+            itemDisplay.HidePersonNoImage = legacy.HidePersonNoImage;
+            itemDisplay.BeautifyMissingMetadata = legacy.BeautifyMissingMetadata;
+            itemDisplay.EnhanceMissingEpisodes = legacy.EnhanceMissingEpisodes;
+            itemDisplay.ReplaceUnplayedWithTotal = legacy.ReplaceUnplayedWithTotal;
+            itemDisplay.ShowCollectionsFromSeasons = legacy.ShowCollectionsFromSeasons;
+
+            if (!string.IsNullOrEmpty(legacy.HidePersonPreference))
+            {
+                itemDisplay.HidePersonPreference = legacy.HidePersonPreference;
+            }
+
+            var libraryOrder = options.LibraryOrder;
+            libraryOrder.ShowLibraryItemCount = legacy.ShowLibraryItemCount;
+            libraryOrder.NoBoxsetsAutoCreation = legacy.NoBoxsetsAutoCreation;
+            libraryOrder.OptimizeMediaItemOrder = legacy.OptimizeMediaItemOrder;
+            libraryOrder.EnforceLibraryOrder = legacy.EnforceLibraryOrder;
+
+            if (!string.IsNullOrEmpty(legacy.OptimizeItemOrderPreferences))
+            {
+                libraryOrder.OptimizeItemOrderPreferences = legacy.OptimizeItemOrderPreferences;
+            }
+
+            if (!string.IsNullOrEmpty(legacy.EnforceUserPreferencesScope))
+            {
+                libraryOrder.EnforceUserPreferencesScope = legacy.EnforceUserPreferencesScope;
+            }
+
+            var searchLog = options.SearchLog;
+            searchLog.ShowMediaInfo = legacy.ShowMediaInfo;
+            searchLog.BlockSearchRecommend = legacy.BlockSearchRecommend;
+            searchLog.ReverseLogLines = legacy.ReverseLogLines;
+        }
+
+        /// <summary>
+        /// 第二次迁移：已分组配置里的 <c>UIFunctionOptions</c>（15 项）拆成 3 个分组。
+        ///
+        /// 与 <see cref="MigrateIfNeeded"/> 的区别：那个处理「平铺 → 分组」，本方法处理
+        /// 「分组后一个巨大的界面功能组 → 三个按作用面划分的组」。
+        /// 两者用各自的 flag，互不影响；顺序执行时前者产出的已是新结构，后者只写 flag。
+        /// </summary>
+        public static void MigrateUiGroupsIfNeeded(string optionsFilePath,
+            IJsonSerializer jsonSerializer, ILogger logger)
+        {
+            try
+            {
+                var directory = Path.GetDirectoryName(optionsFilePath);
+
+                if (string.IsNullOrEmpty(directory)) return;
+
+                var flagPath = Path.Combine(directory, UiGroupsFlagFileName);
+
+                if (File.Exists(flagPath) || !File.Exists(optionsFilePath)) return;
+
+                var text = File.ReadAllText(optionsFilePath);
+
+                if (!text.Contains("\"" + LegacyUiGroupKey + "\""))
+                {
+                    File.WriteAllText(flagPath, DateTime.UtcNow.ToString("O"));
+                    return;
+                }
+
+                var options = jsonSerializer.DeserializeFromString<ExperienceEnhanceOptions>(text) ??
+                              new ExperienceEnhanceOptions();
+
+                var legacy = jsonSerializer.DeserializeFromString<LegacyUiGroupWrapper>(text);
+                if (legacy?.UIFunctionOptions == null)
+                {
+                    File.WriteAllText(flagPath, DateTime.UtcNow.ToString("O"));
+                    return;
+                }
+
+                ApplyLegacyUi(legacy.UIFunctionOptions, options);
+
+                byte[] bytes;
+
+                using (var stream = new MemoryStream())
+                {
+                    jsonSerializer.SerializeToStream(options, stream, new JsonSerializerOptions { Indent = true });
+                    bytes = stream.ToArray();
+                }
+
+                var backupPath = optionsFilePath + ".ui_groups.bak";
+                File.WriteAllText(backupPath, text);
+                File.WriteAllBytes(optionsFilePath, bytes);
+                File.WriteAllText(flagPath, DateTime.UtcNow.ToString("O"));
+
+                logger.Info(
+                    "ExperienceEnhanceOptions: split UIFunctionOptions into 3 groups " +
+                    "(item display / library order / search & logs). Backup: {0}", backupPath);
+            }
+            catch (Exception e)
+            {
+                logger.Warn("ExperienceEnhanceOptions UI group split failed: " + e.Message);
+            }
         }
 
         /// <summary>
@@ -186,7 +291,36 @@ namespace StrmAssistant.Options.Store
             public bool EnhanceNotificationSystem { get; set; } = false;
             public string MetadataUpdateTrackedFields { get; set; } = string.Empty;
 
-            public UIFunctionOptions UIFunctionOptions { get; set; } = new UIFunctionOptions();
+            public LegacyUiFunctionOptions UIFunctionOptions { get; set; } = new LegacyUiFunctionOptions();
+        }
+
+        /// <summary>已分组配置的包装：只用来从整份 JSON 里取出旧的界面功能节点。</summary>
+        private class LegacyUiGroupWrapper
+        {
+            public LegacyUiFunctionOptions UIFunctionOptions { get; set; }
+        }
+
+        /// <summary>
+        /// 旧「界面功能」整组（15 项）的读取 DTO。字段名必须与旧 JSON 完全一致，
+        /// 否则迁移会静默丢值——所以这里不带任何 UI 特性，只做数据搬运。
+        /// </summary>
+        private class LegacyUiFunctionOptions
+        {
+            public bool HidePersonNoImage { get; set; } = false;
+            public string HidePersonPreference { get; set; } = string.Empty;
+            public bool BeautifyMissingMetadata { get; set; } = false;
+            public bool EnhanceMissingEpisodes { get; set; } = false;
+            public bool EnforceLibraryOrder { get; set; } = false;
+            public string EnforceUserPreferencesScope { get; set; } = string.Empty;
+            public bool NoBoxsetsAutoCreation { get; set; } = false;
+            public bool OptimizeMediaItemOrder { get; set; } = false;
+            public string OptimizeItemOrderPreferences { get; set; } = string.Empty;
+            public bool ShowMediaInfo { get; set; } = false;
+            public bool ReplaceUnplayedWithTotal { get; set; } = false;
+            public bool ShowLibraryItemCount { get; set; } = false;
+            public bool ReverseLogLines { get; set; } = false;
+            public bool BlockSearchRecommend { get; set; } = false;
+            public bool ShowCollectionsFromSeasons { get; set; } = false;
         }
     }
 }

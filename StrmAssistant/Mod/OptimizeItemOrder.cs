@@ -36,16 +36,16 @@ namespace StrmAssistant.Mod
         }
 
         private static string Preferences =>
-            Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions.OptimizeItemOrderPreferences;
+            Plugin.Instance.ExperienceEnhanceStore.GetOptions().LibraryOrder.OptimizeItemOrderPreferences;
 
         private static bool Has(string option) =>
             Preferences?.IndexOf(option, StringComparison.OrdinalIgnoreCase) >= 0;
 
         /// <summary>本模块负责的 3 个选项是否有任一被选中（NaturalSort 由 PinyinSortName 处理）。</summary>
         private static bool IsModuleEnabled() =>
-            Has(nameof(UIFunctionOptions.ItemOrderOption.ReverseSeasonOrder)) ||
-            Has(nameof(UIFunctionOptions.ItemOrderOption.ReverseEpisodeOrder)) ||
-            Has(nameof(UIFunctionOptions.ItemOrderOption.CollectionPerItemDateCreated));
+            Has(nameof(LibraryOrderOptions.ItemOrderOption.ReverseSeasonOrder)) ||
+            Has(nameof(LibraryOrderOptions.ItemOrderOption.ReverseEpisodeOrder)) ||
+            Has(nameof(LibraryOrderOptions.ItemOrderOption.CollectionPerItemDateCreated));
 
         protected override void OnInitialize()
         {
@@ -100,12 +100,12 @@ namespace StrmAssistant.Mod
                 if (__instance is Series)
                 {
                     // 非递归 = 季列表
-                    if (!query.Recursive && Has(nameof(UIFunctionOptions.ItemOrderOption.ReverseSeasonOrder)))
+                    if (!query.Recursive && Has(nameof(LibraryOrderOptions.ItemOrderOption.ReverseSeasonOrder)))
                         FlipToDescending(orderBy, ItemSortBy.IndexNumber);
                 }
                 else if (__instance is Season)
                 {
-                    if (Has(nameof(UIFunctionOptions.ItemOrderOption.ReverseEpisodeOrder)))
+                    if (Has(nameof(LibraryOrderOptions.ItemOrderOption.ReverseEpisodeOrder)))
                         FlipToDescending(orderBy, ItemSortBy.IndexNumber);
                 }
             }
@@ -121,7 +121,7 @@ namespace StrmAssistant.Mod
             try
             {
                 if (query == null) return;
-                if (!Has(nameof(UIFunctionOptions.ItemOrderOption.CollectionPerItemDateCreated))) return;
+                if (!Has(nameof(LibraryOrderOptions.ItemOrderOption.CollectionPerItemDateCreated))) return;
 
                 // 合集条目按创建日期升序（PRO 语义未给出方向，此处取“创建时间顺序”）
                 query.OrderBy = new[] { (ItemSortBy.DateCreated, SortOrder.Ascending) };

@@ -23,7 +23,8 @@ namespace StrmAssistant.Options.View
             _libraryManager = libraryManager;
             _store = store;
             ContentData = store.GetOptions();
-            ExperienceEnhanceOptions.UIFunctionOptions.Initialize();
+            ExperienceEnhanceOptions.ItemDisplay.Initialize();
+            ExperienceEnhanceOptions.LibraryOrder.Initialize();
         }
 
         public ExperienceEnhanceOptions ExperienceEnhanceOptions => ContentData as ExperienceEnhanceOptions;

@@ -40,10 +40,10 @@ namespace StrmAssistant.Mod
         }
 
         private static string Scope =>
-            Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions.EnforceUserPreferencesScope;
+            Plugin.Instance.ExperienceEnhanceStore.GetOptions().LibraryOrder.EnforceUserPreferencesScope;
 
         private static bool IsSeriesDisplayEnabled() =>
-            Scope?.IndexOf(nameof(UIFunctionOptions.EnforceUserDisplayOption.SeriesDisplay),
+            Scope?.IndexOf(nameof(LibraryOrderOptions.EnforceUserDisplayOption.SeriesDisplay),
                 StringComparison.OrdinalIgnoreCase) >= 0;
 
         protected override void OnInitialize()

@@ -245,15 +245,15 @@ require(['components/strmassistant/strmassistant']).then(function (mods) {
     if (mod.ui) { try { mod.ui.init(); } catch (e) { console.error('StrmAssistant: ui init failed', e); } }
 }).catch(function (e) { console.error('StrmAssistant: module load failed', e); });
 ";
-            var uiOptions = Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions;
+            var uiOptions = Plugin.Instance.ExperienceEnhanceStore.GetOptions();
             var scriptVersion = typeof(ShortcutMenuHelper).Assembly.GetName().Version?.ToString() ?? "unknown";
             var uiConfig = injectDoubanBadgeBootstrap
                 .Replace("SA_SCRIPT_VERSION", scriptVersion)
-                .Replace("REPLACE_UNPLAYED_TOTAL", uiOptions.ReplaceUnplayedWithTotal ? "true" : "false")
-                .Replace("SHOW_LIB_COUNT", uiOptions.ShowLibraryItemCount ? "true" : "false")
-                .Replace("REVERSE_LOGS", uiOptions.ReverseLogLines ? "true" : "false")
-                .Replace("BLOCK_SEARCH_RECS", uiOptions.BlockSearchRecommend ? "true" : "false")
-                .Replace("SHOW_MEDIA_INFO", uiOptions.ShowMediaInfo ? "true" : "false");
+                .Replace("REPLACE_UNPLAYED_TOTAL", uiOptions.ItemDisplay.ReplaceUnplayedWithTotal ? "true" : "false")
+                .Replace("SHOW_LIB_COUNT", uiOptions.LibraryOrder.ShowLibraryItemCount ? "true" : "false")
+                .Replace("REVERSE_LOGS", uiOptions.SearchLog.ReverseLogLines ? "true" : "false")
+                .Replace("BLOCK_SEARCH_RECS", uiOptions.SearchLog.BlockSearchRecommend ? "true" : "false")
+                .Replace("SHOW_MEDIA_INFO", uiOptions.SearchLog.ShowMediaInfo ? "true" : "false");
             ModifiedShortcutsString += uiConfig;
 
             // shortcuts.js 在详情页/列表页不会加载（4.10 里它是按需导入的 itemShortcuts），

@@ -20,7 +20,7 @@ namespace StrmAssistant.Provider
         public async Task<RemoteSearchResult[]> GetAllEpisodes(SeriesInfo seriesInfo,
             CancellationToken cancellationToken)
         {
-            if (!Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions.EnhanceMissingEpisodes)
+            if (!Plugin.Instance.ExperienceEnhanceStore.GetOptions().ItemDisplay.EnhanceMissingEpisodes)
             {
                 return Array.Empty<RemoteSearchResult>();
             }

@@ -731,10 +731,10 @@ namespace StrmAssistant
             if (e.Item is CollectionFolder library)
             {
                 if (library.CollectionType == CollectionType.BoxSets.ToString() &&
-                    !ExperienceEnhanceStore.GetOptions().UIFunctionOptions.NoBoxsetsAutoCreation)
+                    !ExperienceEnhanceStore.GetOptions().LibraryOrder.NoBoxsetsAutoCreation)
                 {
                     PatchManager.NoBoxsetsAutoCreation.Patch();
-                    ExperienceEnhanceStore.GetOptions().UIFunctionOptions.NoBoxsetsAutoCreation = true;
+                    ExperienceEnhanceStore.GetOptions().LibraryOrder.NoBoxsetsAutoCreation = true;
                     ExperienceEnhanceStore.SavePluginOptionsSuppress();
                 }
 

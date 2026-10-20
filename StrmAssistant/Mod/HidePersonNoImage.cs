@@ -10,7 +10,7 @@ using System.Linq;
 using System.Reflection;
 using StrmAssistant.Common;
 using static StrmAssistant.Mod.PatchManager;
-using static StrmAssistant.Options.UIFunctionOptions;
+using static StrmAssistant.Options.ItemDisplayOptions;
 
 namespace StrmAssistant.Mod
 {
@@ -22,7 +22,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions.HidePersonNoImage)
+            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().ItemDisplay.HidePersonNoImage)
             {
                 Patch();
             }
@@ -49,7 +49,7 @@ namespace StrmAssistant.Mod
 
             if (!(item is Movie) && !(item is Series) && !(item is Season) && !(item is Episode)) return;
 
-            var preference = Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions.HidePersonPreference;
+            var preference = Plugin.Instance.ExperienceEnhanceStore.GetOptions().ItemDisplay.HidePersonPreference;
 
             var noImage =
                 preference?.Contains(HidePersonOption.NoImage.ToString(), StringComparison.OrdinalIgnoreCase) == true;

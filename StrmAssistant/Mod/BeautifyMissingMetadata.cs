@@ -26,7 +26,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions.BeautifyMissingMetadata)
+            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().ItemDisplay.BeautifyMissingMetadata)
             {
                 Patch();
             }

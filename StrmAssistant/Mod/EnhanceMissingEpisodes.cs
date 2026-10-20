@@ -22,7 +22,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions.EnhanceMissingEpisodes)
+            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().ItemDisplay.EnhanceMissingEpisodes)
             {
                 Patch();
             }

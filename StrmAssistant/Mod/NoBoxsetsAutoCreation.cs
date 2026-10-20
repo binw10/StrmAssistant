@@ -20,7 +20,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions.NoBoxsetsAutoCreation)
+            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().LibraryOrder.NoBoxsetsAutoCreation)
             {
                 Patch();
             }

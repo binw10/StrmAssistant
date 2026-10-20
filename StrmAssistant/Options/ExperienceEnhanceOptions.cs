@@ -33,9 +33,20 @@ namespace StrmAssistant.Options
         [DisplayNameL("ExperienceEnhanceOptions_Group_Notification", typeof(Resources))]
         public ExperienceNotificationOptions Notification { get; set; } = new ExperienceNotificationOptions();
 
-        /// <summary>界面功能：列表/详情页的展示类开关（保持原有子组）。</summary>
-        [DisplayNameL("UIFunctionOptions_EditorTitle_UI_Functions", typeof(Resources))]
-        public UIFunctionOptions UIFunctionOptions { get; set; } = new UIFunctionOptions();
+        /// <summary>
+        /// 条目显示：详情页人物列表、分集标题、缺集视图、剧集卡片上的显示效果。
+        /// 顺序按「由内到外」：条目 → 媒体库 → 搜索与日志。
+        /// </summary>
+        [DisplayNameL("ItemDisplayOptions_EditorTitle_Item_Display", typeof(Resources))]
+        public ItemDisplayOptions ItemDisplay { get; set; } = new ItemDisplayOptions();
+
+        /// <summary>媒体库与排序：首页库卡片角标、合集库、条目自然排序、库顺序强制。</summary>
+        [DisplayNameL("LibraryOrderOptions_EditorTitle_Library_and_Order", typeof(Resources))]
+        public LibraryOrderOptions LibraryOrder { get; set; } = new LibraryOrderOptions();
+
+        /// <summary>搜索与日志：搜索结果卡片信息、搜索页推荐区块、服务器日志列表顺序。</summary>
+        [DisplayNameL("SearchLogOptions_EditorTitle_Search_and_Logs", typeof(Resources))]
+        public SearchLogOptions SearchLog { get; set; } = new SearchLogOptions();
 
         /// <summary>Store 在保存时用于判断 patch 是否可用（与各组内的同名 helper 独立）。</summary>
         [Browsable(false)]

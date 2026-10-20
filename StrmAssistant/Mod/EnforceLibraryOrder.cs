@@ -17,7 +17,7 @@ namespace StrmAssistant.Mod
         {
             Initialize();
 
-            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions.EnforceLibraryOrder)
+            if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().LibraryOrder.EnforceLibraryOrder)
             {
                 Patch();
             }

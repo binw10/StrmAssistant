@@ -7,7 +7,8 @@ using StrmAssistant.Options.UIBaseClasses.Store;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static StrmAssistant.Options.UIFunctionOptions;
+using static StrmAssistant.Options.ItemDisplayOptions;
+using static StrmAssistant.Options.LibraryOrderOptions;
 
 namespace StrmAssistant.Options.Store
 {
@@ -27,6 +28,10 @@ namespace StrmAssistant.Options.Store
             ExperienceEnhanceOptionsMigration.MigrateIfNeeded(OptionsFilePath,
                 applicationHost.Resolve<MediaBrowser.Model.Serialization.IJsonSerializer>(), logger);
 
+            // 第二次迁移：把旧的「界面功能」整组拆成 条目显示 / 媒体库与排序 / 搜索与日志
+            ExperienceEnhanceOptionsMigration.MigrateUiGroupsIfNeeded(OptionsFilePath,
+                applicationHost.Resolve<MediaBrowser.Model.Serialization.IJsonSerializer>(), logger);
+
             FileSaving += OnFileSaving;
             FileSaved += OnFileSaved;
         }
@@ -43,9 +48,9 @@ namespace StrmAssistant.Options.Store
         {
             if (e.Options is ExperienceEnhanceOptions options)
             {
-                if (string.IsNullOrEmpty(options.UIFunctionOptions.HidePersonPreference))
+                if (string.IsNullOrEmpty(options.ItemDisplay.HidePersonPreference))
                 {
-                    options.UIFunctionOptions.HidePersonPreference = HidePersonOption.NoImage.ToString();
+                    options.ItemDisplay.HidePersonPreference = HidePersonOption.NoImage.ToString();
                 }
 
                 var changes = PropertyChangeDetector.DetectObjectPropertyChanges(ExperienceEnhanceOptions, options);
@@ -77,10 +82,10 @@ namespace StrmAssistant.Options.Store
                 }
 
                 // UI 注入选项变更：重新生成前端注入字符串，下次请求即生效
-                if (changedProperties.Contains(nameof(UIFunctionOptions.ReplaceUnplayedWithTotal)) ||
-                    changedProperties.Contains(nameof(UIFunctionOptions.ShowLibraryItemCount)) ||
-                    changedProperties.Contains(nameof(UIFunctionOptions.ReverseLogLines)) ||
-                    changedProperties.Contains(nameof(UIFunctionOptions.BlockSearchRecommend)))
+                if (changedProperties.Contains(nameof(ItemDisplayOptions.ReplaceUnplayedWithTotal)) ||
+                    changedProperties.Contains(nameof(LibraryOrderOptions.ShowLibraryItemCount)) ||
+                    changedProperties.Contains(nameof(SearchLogOptions.ReverseLogLines)) ||
+                    changedProperties.Contains(nameof(SearchLogOptions.BlockSearchRecommend)))
                 {
                     Web.Helper.ShortcutMenuHelper.Refresh();
                 }
@@ -121,9 +126,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.HidePersonNoImage)))
+                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.ItemDisplay.HidePersonNoImage)))
                 {
-                    if (options.UIFunctionOptions.HidePersonNoImage)
+                    if (options.ItemDisplay.HidePersonNoImage)
                     {
                         PatchManager.HidePersonNoImage.Patch();
                     }
@@ -133,9 +138,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.EnforceLibraryOrder)))
+                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.LibraryOrder.EnforceLibraryOrder)))
                 {
-                    if (options.UIFunctionOptions.EnforceLibraryOrder)
+                    if (options.LibraryOrder.EnforceLibraryOrder)
                     {
                         PatchManager.EnforceLibraryOrder.Patch();
                     }
@@ -145,12 +150,12 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.EnforceUserPreferencesScope)) ||
-                    changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.EnforceLibraryOrder)))
+                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.LibraryOrder.EnforceUserPreferencesScope)) ||
+                    changedProperties.Contains(nameof(ExperienceEnhanceOptions.LibraryOrder.EnforceLibraryOrder)))
                 {
-                    var scope = options.UIFunctionOptions.EnforceUserPreferencesScope ?? string.Empty;
+                    var scope = options.LibraryOrder.EnforceUserPreferencesScope ?? string.Empty;
                     var seriesDisplayEnabled =
-                        options.UIFunctionOptions.EnforceLibraryOrder &&
+                        options.LibraryOrder.EnforceLibraryOrder &&
                         scope.Contains(nameof(EnforceUserDisplayOption.SeriesDisplay), StringComparison.OrdinalIgnoreCase);
 
                     if (seriesDisplayEnabled)
@@ -163,9 +168,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.BeautifyMissingMetadata)))
+                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.ItemDisplay.BeautifyMissingMetadata)))
                 {
-                    if (options.UIFunctionOptions.BeautifyMissingMetadata)
+                    if (options.ItemDisplay.BeautifyMissingMetadata)
                     {
                         PatchManager.BeautifyMissingMetadata.Patch();
                     }
@@ -175,9 +180,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.EnhanceMissingEpisodes)))
+                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.ItemDisplay.EnhanceMissingEpisodes)))
                 {
-                    if (options.UIFunctionOptions.EnhanceMissingEpisodes)
+                    if (options.ItemDisplay.EnhanceMissingEpisodes)
                     {
                         PatchManager.EnhanceMissingEpisodes.Patch();
                     }
@@ -187,9 +192,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.NoBoxsetsAutoCreation)))
+                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.LibraryOrder.NoBoxsetsAutoCreation)))
                 {
-                    if (options.UIFunctionOptions.NoBoxsetsAutoCreation)
+                    if (options.LibraryOrder.NoBoxsetsAutoCreation)
                     {
                         PatchManager.NoBoxsetsAutoCreation.Patch();
                     }
@@ -199,9 +204,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.OptimizeItemOrderPreferences)) ||
-                    changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.OptimizeMediaItemOrder)))
-                {                    var prefs = options.UIFunctionOptions.OptimizeItemOrderPreferences ?? string.Empty;
+                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.LibraryOrder.OptimizeItemOrderPreferences)) ||
+                    changedProperties.Contains(nameof(ExperienceEnhanceOptions.LibraryOrder.OptimizeMediaItemOrder)))
+                {                    var prefs = options.LibraryOrder.OptimizeItemOrderPreferences ?? string.Empty;
                     var orderModuleOn =
                         prefs.Contains(nameof(ItemOrderOption.ReverseSeasonOrder), StringComparison.OrdinalIgnoreCase) ||
                         prefs.Contains(nameof(ItemOrderOption.ReverseEpisodeOrder), StringComparison.OrdinalIgnoreCase) ||
@@ -217,9 +222,9 @@ namespace StrmAssistant.Options.Store
                     }
                 }
 
-                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.UIFunctionOptions.ShowCollectionsFromSeasons)))
+                if (changedProperties.Contains(nameof(ExperienceEnhanceOptions.ItemDisplay.ShowCollectionsFromSeasons)))
                 {
-                    if (options.UIFunctionOptions.ShowCollectionsFromSeasons)
+                    if (options.ItemDisplay.ShowCollectionsFromSeasons)
                     {
                         PatchManager.ShowCollectionsFromSeasons.Patch();
                     }
@@ -244,9 +249,9 @@ namespace StrmAssistant.Options.Store
                     _logger.Info("MergeSeriesPreference is set to {0}", options.Merge.MergeSeriesPreference.GetDescription());
                     _logger.Info("EnhanceNotificationSystem is set to {0}", options.Notification.EnhanceNotificationSystem);
                     _logger.Info("EnableDeepDelete is set to {0}", options.Playback.EnableDeepDelete);
-                    _logger.Info("HidePersonNoImage is set to {0}", options.UIFunctionOptions.HidePersonNoImage);
+                    _logger.Info("HidePersonNoImage is set to {0}", options.ItemDisplay.HidePersonNoImage);
                     var hidePersonPreference = string.Join(", ",
-                        options.UIFunctionOptions.HidePersonPreference
+                        options.ItemDisplay.HidePersonPreference
                             ?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                             .Select(s =>
                                 Enum.TryParse(s.Trim(), true, out HidePersonOption option)
@@ -254,13 +259,13 @@ namespace StrmAssistant.Options.Store
                                     : null)
                             .Where(d => d != null) ?? Enumerable.Empty<string>());
                     _logger.Info("HidePersonPreference is set to {0}", hidePersonPreference);
-                    _logger.Info("EnforceLibraryOrder is set to {0}", options.UIFunctionOptions.EnforceLibraryOrder);
+                    _logger.Info("EnforceLibraryOrder is set to {0}", options.LibraryOrder.EnforceLibraryOrder);
                     _logger.Info("BeautifyMissingMetadata is set to {0}",
-                        options.UIFunctionOptions.BeautifyMissingMetadata);
+                        options.ItemDisplay.BeautifyMissingMetadata);
                     _logger.Info("EnhanceMissingEpisodes is set to {0}",
-                        options.UIFunctionOptions.EnhanceMissingEpisodes);
+                        options.ItemDisplay.EnhanceMissingEpisodes);
                     _logger.Info("NoBoxsetsAutoCreation is set to {0}",
-                        options.UIFunctionOptions.NoBoxsetsAutoCreation);
+                        options.LibraryOrder.NoBoxsetsAutoCreation);
 
                     _logger.Info("EnableAutoMarkWatched is set to {0}", options.Playback.EnableAutoMarkWatched);
                     _logger.Info("AutoMarkWatchedThreshold is set to {0}", options.Playback.AutoMarkWatchedThreshold);

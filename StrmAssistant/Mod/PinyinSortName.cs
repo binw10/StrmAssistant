@@ -66,7 +66,7 @@ namespace StrmAssistant.Mod
 
                 // OptimizeMediaItemOrder：SortName 数字段左补零实现自然排序（2 排在 10 前）。
                 // SortName 仅用于排序不用于显示，补零无视觉影响。
-                if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().UIFunctionOptions.OptimizeMediaItemOrder &&
+                if (Plugin.Instance.ExperienceEnhanceStore.GetOptions().LibraryOrder.OptimizeMediaItemOrder &&
                     ContainsDigits(result))
                 {
                     result = Naturalize(result);
