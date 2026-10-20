@@ -250,7 +250,7 @@ namespace StrmAssistant.Common
             };
         }
 
-        private sealed class PlaylistEntry
+        internal sealed class PlaylistEntry
         {
             public string Name;
             public double TotalSeconds;
@@ -263,7 +263,7 @@ namespace StrmAssistant.Common
             public List<double> Chapters = new List<double>();
         }
 
-        private sealed class ClipEntry
+        internal sealed class ClipEntry
         {
             public string Name;
             public double Duration;
@@ -548,7 +548,7 @@ namespace StrmAssistant.Common
         /// 故须按 <c>PlayItem_ref</c> 减去对应 PlayItem 的 IN_time，再加上其前面各 PlayItem 的累计时长，
         /// 才是 Emby 需要的「标题内偏移秒」。
         /// </summary>
-        private static void ParsePlayListMark(byte[] data, int markStart, PlaylistEntry entry)
+        internal static void ParsePlayListMark(byte[] data, int markStart, PlaylistEntry entry)
         {
             if (markStart <= 0 || markStart + 6 > data.Length) return;
 
@@ -717,7 +717,13 @@ namespace StrmAssistant.Common
             {
                 try
                 {
-                    return _udf.GetFiles(relativeDir, "*").Select(Normalize).ToArray();
+                    // 注意：DiscUtils 的 searchPattern 按 Windows 语义实现，"*" **不匹配带扩展名的文件**
+                    // （实测 BDMV\PLAYLIST 下 "*" → 0 个，"*.*" / "*.mpls" → 1 个）。
+                    // 用 GetFileSystemEntries 全量列举再过滤，避免再踩这个坑。
+                    return _udf.GetFileSystemEntries(relativeDir)
+                        .Where(entry => _udf.FileExists(entry))
+                        .Select(Normalize)
+                        .ToArray();
                 }
                 catch
                 {
