@@ -7,10 +7,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using static StrmAssistant.Mod.PatchManager;
 using static StrmAssistant.Options.Utility;
 
@@ -24,7 +26,21 @@ namespace StrmAssistant.Mod
         private static MethodInfo sqlite3_enable_load_extension;
         private static FieldInfo sqlite3_db;
         private static MethodInfo _createConnection;
+        private static MethodInfo _createConnectionManager;
+        private static FieldInfo _managerId;
         private static PropertyInfo _dbFilePath;
+        private static readonly HashSet<string> _loggedHandles = new HashSet<string>();
+
+        /// <summary>
+        /// 已加载分词器的原生句柄。键是 <c>SQLiteDatabaseConnection.db</c> 对象本身，
+        /// 克隆共享同一句柄 → 一个池位只需加载一次。用弱表避免持有句柄导致泄漏。
+        /// 只用于**加速**：表里没有记录时仍以探针为准，不会漏加载。
+        /// </summary>
+        private static readonly ConditionalWeakTable<object, object> _tokenizedHandles =
+            new ConditionalWeakTable<object, object>();
+
+        private static readonly object TokenizedMarker = new object();
+
         private static MethodInfo _getJoinCommandText;
         private static MethodInfo _createSearchTerm;
         private static MethodInfo _cacheIdsFromTextParams;
@@ -35,6 +51,7 @@ namespace StrmAssistant.Mod
         private static string _tokenizerPath;
         private static readonly object _lock = new object();
         private static bool _patchPhase2Initialized;
+        private static int _phase2Queued;
         private static string _libraryDbPath;
         private static readonly string RebuildMarkerPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath, "strmassistant_chinese_search_rebuild.pending");
         private static readonly string NormV2MarkerPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath, "strmassistant_chinese_search_norm2.done");
@@ -280,6 +297,17 @@ namespace StrmAssistant.Mod
                         _dbFilePath = baseSqliteRepository.GetProperty("DbFilePath", 
                             BindingFlags.NonPublic | BindingFlags.Instance);
                     }
+
+                    // 连接管理器：所有连接（读+写）的唯一出口，override 虚方法不可内联。
+                    // 前置重载（CreateConnection() / (bool)）是一行转发，会被 JIT 内联 → 打在那上面覆盖不到写路径。
+                    var connectionManager = EmbyVersionCompatibility.TryGetType(embySqlite, "Emby.Sqlite.PooledDatabaseConnectionManager");
+                    if (connectionManager != null)
+                    {
+                        _createConnectionManager = connectionManager.GetMethod("CreateConnection",
+                            BindingFlags.Public | BindingFlags.Instance, null,
+                            new[] { typeof(bool), typeof(CancellationToken) }, null);
+                        _managerId = connectionManager.GetField("Id", BindingFlags.NonPublic | BindingFlags.Instance);
+                    }
                 }
 
                 // 加载 Emby.Server.Implementations
@@ -389,8 +417,28 @@ namespace StrmAssistant.Mod
 
         private static void PatchPhase1()
         {
-            if (EnsureTokenizerExists() && PatchUnpatch(Instance.PatchTracker, true, _createConnection,
-                    postfix: nameof(CreateConnectionPostfix))) return;
+            if (!EnsureTokenizerExists())
+            {
+                if (Plugin.Instance.DebugMode && !PatchManager.IsArm64)
+                {
+                    Plugin.Instance.Logger.Debug("EnhanceChineseSearch - PatchPhase1 Failed: tokenizer not ready");
+                }
+                ResetOptions();
+                return;
+            }
+
+            // 双补丁：仓库侧（能拿到 DbFilePath，用于定位 library.db）+ 管理器侧（覆盖全部连接路径）。
+            var patchedRepository = PatchUnpatch(Instance.PatchTracker, true, _createConnection,
+                postfix: nameof(CreateConnectionPostfix));
+
+            var patchedManager = _createConnectionManager != null &&
+                                 PatchUnpatch(Instance.PatchTracker, true, _createConnectionManager,
+                                     postfix: nameof(CreateConnectionPostfix));
+
+            Plugin.Instance.Logger.Info(
+                $"EnhanceChineseSearch - PatchPhase1: repository={patchedRepository}, connectionManager={patchedManager}");
+
+            if (patchedRepository || patchedManager) return;
 
             if (Plugin.Instance.DebugMode && !PatchManager.IsArm64)
             {
@@ -398,6 +446,77 @@ namespace StrmAssistant.Mod
             }
             
             ResetOptions();
+        }
+
+        /// <summary>
+        /// 把 Phase2（状态判定 + 可能的全量索引重建）排到后台执行。
+        ///
+        /// 为什么必须离开 postfix：
+        /// 1. 写路径的 postfix 是在持有 <c>_writeConnectionPool</c> 信号量时被调用的，重建会把整个库冻住；
+        /// 2. postfix 持有静态 <c>_lock</c>，重建期间所有建连都被阻塞。
+        ///
+        /// 为什么用「仓库的写连接」而不是自己 <c>SQLite3.Open</c>：
+        /// 首个触发 postfix 的连接通常是**只读**连接（<c>ConnectionFlags.ReadOnly</c>），
+        /// 在上面执行 DROP/CREATE/INSERT 必然抛 readonly（实测已复现）。
+        /// 走仓库的写连接还能复用 Emby 的写信号量，避免并发写撞 SQLITE_BUSY。
+        /// </summary>
+        private static void QueuePhase2()
+        {
+            if (Interlocked.Exchange(ref _phase2Queued, 1) == 1) return;
+
+            Task.Run(async () =>
+            {
+                IDatabaseConnection connection = null;
+
+                try
+                {
+                    // 稍等启动高峰过去，避免和 Emby 的启动写入抢写锁
+                    await Task.Delay(3000).ConfigureAwait(false);
+
+                    connection = OpenRepositoryWriteConnection();
+                    if (connection == null)
+                    {
+                        Plugin.Instance.Logger.Warn("EnhanceChineseSearch - Phase2 skipped: no writable library connection");
+                        return;
+                    }
+
+                    LoadTokenizerExtension(connection);
+                    PatchPhase2(connection);
+                }
+                catch (Exception e)
+                {
+                    Plugin.Instance.Logger.Warn($"EnhanceChineseSearch - Phase2 failed: {e.Message}");
+                }
+                finally
+                {
+                    try
+                    {
+                        connection?.Dispose();
+                    }
+                    catch (Exception)
+                    {
+                        // 释放失败不影响后续
+                    }
+                }
+            });
+        }
+
+        /// <summary>通过仓库的 <c>CreateConnection(false, ct)</c> 取一条可写连接（参与 Emby 写信号量）。</summary>
+        private static IDatabaseConnection OpenRepositoryWriteConnection()
+        {
+            try
+            {
+                var repository = BaseItem.ItemRepository;
+                if (repository == null || _createConnection == null) return null;
+
+                return _createConnection.Invoke(repository, new object[] { false, CancellationToken.None })
+                    as IDatabaseConnection;
+            }
+            catch (Exception e)
+            {
+                Plugin.Instance.Logger.Warn($"EnhanceChineseSearch - open writable connection failed: {e.Message}");
+                return null;
+            }
         }
 
         private static void PatchPhase2(IDatabaseConnection connection)
@@ -1149,7 +1268,24 @@ namespace StrmAssistant.Mod
 
         private static bool LoadTokenizerExtension(IDatabaseConnection connection)
         {
-            if (HasTokenizerOnConnection(connection)) return true;
+            object handle = null;
+            try
+            {
+                handle = sqlite3_db?.GetValue(connection);
+            }
+            catch (Exception)
+            {
+                // 拿不到句柄就退回逐次探针
+            }
+
+            // 该句柄已确认加载过（克隆共享句柄）→ 直接返回，省掉一次 SQL 往返
+            if (handle != null && _tokenizedHandles.TryGetValue(handle, out _)) return true;
+
+            if (HasTokenizerOnConnection(connection))
+            {
+                MarkTokenized(handle);
+                return true;
+            }
 
             try
             {
@@ -1194,6 +1330,8 @@ namespace StrmAssistant.Mod
                 sqlite3_enable_load_extension.Invoke(raw, new[] { db, 1 });
                 connection.Execute("SELECT load_extension('" + _tokenizerPath + "')");
 
+                MarkTokenized(handle);
+
                 return true;
             }
             catch (Exception e)
@@ -1213,6 +1351,39 @@ namespace StrmAssistant.Mod
             return false;
         }
 
+        /// <summary>
+        /// 从连接管理器实例取仓库标识（<c>PooledDatabaseConnectionManager.Id</c> = 仓库类型名）。
+        /// 传入仓库实例时返回 null。
+        /// </summary>
+        private static string TryGetManagerId(object instance)
+        {
+            if (instance == null || _managerId == null) return null;
+
+            try
+            {
+                return _managerId.GetValue(instance) as string;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>记下「该原生句柄已加载分词器」，后续克隆直接命中。</summary>
+        private static void MarkTokenized(object handle)
+        {
+            if (handle == null) return;
+
+            try
+            {
+                _tokenizedHandles.GetValue(handle, _ => TokenizedMarker);
+            }
+            catch (Exception)
+            {
+                // 去重表异常只影响性能，不影响正确性
+            }
+        }
+
         [HarmonyPostfix]
         private static void CreateConnectionPostfix(object __instance, ref IDatabaseConnection __result)
         {
@@ -1223,10 +1394,19 @@ namespace StrmAssistant.Mod
                 {
                     // 尝试获取数据库文件路径，如果属性不存在则尝试其他方式
                     string db = null;
+                    var managerId = TryGetManagerId(__instance);
 
                     if (_dbFilePath != null)
                     {
-                        db = _dbFilePath.GetValue(__instance) as string;
+                        // __instance 可能是连接管理器（新补丁目标），此时仓库属性不适用
+                        try
+                        {
+                            db = _dbFilePath.GetValue(__instance) as string;
+                        }
+                        catch (TargetException)
+                        {
+                            db = null;
+                        }
                     }
                     else
                     {
@@ -1279,6 +1459,13 @@ namespace StrmAssistant.Mod
                         _libraryDbPath = db;
                     }
 
+                    // 管理器侧拿不到路径，用 Id（= 仓库类型名）判断；非条目库跳过
+                    if (db == null && managerId != null &&
+                        !managerId.Equals("SqliteItemRepository", StringComparison.Ordinal))
+                    {
+                        return;
+                    }
+
                     // 如果 db 为 null，可能是新版本中路径获取方式改变了
                     // 在这种情况下，我们仍然尝试加载，但记录警告
                     if (db == null && Plugin.Instance.DebugMode)
@@ -1286,12 +1473,24 @@ namespace StrmAssistant.Mod
                         Plugin.Instance.Logger.Debug("EnhanceChineseSearch: Could not determine database path, attempting to load tokenizer anyway");
                     }
 
+                    var handle = sqlite3_db?.GetValue(__result);
+                    var handleKey = handle == null ? "null" : RuntimeHelpers.GetHashCode(handle).ToString("x8");
                     var tokenizerLoaded = LoadTokenizerExtension(__result);
+
+                    if (_loggedHandles.Add($"{__instance.GetType().Name}|{managerId}|{handleKey}|{__result.IsReadOnly}"))
+                    {
+                        Plugin.Instance.Logger.Info(
+                            $"EnhanceChineseSearch - tokenizer {(tokenizerLoaded ? "ready" : "NOT loaded")} on " +
+                            $"{__instance.GetType().Name}({managerId ?? Path.GetFileName(db) ?? "-"}) " +
+                            $"handle={handleKey} readOnly={__result.IsReadOnly}");
+                    }
 
                     if (tokenizerLoaded && !_patchPhase2Initialized)
                     {
                         _patchPhase2Initialized = true;
-                        PatchPhase2(__result);
+                        // Phase2 含全量索引重建，绝不能跑在 CreateConnection 的调用栈里：
+                        // 写路径此时持有写信号量 + _lock，重建会把整个库冻住甚至死锁。
+                        QueuePhase2();
                     }
                 }
                 catch (Exception ex)
