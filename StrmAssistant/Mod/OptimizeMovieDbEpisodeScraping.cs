@@ -4,6 +4,7 @@ using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
 using StrmAssistant.Common;
+using StrmAssistant.Core;
 using StrmAssistant.Provider;
 using System;
 using System.Collections.Generic;
@@ -250,7 +251,21 @@ namespace StrmAssistant.Mod
             });
         }
 
+        /// <summary>
+        /// 按季拉取剧集列表。被 <c>EpisodeGetMetadataPrefix</c> / <c>EpisodeGetImagesPrefix</c>
+        /// 以 <c>.Result</c> **同步阻塞**调用 —— 埋点量化（首集付网络，其余命中缓存）。
+        /// </summary>
         private static async Task<SeasonResponseInfo> FetchSeasonInfoAsync(string tmdbId, int seasonNumber,
+            string language, CancellationToken cancellationToken)
+        {
+            using (PerfProbe.Measure("MovieDb.FetchSeasonInfo", 500))
+            {
+                return await FetchSeasonInfoCoreAsync(tmdbId, seasonNumber, language, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        private static async Task<SeasonResponseInfo> FetchSeasonInfoCoreAsync(string tmdbId, int seasonNumber,
             string language, CancellationToken cancellationToken)
         {
             var cacheFilename = $"season-{seasonNumber}-episodes";

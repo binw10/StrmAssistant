@@ -10,6 +10,7 @@ using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
 using MediaBrowser.Model.Serialization;
+using StrmAssistant.Core;
 using StrmAssistant.Mod;
 using StrmAssistant.Provider;
 using System;
@@ -343,7 +344,21 @@ namespace StrmAssistant.Common
             return null;
         }
         
+        /// <summary>
+        /// 在线剧集组（TMDB / 外部 URL）。被 <c>MovieDbEpisodeGroup</c> 的 Harmony Prefix
+        /// 以 <c>.Result</c> **同步阻塞**调用 —— 此处埋点量化其耗时（含缓存命中）。
+        /// </summary>
         public async Task<EpisodeGroupResponse> FetchOnlineEpisodeGroup(string seriesTmdbId,
+            string episodeGroupId, string language, string localEpisodeGroupPath, CancellationToken cancellationToken)
+        {
+            using (PerfProbe.Measure("MetadataApi.FetchOnlineEpisodeGroup", 500))
+            {
+                return await FetchOnlineEpisodeGroupCore(seriesTmdbId, episodeGroupId, language,
+                    localEpisodeGroupPath, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private async Task<EpisodeGroupResponse> FetchOnlineEpisodeGroupCore(string seriesTmdbId,
             string episodeGroupId, string language, string localEpisodeGroupPath, CancellationToken cancellationToken)
         {
             var isExternalEpisodeGroup = IsValidHttpUrl(episodeGroupId);
@@ -389,7 +404,19 @@ namespace StrmAssistant.Common
             return episodeGroupResponse;
         }
 
+        /// <summary>
+        /// 本地剧集组 JSON。被 <c>MovieDbEpisodeGroup</c> 的 Prefix 以 <c>.Result</c> 同步调用；
+        /// 有 <see cref="LruCache"/> 兜底，正常应为毫秒级 —— 埋点用于确认「本地读是否真的快」。
+        /// </summary>
         public async Task<EpisodeGroupResponse> FetchLocalEpisodeGroup(string localEpisodeGroupPath)
+        {
+            using (PerfProbe.Measure("MetadataApi.FetchLocalEpisodeGroup", 100))
+            {
+                return await FetchLocalEpisodeGroupCore(localEpisodeGroupPath).ConfigureAwait(false);
+            }
+        }
+
+        private async Task<EpisodeGroupResponse> FetchLocalEpisodeGroupCore(string localEpisodeGroupPath)
         {
             EpisodeGroupResponse result = null;
 

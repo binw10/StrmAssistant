@@ -59,11 +59,7 @@ namespace StrmAssistant.Mod
         {
             if (__result == null) return;
 
-            __result = __result.ContinueWith(t =>
-            {
-                if (t.Status == TaskStatus.RanToCompletion) ConvertOverview(t.Result);
-                return t.Result;
-            });
+            __result = ConvertOverviewAsync(__result);
         }
 
         [HarmonyPostfix]
@@ -71,11 +67,19 @@ namespace StrmAssistant.Mod
         {
             if (__result == null) return;
 
-            __result = __result.ContinueWith(t =>
-            {
-                if (t.Status == TaskStatus.RanToCompletion) ConvertOverview(t.Result);
-                return t.Result;
-            });
+            __result = ConvertOverviewAsync(__result);
+        }
+
+        /// <summary>
+        /// 换包模式：<c>await</c> 原 Task → 繁中转换 → 原样返回。
+        /// 相比 <c>ContinueWith</c>，异常与取消状态原样传播（见 <see cref="ClearTagline"/> 同类说明）。
+        /// </summary>
+        private static async Task<MetadataResult<T>> ConvertOverviewAsync<T>(Task<MetadataResult<T>> task)
+            where T : BaseItem
+        {
+            var result = await task.ConfigureAwait(false);
+            ConvertOverview(result);
+            return result;
         }
 
         private static void ConvertOverview<T>(MetadataResult<T> result) where T : BaseItem

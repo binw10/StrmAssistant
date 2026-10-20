@@ -12,6 +12,7 @@ using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.MediaInfo;
 using MediaBrowser.Model.Querying;
+using StrmAssistant.Core;
 using StrmAssistant.Mod;
 using StrmAssistant.Options;
 using StrmAssistant.Properties;
@@ -1140,7 +1141,23 @@ namespace StrmAssistant.Common
             return (Task<IMediaMount>)_mountMethod.Invoke(_mediaMountManager, args);
         }
 
+        /// <summary>
+        /// strm 目标挂载路径解析。
+        /// <para>
+        /// ⚠️ 每次调用都会**真实 Mount**（<see cref="InvokeMountAsync"/> 内无缓存），
+        /// 且被 <c>ExclusiveExtract.GetInputArgumentPrefix</c> 在**探测热路径**上同步调用。
+        /// 此处埋点用于量化其真实开销（指标常驻，逐次日志仅 DebugMode 且 ≥200ms）。
+        /// </para>
+        /// </summary>
         public async Task<string> GetStrmMountPath(string strmPath)
+        {
+            using (PerfProbe.Measure("LibraryApi.GetStrmMountPath", 200))
+            {
+                return await GetStrmMountPathCore(strmPath).ConfigureAwait(false);
+            }
+        }
+
+        private async Task<string> GetStrmMountPathCore(string strmPath)
         {
             try
             {

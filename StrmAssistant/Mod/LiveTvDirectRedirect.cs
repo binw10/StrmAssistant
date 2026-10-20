@@ -95,29 +95,56 @@ namespace StrmAssistant.Mod
             }
         }
 
+        /// <summary>
+        /// 换包模式：把「标记可直连」包成新 Task 交回调用方。
+        /// <para>
+        /// 不能用 <c>async void</c>——那会在第一个 <c>await</c> 处立即返回，Harmony 把**原始** Task
+        /// 交给调用方，而调用方拿到 List 后可能已经开始生成播放地址，此时
+        /// <c>RequiresOpening</c> / <c>SupportsDirectPlay</c> 是否已赋值取决于线程调度顺序，
+        /// 表现为 LiveTV 直链"时好时坏"。
+        /// </para>
+        /// <para>
+        /// 改成 <c>ref</c> + 返回新 Task 后，调用方 <c>await</c> 到的一定是**已改过**的同一个 List 实例。
+        /// </para>
+        /// </summary>
         [HarmonyPostfix]
-        private static async void GetChannelMediaSourcesPostfix(Task<List<MediaSourceInfo>> __result)
+        private static void GetChannelMediaSourcesPostfix(ref Task<List<MediaSourceInfo>> __result)
         {
             if (!IsEnabled || __result == null) return;
 
+            __result = MarkDirectPlayableAsync(__result);
+        }
+
+        private static async Task<List<MediaSourceInfo>> MarkDirectPlayableAsync(
+            Task<List<MediaSourceInfo>> task)
+        {
+            // 原 Task 若失败/取消，异常原样向外传播（不吞）
+            var sources = await task.ConfigureAwait(false);
+
             try
             {
-                foreach (var mediaSource in await __result)
+                if (sources != null)
                 {
-                    mediaSource.RequiresOpening = false;
-                    mediaSource.RequiresClosing = false;
-                    mediaSource.OpenToken = null;
-                    mediaSource.IsRemote = true;
-                    mediaSource.Protocol = MediaProtocol.Http;
-                    mediaSource.SupportsDirectPlay = true;
-                    mediaSource.SupportsDirectStream = true;
-                    mediaSource.SupportsTranscoding = false;
+                    foreach (var mediaSource in sources)
+                    {
+                        mediaSource.RequiresOpening = false;
+                        mediaSource.RequiresClosing = false;
+                        mediaSource.OpenToken = null;
+                        mediaSource.IsRemote = true;
+                        mediaSource.Protocol = MediaProtocol.Http;
+                        mediaSource.SupportsDirectPlay = true;
+                        mediaSource.SupportsDirectStream = true;
+                        mediaSource.SupportsTranscoding = false;
+                    }
                 }
             }
             catch (Exception e)
             {
-                Plugin.Instance.Logger.Debug($"LiveTvDirectRedirect: 处理 MediaSource 失败 - {e.Message}");
+                // 该路径低频，失败必须可见（此前只记 Debug，线上等于静默）
+                Plugin.Instance.Logger.Warn($"LiveTvDirectRedirect: 标记 MediaSource 失败 - {e}");
             }
+
+            return sources;
         }
     }
 }

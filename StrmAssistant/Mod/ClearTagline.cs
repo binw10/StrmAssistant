@@ -56,11 +56,7 @@ namespace StrmAssistant.Mod
         {
             if (__result == null) return;
 
-            __result = __result.ContinueWith(t =>
-            {
-                if (t.Status == TaskStatus.RanToCompletion) ClearTaglines(t.Result);
-                return t.Result;
-            });
+            __result = ClearTaglinesAsync(__result);
         }
 
         [HarmonyPostfix]
@@ -68,11 +64,20 @@ namespace StrmAssistant.Mod
         {
             if (__result == null) return;
 
-            __result = __result.ContinueWith(t =>
-            {
-                if (t.Status == TaskStatus.RanToCompletion) ClearTaglines(t.Result);
-                return t.Result;
-            });
+            __result = ClearTaglinesAsync(__result);
+        }
+
+        /// <summary>
+        /// 换包模式：<c>await</c> 原 Task → 清空 Tagline → 原样返回。
+        /// 相比 <c>ContinueWith</c>，原 Task 的异常与取消状态会**原样传播**给调用方
+        /// （<c>ContinueWith</c> 会把异常落在新 Task 上，若外层不读就变成 UnobservedTaskException）。
+        /// </summary>
+        private static async Task<MetadataResult<T>> ClearTaglinesAsync<T>(Task<MetadataResult<T>> task)
+            where T : BaseItem
+        {
+            var result = await task.ConfigureAwait(false);
+            ClearTaglines(result);
+            return result;
         }
 
         private static void ClearTaglines<T>(MetadataResult<T> result) where T : BaseItem

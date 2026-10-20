@@ -5,6 +5,7 @@ using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Configuration;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
+using StrmAssistant.Core;
 using StrmAssistant.Provider;
 using System;
 using System.Collections.Generic;
@@ -480,7 +481,22 @@ namespace StrmAssistant.Mod
             }
         }
 
+        /// <summary>
+        /// 季集号映射（本地/在线剧集组）。被 Prefix 以 <c>.Result</c> **同步阻塞**调用，
+        /// 内部可能串行触发本地读 + 在线拉取 —— 埋点量化整体耗时。
+        /// </summary>
         private static async Task<SeasonEpisodeMapping> MapSeasonEpisode(string seriesTmdbId, string episodeGroupId,
+            string language, int? lookupSeasonNumber, int? lookupEpisodeNumber, string localEpisodeGroupPath,
+            CancellationToken cancellationToken)
+        {
+            using (PerfProbe.Measure("MovieDbEpisodeGroup.MapSeasonEpisode", 500))
+            {
+                return await MapSeasonEpisodeCore(seriesTmdbId, episodeGroupId, language, lookupSeasonNumber,
+                    lookupEpisodeNumber, localEpisodeGroupPath, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private static async Task<SeasonEpisodeMapping> MapSeasonEpisodeCore(string seriesTmdbId, string episodeGroupId,
             string language, int? lookupSeasonNumber, int? lookupEpisodeNumber, string localEpisodeGroupPath,
             CancellationToken cancellationToken)
         {
