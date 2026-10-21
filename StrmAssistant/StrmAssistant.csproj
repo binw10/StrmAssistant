@@ -73,6 +73,8 @@
     <!-- 显式拼接输出目录，避免 Build 目标里 TargetPath/TargetDir 为空 -->
     <StrmAssistantBuildOutputDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(TargetFramework)\</StrmAssistantBuildOutputDir>
     <StrmAssistantMergedAssembly>$(StrmAssistantBuildOutputDir)$(AssemblyName).dll</StrmAssistantMergedAssembly>
+    <!-- 发布包命名：StrmAssistantPlus_v3.0.0.58.dll；部署文件名保持 StrmAssistant.dll，避免多版本副本被 Emby 同时加载 -->
+    <StrmAssistantPackageAssembly>$(StrmAssistantBuildOutputDir)StrmAssistantPlus_v$(Version).dll</StrmAssistantPackageAssembly>
 
     <!-- ILRepack 可执行文件：优先使用 NuGet 包目录，避免 $(ILRepack) 这类空属性 -->
     <ILRepackExe Condition="'$(ILRepackExe)'=='' and '$(NuGetPackageRoot)'!=''">$(NuGetPackageRoot)ilrepack\2.0.42\tools\ILRepack.exe</ILRepackExe>
@@ -95,6 +97,12 @@
     <Message Importance="high" Text="StrmAssistant: ILRepack merge -> $(StrmAssistantMergedAssembly)" />
     <Message Importance="high" Text="StrmAssistant: ILRepack exe -> $(ILRepackExe)" />
     <Exec Command="&quot;$(ILRepackExe)&quot; /out:&quot;$(StrmAssistantMergedAssembly)&quot; &quot;$(StrmAssistantMergedAssembly)&quot; &quot;$(StrmAssistantBuildOutputDir)0Harmony.dll&quot; &quot;$(StrmAssistantBuildOutputDir)ChineseConverter.dll&quot; &quot;$(StrmAssistantBuildOutputDir)TinyPinyin.dll&quot; &quot;$(StrmAssistantBuildOutputDir)DiscUtils.Core.dll&quot; &quot;$(StrmAssistantBuildOutputDir)DiscUtils.Streams.dll&quot; &quot;$(StrmAssistantBuildOutputDir)DiscUtils.Udf.dll&quot; &quot;$(StrmAssistantBuildOutputDir)DiscUtils.Iso9660.dll&quot; /lib:&quot;$(StrmAssistantBuildOutputDir)&quot;" />
+
+    <Copy SourceFiles="$(StrmAssistantMergedAssembly)"
+          DestinationFiles="$(StrmAssistantPackageAssembly)"
+          OverwriteReadOnlyFiles="true"
+          SkipUnchangedFiles="false" />
+    <Message Importance="high" Text="StrmAssistant: versioned package -> $(StrmAssistantPackageAssembly)" />
 
     <MakeDir Condition="'$(StrmAssistantPluginOutputDir)'!=''" Directories="$(StrmAssistantPluginOutputDir)" />
     <Copy Condition="'$(StrmAssistantPluginOutputDir)'!=''"
