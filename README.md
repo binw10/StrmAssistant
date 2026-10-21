@@ -93,7 +93,7 @@
 git add -A && git commit -m "..." && git push
 ```
 
-然后从 [Releases](https://github.com/myp015/StrmAssistant/releases) 下载最新 `build-N` 的 `StrmAssistant.dll`，部署到 `config/plugins/StrmAssistant.dll` 后重启 Emby。
+然后从 [Releases](https://github.com/myp015/StrmAssistant/releases) 下载最新 `build-N` 的 `StrmAssistantPlus_v<版本>.dll`，重命名为 `StrmAssistant.dll` 覆盖到 `config/plugins/StrmAssistant.dll` 后重启 Emby。
 
 ### 方式二：本地构建
 

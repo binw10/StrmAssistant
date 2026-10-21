@@ -2,8 +2,11 @@ name: Build Plugin
 
 on:
   push:
-    branches: [main, master]
+    branches: [myp015]
   workflow_dispatch:  # 支持手动触发
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -33,21 +36,31 @@ jobs:
         run: dotnet restore StrmAssistant/StrmAssistant.csproj
 
       - name: Build the project
-        run: dotnet build StrmAssistant/StrmAssistant.csproj --no-restore --configuration Release -p:UseSharedCompilation=false
+        run: dotnet build StrmAssistant/StrmAssistant.csproj --no-restore --configuration Release -p:UseSharedCompilation=false -p:StrmAssistantPluginOutputDir=
 
-      # 收集编译产物（ILRepack 打包后的最终 DLL）
+      - name: Read version
+        id: version
+        shell: pwsh
+        run: |
+          [xml]$csproj = Get-Content "StrmAssistant/StrmAssistant.csproj"
+          $version = ($csproj.Project.PropertyGroup.Version | Where-Object { $_ }) | Select-Object -First 1
+          if (-not $version) { throw "Version not found in csproj" }
+          "value=$version" >> $env:GITHUB_OUTPUT
+
+      # 收集编译产物（ILRepack 打包后的版本化 DLL）
       - name: Collect artifact
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifact | Out-Null
-          Get-ChildItem -Path "StrmAssistant/bin/Release/net6.0/StrmAssistant.dll" -ErrorAction SilentlyContinue | Copy-Item -Destination artifact/
-          Get-ChildItem -Path "StrmAssistant/bin/Release/StrmAssistant.dll" -ErrorAction SilentlyContinue | Copy-Item -Destination artifact/
+          $dll = Get-ChildItem "StrmAssistant/bin/Release/net6.0/StrmAssistantPlus_v*.dll" | Select-Object -First 1
+          if (-not $dll) { throw "Versioned DLL not found" }
+          Copy-Item $dll.FullName -Destination artifact/
           Get-ChildItem artifact/ | Select-Object Name, Length
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: StrmAssistant-${{ github.run_number }}
+          name: StrmAssistantPlus_v${{ steps.version.outputs.value }}-${{ github.run_number }}
           path: artifact/*
           compression-level: 0  # DLL已经是二进制，不需要压缩
           retention-days: 30
@@ -58,9 +71,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: StrmAssistant build #${{ github.run_number }}
+          name: StrmAssistantPlus v${{ steps.version.outputs.value }} build #${{ github.run_number }}
           body: |
             Auto-build from commit ${{ github.sha }}
+            Version: ${{ steps.version.outputs.value }}
             Emby 4.9 / 4.10 compatible
-          files: artifact/StrmAssistant.dll
-          fail_on_unmatched_files: false
+          files: artifact/*.dll
+          fail_on_unmatched_files: true
