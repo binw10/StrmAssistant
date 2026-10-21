@@ -1374,10 +1374,10 @@
     <value>ISO 提取</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_MediaInfoPersist" xml:space="preserve">
-    <value>媒体信息持久化</value>
+    <value>信息持久化</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_ExtractionPerformance" xml:space="preserve">
-    <value>性能与独占</value>
+    <value>独占与性能</value>
   </data>
   <data name="IntroSkipOptions_Group_Fingerprint" xml:space="preserve">
     <value>声纹探测</value>
@@ -1386,13 +1386,13 @@
     <value>在线刮削</value>
   </data>
   <data name="IntroSkipOptions_Group_Playback" xml:space="preserve">
-    <value>行为探测</value>
+    <value>行为标记</value>
   </data>
   <data name="ExperienceEnhanceOptions_Group_VersionMerge" xml:space="preserve">
-    <value>多版本合并</value>
+    <value>合并</value>
   </data>
   <data name="ExperienceEnhanceOptions_Group_VersionDisplay" xml:space="preserve">
-    <value>多版本展示</value>
+    <value>展示</value>
   </data>
   <data name="ExperienceEnhanceOptions_Group_Playback" xml:space="preserve">
     <value>播放与清理</value>
@@ -1401,7 +1401,7 @@
     <value>通知</value>
   </data>
   <data name="GeneralOptions_Group_TaskConcurrency" xml:space="preserve">
-    <value>任务并发</value>
+    <value>并发控制</value>
   </data>
   <data name="GeneralOptions_Group_Memory" xml:space="preserve">
     <value>内存管理</value>
@@ -1429,5 +1429,11 @@
   </data>
   <data name="MetadataEnhanceOptions_ClearSeasonMapButton_Remove_cached_series_season_mappings_so_season_items_are_matched_again__Useful_after_a_wrong_season_match_" xml:space="preserve">
     <value>清除已缓存的剧集→季映射，让季条目重新匹配。季条目匹配错误后可点此重置。</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_Group_MultipleVersions" xml:space="preserve">
+    <value>多版本</value>
+  </data>
+  <data name="MediaInfoExtractOptions_Group_MediaInfoStoragePerformance" xml:space="preserve">
+    <value>媒体信息持久化与性能</value>
   </data>
 </root>

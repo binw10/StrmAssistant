@@ -3037,6 +3037,15 @@ namespace StrmAssistant.Properties {
                 return ResourceManager.GetString("MediaInfoExtractOptions_Group_ExtractionPerformance", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to MediaInfo Persistence and Performance.
+        /// </summary>
+        public static string MediaInfoExtractOptions_Group_MediaInfoStoragePerformance {
+            get {
+                return ResourceManager.GetString("MediaInfoExtractOptions_Group_MediaInfoStoragePerformance", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Detection and Fingerprint.
@@ -3080,6 +3089,15 @@ namespace StrmAssistant.Properties {
         public static string ExperienceEnhanceOptions_Group_VersionDisplay {
             get {
                 return ResourceManager.GetString("ExperienceEnhanceOptions_Group_VersionDisplay", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Multiple Versions.
+        /// </summary>
+        public static string ExperienceEnhanceOptions_Group_MultipleVersions {
+            get {
+                return ResourceManager.GetString("ExperienceEnhanceOptions_Group_MultipleVersions", resourceCulture);
             }
         }
         

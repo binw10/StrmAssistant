@@ -1,8 +1,13 @@
 using Emby.Web.GenericEdit;
+using Emby.Web.GenericEdit.Editors;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.GenericEdit;
 using MediaBrowser.Model.LocalizationAttributes;
 using StrmAssistant.Properties;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace StrmAssistant.Options
@@ -74,6 +79,70 @@ namespace StrmAssistant.Options
         public bool IsModSupported =>
             RuntimeInformation.ProcessArchitecture == Architecture.X64 ||
             RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
+
+        public override IEditObjectContainer CreateEditContainer()
+        {
+            var container = base.CreateEditContainer();
+            if (!(container is EditObjectContainer editContainer) ||
+                editContainer.EditorRoot?.EditorItems == null) return container;
+
+            var root = editContainer.EditorRoot;
+            var items = root.EditorItems.ToList();
+            var persist = items.OfType<EditorGroup>().FirstOrDefault(g => IsEditor(g, nameof(MediaInfoPersist)));
+            var performance = items.OfType<EditorGroup>().FirstOrDefault(g => IsEditor(g, nameof(ExtractionPerformance)));
+            if (persist == null || performance == null) return container;
+
+            // 独占提取放在合并组最上面。
+            if (performance.EditorItems != null)
+            {
+                var perfItems = performance.EditorItems.ToList();
+                var order = new[]
+                {
+                    nameof(ExtractionPerformanceOptions.ExclusiveExtract),
+                    nameof(ExtractionPerformanceOptions.ExclusiveControlFeatures),
+                    nameof(ExtractionPerformanceOptions.MediaInfoExtractionTimeoutMs),
+                    nameof(ExtractionPerformanceOptions.ImageExtractionTimeoutMultiplier)
+                };
+                var ordered = new List<EditorBase>();
+                foreach (var name in order)
+                {
+                    ordered.AddRange(perfItems.Where(i => IsEditor(i, name)));
+                }
+                ordered.AddRange(perfItems.Where(i => !ordered.Contains(i)));
+                performance.EditorItems = ordered.ToArray();
+            }
+
+            var storagePerformance = new EditorGroup(
+                Resources.MediaInfoExtractOptions_Group_MediaInfoStoragePerformance,
+                new EditorBase[] { performance, persist }, "MediaInfoStoragePerformance", root.Id, null);
+
+            var newItems = new List<EditorBase>();
+            foreach (var item in items)
+            {
+                if (ReferenceEquals(item, persist))
+                {
+                    newItems.Add(storagePerformance);
+                    continue;
+                }
+
+                if (ReferenceEquals(item, performance)) continue;
+
+                newItems.Add(item);
+            }
+
+            root.EditorItems = newItems.ToArray();
+            return container;
+        }
+
+        private static bool IsEditor(EditorBase editor, string name)
+        {
+            if (editor == null) return false;
+            if (string.Equals(editor.Name, name, StringComparison.OrdinalIgnoreCase)) return true;
+            var id = editor.Id;
+            return !string.IsNullOrEmpty(id) &&
+                   (string.Equals(id, name, StringComparison.OrdinalIgnoreCase) ||
+                    id.EndsWith("." + name, StringComparison.OrdinalIgnoreCase));
+        }
 
         public void Initialize(ILibraryManager libraryManager)
         {

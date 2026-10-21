@@ -1,11 +1,14 @@
 using Emby.Web.GenericEdit;
+using Emby.Web.GenericEdit.Editors;
 using Emby.Web.GenericEdit.Elements;
 using Emby.Web.GenericEdit.Validation;
 using MediaBrowser.Model.Attributes;
+using MediaBrowser.Model.GenericEdit;
 using MediaBrowser.Model.LocalizationAttributes;
 using StrmAssistant.Mod;
 using StrmAssistant.Properties;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 
@@ -94,6 +97,64 @@ namespace StrmAssistant.Options
         protected override void Validate(ValidationContext context)
         {
             ValidateChildGroup(context, nameof(TaskConcurrency));
+        }
+
+        public override IEditObjectContainer CreateEditContainer()
+        {
+            var container = base.CreateEditContainer();
+            if (!(container is EditObjectContainer editContainer) ||
+                editContainer.EditorRoot?.EditorItems == null) return container;
+
+            var root = editContainer.EditorRoot;
+            var rootItems = root.EditorItems.ToList();
+            var taskGroup = rootItems.OfType<EditorGroup>()
+                .FirstOrDefault(g => IsEditor(g, nameof(TaskConcurrency)));
+            if (taskGroup?.EditorItems == null) return container;
+
+            var taskItems = taskGroup.EditorItems.ToList();
+            var catchupNames = new[]
+            {
+                nameof(TaskConcurrencyOptions.CatchupMode),
+                nameof(TaskConcurrencyOptions.CatchupMinWaitSeconds),
+                nameof(TaskConcurrencyOptions.CatchupTaskScope)
+            };
+            var catchupItems = taskItems
+                .Where(i => catchupNames.Any(n => IsEditor(i, n)))
+                .ToList();
+            if (catchupItems.Count == 0) return container;
+
+            var remaining = taskItems.Except(catchupItems).ToList();
+            var concurrencyGroup = new EditorGroup(Resources.GeneralOptions_Group_TaskConcurrency,
+                remaining.ToArray(), taskGroup.Name, taskGroup.ParentId, null);
+
+            var newItems = new List<EditorBase>();
+            foreach (var item in rootItems)
+            {
+                if (ReferenceEquals(item, taskGroup))
+                {
+                    newItems.Add(concurrencyGroup);
+                    continue;
+                }
+
+                newItems.Add(item);
+                if (IsEditor(item, nameof(EnablePlugin)))
+                {
+                    newItems.AddRange(catchupItems);
+                }
+            }
+
+            root.EditorItems = newItems.ToArray();
+            return container;
+        }
+
+        private static bool IsEditor(EditorBase editor, string name)
+        {
+            if (editor == null) return false;
+            if (string.Equals(editor.Name, name, StringComparison.OrdinalIgnoreCase)) return true;
+            var id = editor.Id;
+            return !string.IsNullOrEmpty(id) &&
+                   (string.Equals(id, name, StringComparison.OrdinalIgnoreCase) ||
+                    id.EndsWith("." + name, StringComparison.OrdinalIgnoreCase));
         }
 
         public void Initialize()

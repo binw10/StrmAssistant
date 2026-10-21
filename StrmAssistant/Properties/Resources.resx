@@ -1461,10 +1461,10 @@
     <value>ISO Extraction</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_MediaInfoPersist" xml:space="preserve">
-    <value>MediaInfo Persistence</value>
+    <value>Persistence</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_ExtractionPerformance" xml:space="preserve">
-    <value>Performance &amp; Exclusive</value>
+    <value>Exclusive &amp; Performance</value>
   </data>
   <data name="IntroSkipOptions_Group_Fingerprint" xml:space="preserve">
     <value>Fingerprint Detection</value>
@@ -1473,13 +1473,13 @@
     <value>Online Scraping</value>
   </data>
   <data name="IntroSkipOptions_Group_Playback" xml:space="preserve">
-    <value>Behavior Detection</value>
+    <value>Behavior Markers</value>
   </data>
   <data name="ExperienceEnhanceOptions_Group_VersionMerge" xml:space="preserve">
-    <value>Version Merge</value>
+    <value>Merge</value>
   </data>
   <data name="ExperienceEnhanceOptions_Group_VersionDisplay" xml:space="preserve">
-    <value>Version Display</value>
+    <value>Display</value>
   </data>
   <data name="ExperienceEnhanceOptions_Group_Playback" xml:space="preserve">
     <value>Playback &amp; Cleanup</value>
@@ -1488,7 +1488,7 @@
     <value>Notification</value>
   </data>
   <data name="GeneralOptions_Group_TaskConcurrency" xml:space="preserve">
-    <value>Task Concurrency</value>
+    <value>Concurrency Control</value>
   </data>
   <data name="GeneralOptions_Group_Memory" xml:space="preserve">
     <value>Memory</value>
@@ -1516,5 +1516,11 @@
   </data>
   <data name="MetadataEnhanceOptions_ClearSeasonMapButton_Remove_cached_series_season_mappings_so_season_items_are_matched_again__Useful_after_a_wrong_season_match_" xml:space="preserve">
     <value>Remove cached series-to-season mappings so season items are matched again. Use this after a wrong season match.</value>
+  </data>
+  <data name="ExperienceEnhanceOptions_Group_MultipleVersions" xml:space="preserve">
+    <value>Multiple Versions</value>
+  </data>
+  <data name="MediaInfoExtractOptions_Group_MediaInfoStoragePerformance" xml:space="preserve">
+    <value>MediaInfo Persistence &amp; Performance</value>
   </data>
 </root>

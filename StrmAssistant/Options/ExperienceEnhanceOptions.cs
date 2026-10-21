@@ -1,7 +1,12 @@
 using Emby.Web.GenericEdit;
+using Emby.Web.GenericEdit.Editors;
+using MediaBrowser.Model.GenericEdit;
 using MediaBrowser.Model.LocalizationAttributes;
 using StrmAssistant.Properties;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace StrmAssistant.Options
@@ -53,5 +58,48 @@ namespace StrmAssistant.Options
         public bool IsModSupported =>
             RuntimeInformation.ProcessArchitecture == Architecture.X64 ||
             RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
+
+        public override IEditObjectContainer CreateEditContainer()
+        {
+            var container = base.CreateEditContainer();
+            if (!(container is EditObjectContainer editContainer) ||
+                editContainer.EditorRoot?.EditorItems == null) return container;
+
+            var root = editContainer.EditorRoot;
+            var items = root.EditorItems.ToList();
+            var merge = items.OfType<EditorGroup>().FirstOrDefault(g => IsEditor(g, nameof(Merge)));
+            var display = items.OfType<EditorGroup>().FirstOrDefault(g => IsEditor(g, nameof(Display)));
+            if (merge == null || display == null) return container;
+
+            var multipleVersions = new EditorGroup(Resources.ExperienceEnhanceOptions_Group_MultipleVersions,
+                new EditorBase[] { merge, display }, "MultipleVersions", root.Id, null);
+
+            var newItems = new List<EditorBase>();
+            foreach (var item in items)
+            {
+                if (ReferenceEquals(item, merge))
+                {
+                    newItems.Add(multipleVersions);
+                    continue;
+                }
+
+                if (ReferenceEquals(item, display)) continue;
+
+                newItems.Add(item);
+            }
+
+            root.EditorItems = newItems.ToArray();
+            return container;
+        }
+
+        private static bool IsEditor(EditorBase editor, string name)
+        {
+            if (editor == null) return false;
+            if (string.Equals(editor.Name, name, StringComparison.OrdinalIgnoreCase)) return true;
+            var id = editor.Id;
+            return !string.IsNullOrEmpty(id) &&
+                   (string.Equals(id, name, StringComparison.OrdinalIgnoreCase) ||
+                    id.EndsWith("." + name, StringComparison.OrdinalIgnoreCase));
+        }
     }
 }
