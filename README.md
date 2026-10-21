@@ -87,7 +87,7 @@
 
 ### 方式一：GitHub Actions（推荐）
 
-在 GitHub 仓库的 Actions 页面选择 `Build Plugin`，点击 `Run workflow` 手动触发；构建完成后从 [Releases](https://github.com/myp015/StrmAssistant/releases) 下载最新 `build-N` 的 `StrmAssistantPlus_v<版本>.dll`，重命名为 `StrmAssistant.dll` 覆盖到 `config/plugins/StrmAssistant.dll` 后重启 Emby。
+在 GitHub 仓库的 Actions 页面选择 `Build Plugin`，点击 `Run workflow` 手动触发；构建完成后从 [Releases](https://github.com/myp015/StrmAssistant/releases) 下载对应版本 tag（如 `v3.0.0.58`）的 `StrmAssistantPlus_v<版本>.dll`，重命名为 `StrmAssistant.dll` 覆盖到 `config/plugins/StrmAssistant.dll` 后重启 Emby。
 
 ### 方式二：本地构建
 
