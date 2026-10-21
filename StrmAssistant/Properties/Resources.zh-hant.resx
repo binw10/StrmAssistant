@@ -375,10 +375,10 @@
     <value>替代 TMDB API 金鑰無效</value>
   </data>
   <data name="MediaInfoExtractOptions_PersistMediaInfo_Persist_MediaInfo" xml:space="preserve">
-    <value>備份媒體訊息</value>
+    <value>媒體訊息持久化（預設）</value>
   </data>
   <data name="MediaInfoExtractOptions_PersistMediaInfo_Persist_media_info_in_JSON_file__Default_is_OFF_" xml:space="preserve">
-    <value>備份媒體資訊和章節片頭片尾標記到 JSON 檔案；擷取任務可自動恢復，也可單獨執行「恢復媒體訊息」。</value>
+    <value>擷取/入庫時優先從 JSON 恢復；缺 JSON 時探測並寫入；入庫時已有媒體訊息也會寫入備份。</value>
   </data>
   <data name="UIFunctionOptions_EnhanceMissingEpisodes_Missing_Episodes_Enhanced" xml:space="preserve">
     <value>查看缺少的集增強</value>
@@ -390,7 +390,7 @@
     <value>可選媒體資訊 JSON 根目錄</value>
   </data>
   <data name="MediaInfoExtractOptions_MediaInfoJsonRootFolder_Store_or_load_media_info_JSON_files_under_this_root_folder__Default_is_EMPTY_" xml:space="preserve">
-    <value>在此根文件夹下存储或加载媒体信息 JSON 文件，默认为空。</value>
+    <value>擷取、備份任務、恢復任務共用此根目錄；留空則與媒體檔案同目錄。Windows 下會自動按磁碟機/UNC 建立子目錄。</value>
   </data>
   <data name="ClearChapterMarkersTask_Name_Clear_Episode_Intros" xml:space="preserve">
     <value>清除片頭片尾標記</value>
@@ -414,13 +414,13 @@
     <value>備份媒體訊息</value>
   </data>
   <data name="PersistMediaInfoTask_Description_Persists_media_info_to_json_file" xml:space="preserve">
-    <value>將媒體庫已存在媒體訊息的影音匯出為 JSON，無媒體訊息則跳過</value>
+    <value>全庫匯出/刷新已有媒體訊息的 JSON（不含媒體檔案），不探測媒體。</value>
   </data>
   <data name="RestoreMediaInfoTask_Name_Restore_MediaInfo" xml:space="preserve">
     <value>恢復媒體訊息</value>
   </data>
   <data name="RestoreMediaInfoTask_Description_Restores_media_info_from_JSON_file" xml:space="preserve">
-    <value>媒體庫存在 JSON 檔案則恢復對應媒體訊息，不存在 JSON 檔案則跳過</value>
+    <value>從 JSON 恢復 DB 缺失的媒體訊息、章節和縮圖；不覆蓋已有媒體訊息。</value>
   </data>
   <data name="RefreshPersonTask_Name_Refresh_Chinese_Actor" xml:space="preserve">
     <value>刷新演員訊息</value>
@@ -1185,10 +1185,10 @@
     <value>更新失敗，請至控制台查看詳細錯誤訊息。</value>
   </data>
   <data name="MediaInfoExtractOptions_MediaInfoRestoreMode_Only_restore_media_info__chapters__and_video_thumbnails_from_JSON_or_BIF__skipping_extraction__Default_is_OFF_" xml:space="preserve">
-    <value>僅從 JSON 或 BIF 恢復媒體訊息，章節片頭片尾標記，預覽縮圖，跳過實際提取。</value>
+    <value>擷取時僅從 JSON/BIF 恢復媒體訊息、章節和縮圖，不探測。</value>
   </data>
   <data name="MediaInfoExtractOptions_MediaInfoRestoreMode_MediaInfo_Restore_Mode" xml:space="preserve">
-    <value>媒體資訊恢復模式</value>
+    <value>僅恢復（跳過擷取）</value>
   </data>
   <data name="DisclaimerButtonText" xml:space="preserve">
     <value>點擊查看免責聲明。未刪除插件前，請勿發送日誌至官方​​。請務必牢記！</value>
@@ -1374,7 +1374,7 @@
     <value>ISO 擷取</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_MediaInfoPersist" xml:space="preserve">
-    <value>資訊持久化</value>
+    <value>媒體訊息持久化</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_ExtractionPerformance" xml:space="preserve">
     <value>效能與獨佔</value>

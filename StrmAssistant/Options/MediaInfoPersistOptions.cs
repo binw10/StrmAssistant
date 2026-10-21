@@ -36,8 +36,6 @@ namespace StrmAssistant.Options
         [DisplayNameL("MediaInfoExtractOptions_MediaInfoJsonRootFolder_MediaInfo_Json_Root_Folder", typeof(Resources))]
         [DescriptionL("MediaInfoExtractOptions_MediaInfoJsonRootFolder_Store_or_load_media_info_JSON_files_under_this_root_folder__Default_is_EMPTY_", typeof(Resources))]
         [EditFolderPicker]
-        [VisibleCondition(nameof(PersistMediaInfoMode), ValueCondition.IsNotEqual,
-            MediaInfoExtractOptions.PersistMediaInfoOption.None)]
         public string MediaInfoJsonRootFolder { get; set; } = string.Empty;
 
         public void Initialize()

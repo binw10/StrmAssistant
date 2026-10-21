@@ -462,10 +462,10 @@
     <value>Alternative MovieDb Api Key is invalid</value>
   </data>
   <data name="MediaInfoExtractOptions_PersistMediaInfo_Persist_MediaInfo" xml:space="preserve">
-    <value>Backup Media Info</value>
+    <value>MediaInfo Persist (Default)</value>
   </data>
   <data name="MediaInfoExtractOptions_PersistMediaInfo_Persist_media_info_in_JSON_file__Default_is_OFF_" xml:space="preserve">
-    <value>Back up media info and chapter markers to JSON files. The extraction task can auto-restore from JSON, or run "Restore Media Info" separately.</value>
+    <value>Restore from JSON first during extraction/import; probe and write JSON when missing; also write when media info already exists on import.</value>
   </data>
   <data name="UIFunctionOptions_EnhanceMissingEpisodes_Missing_Episodes_Enhanced" xml:space="preserve">
     <value>View Missing Episodes Enhanced</value>
@@ -477,7 +477,7 @@
     <value>Optional MediaInfo JSON Root Folder</value>
   </data>
   <data name="MediaInfoExtractOptions_MediaInfoJsonRootFolder_Store_or_load_media_info_JSON_files_under_this_root_folder__Default_is_EMPTY_" xml:space="preserve">
-    <value>Store or load media info JSON files under this root folder. Default is EMPTY.</value>
+    <value>Shared by extraction, backup and restore tasks; leave empty to store beside the media file. On Windows, drive/UNC subfolders are created automatically.</value>
   </data>
   <data name="ClearChapterMarkersTask_Name_Clear_Episode_Intros" xml:space="preserve">
     <value>Clear Episode Intros</value>
@@ -501,13 +501,13 @@
     <value>Backup Media Info</value>
   </data>
   <data name="PersistMediaInfoTask_Description_Persists_media_info_to_json_file" xml:space="preserve">
-    <value>Back up media info and chapter markers to JSON files for items that already have MediaInfo; skip items without MediaInfo</value>
+    <value>Export/refresh JSON for all items that already have MediaInfo (metadata only, not media files); no probing.</value>
   </data>
   <data name="RestoreMediaInfoTask_Name_Restore_MediaInfo" xml:space="preserve">
     <value>Restore Media Info</value>
   </data>
   <data name="RestoreMediaInfoTask_Description_Restores_media_info_from_JSON_file" xml:space="preserve">
-    <value>Restore media info from JSON files; skip items without JSON</value>
+    <value>Restore media info, chapters and thumbnails from JSON for items missing DB media info; never overwrite existing media info.</value>
   </data>
   <data name="RefreshPersonTask_Name_Refresh_Chinese_Actor" xml:space="preserve">
     <value>Refresh Chinese Actor</value>
@@ -1272,10 +1272,10 @@
     <value>Update failed. Check error details in admin dashboard.</value>
   </data>
   <data name="MediaInfoExtractOptions_MediaInfoRestoreMode_Only_restore_media_info__chapters__and_video_thumbnails_from_JSON_or_BIF__skipping_extraction__Default_is_OFF_" xml:space="preserve">
-    <value>Only restore media info, chapter markers, and video thumbnails from JSON or BIF, skipping extraction.</value>
+    <value>Only restore media info, chapters and thumbnails from JSON/BIF during extraction; no probing.</value>
   </data>
   <data name="MediaInfoExtractOptions_MediaInfoRestoreMode_MediaInfo_Restore_Mode" xml:space="preserve">
-    <value>MediaInfo Restore Mode</value>
+    <value>Restore Only (Skip Probing)</value>
   </data>
   <data name="DisclaimerButtonText" xml:space="preserve">
     <value>Click to view the disclaimer. Do not send logs to the official team before uninstalling the plugin. Please remember this!</value>
@@ -1461,7 +1461,7 @@
     <value>ISO Extraction</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_MediaInfoPersist" xml:space="preserve">
-    <value>Info Persistence</value>
+    <value>MediaInfo Persistence</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_ExtractionPerformance" xml:space="preserve">
     <value>Performance &amp; Exclusive</value>
