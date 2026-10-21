@@ -69,21 +69,26 @@ namespace StrmAssistant.Options
             var items = root.EditorItems.ToList();
             var merge = items.OfType<EditorGroup>().FirstOrDefault(g => IsEditor(g, nameof(Merge)));
             var display = items.OfType<EditorGroup>().FirstOrDefault(g => IsEditor(g, nameof(Display)));
-            if (merge == null || display == null) return container;
+            if (merge == null && display == null) return container;
+
+            var mergedItems = new List<EditorBase>();
+            if (merge?.EditorItems != null) mergedItems.AddRange(merge.EditorItems);
+            if (display?.EditorItems != null) mergedItems.AddRange(display.EditorItems);
 
             var multipleVersions = new EditorGroup(Resources.ExperienceEnhanceOptions_Group_MultipleVersions,
-                new EditorBase[] { merge, display }, "MultipleVersions", root.Id, null);
+                mergedItems.ToArray(), "MultipleVersions", root.Id, null);
+            var anchor = merge ?? display;
 
             var newItems = new List<EditorBase>();
             foreach (var item in items)
             {
-                if (ReferenceEquals(item, merge))
+                if (ReferenceEquals(item, anchor))
                 {
                     newItems.Add(multipleVersions);
                     continue;
                 }
 
-                if (ReferenceEquals(item, display)) continue;
+                if (ReferenceEquals(item, merge) || ReferenceEquals(item, display)) continue;
 
                 newItems.Add(item);
             }

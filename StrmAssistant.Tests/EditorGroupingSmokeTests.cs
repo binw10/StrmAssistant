@@ -44,10 +44,10 @@ namespace StrmAssistant.Tests
             var multipleVersions = container.EditorRoot.EditorItems.OfType<EditorGroup>()
                 .FirstOrDefault(g => NameOrId(g, "MultipleVersions"));
             Assert.NotNull(multipleVersions);
-            Assert.Contains(multipleVersions.EditorItems.OfType<EditorGroup>(),
-                g => NameOrId(g, "Merge"));
-            Assert.Contains(multipleVersions.EditorItems.OfType<EditorGroup>(),
-                g => NameOrId(g, "Display"));
+            Assert.Contains(multipleVersions.EditorItems, i => NameOrId(i, "MergeMultiVersion"));
+            Assert.Contains(multipleVersions.EditorItems, i => NameOrId(i, "EnableMultiVersionEnhance"));
+            Assert.DoesNotContain(multipleVersions.EditorItems.OfType<EditorGroup>(),
+                g => NameOrId(g, "Merge") || NameOrId(g, "Display"));
         }
 
         [Fact]
@@ -59,13 +59,10 @@ namespace StrmAssistant.Tests
             var storage = container.EditorRoot.EditorItems.OfType<EditorGroup>()
                 .FirstOrDefault(g => NameOrId(g, "MediaInfoStoragePerformance"));
             Assert.NotNull(storage);
-            var performance = storage.EditorItems.OfType<EditorGroup>()
-                .FirstOrDefault(g => NameOrId(g, "ExtractionPerformance"));
-            var persist = storage.EditorItems.OfType<EditorGroup>()
-                .FirstOrDefault(g => NameOrId(g, "MediaInfoPersist"));
-            Assert.NotNull(performance);
-            Assert.NotNull(persist);
-            Assert.True(NameOrId(performance.EditorItems.First(), "ExclusiveExtract"));
+            Assert.True(NameOrId(storage.EditorItems.First(), "ExclusiveExtract"));
+            Assert.Contains(storage.EditorItems, i => NameOrId(i, "PersistMediaInfoMode"));
+            Assert.DoesNotContain(storage.EditorItems.OfType<EditorGroup>(),
+                g => NameOrId(g, "ExtractionPerformance") || NameOrId(g, "MediaInfoPersist"));
         }
 
         private static bool NameOrId(EditorBase editor, string name)

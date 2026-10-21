@@ -1521,6 +1521,6 @@
     <value>Multiple Versions</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_MediaInfoStoragePerformance" xml:space="preserve">
-    <value>MediaInfo Persistence &amp; Performance</value>
+    <value>MediaInfo Persistence</value>
   </data>
 </root>

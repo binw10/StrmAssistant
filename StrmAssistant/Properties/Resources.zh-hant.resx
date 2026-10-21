@@ -1434,6 +1434,6 @@
     <value>多版本</value>
   </data>
   <data name="MediaInfoExtractOptions_Group_MediaInfoStoragePerformance" xml:space="preserve">
-    <value>媒體訊息持久化與效能</value>
+    <value>媒體訊息持久化</value>
   </data>
 </root>

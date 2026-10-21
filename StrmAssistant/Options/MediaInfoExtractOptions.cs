@@ -112,9 +112,13 @@ namespace StrmAssistant.Options
                 performance.EditorItems = ordered.ToArray();
             }
 
+            var mergedItems = new List<EditorBase>();
+            if (performance.EditorItems != null) mergedItems.AddRange(performance.EditorItems);
+            if (persist.EditorItems != null) mergedItems.AddRange(persist.EditorItems);
+
             var storagePerformance = new EditorGroup(
                 Resources.MediaInfoExtractOptions_Group_MediaInfoStoragePerformance,
-                new EditorBase[] { performance, persist }, "MediaInfoStoragePerformance", root.Id, null);
+                mergedItems.ToArray(), "MediaInfoStoragePerformance", root.Id, null);
 
             var newItems = new List<EditorBase>();
             foreach (var item in items)
