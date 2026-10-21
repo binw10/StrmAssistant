@@ -84,6 +84,10 @@ const strmAssistantCommandSource = {
             'zh-hk': '\u89E3\u9396',
             'zh-tw': '\u89E3\u9396'
         }[locale] || 'Unlock') + (cjk ? this.globalize.translate('Metadata') : ' ' + this.globalize.translate('Metadata'));
+        const extractMediaInfoName = locale === 'zh-cn' ? '\u63D0\u53D6\u5A92\u4F53\u4FE1\u606F' :
+            (['zh-hk', 'zh-tw'].includes(locale) ? '\u63D0\u53D6\u5A92\u9AD4\u8A0A\u606F' : 'Extract Media Info');
+        const deleteMediaInfoName = locale === 'zh-cn' ? '\u5220\u9664\u5A92\u4F53\u4FE1\u606F' :
+            (['zh-hk', 'zh-tw'].includes(locale) ? '\u522A\u9664\u5A92\u9AD4\u8A0A\u606F' : 'Delete Media Info');
 
         if (options.items?.length === 1 && options.items[0].LibraryOptions && options.items[0].Type === 'VirtualFolder' &&
             options.items[0].CollectionType !== 'boxsets' && options.items[0].CollectionType !== 'playlists') {
@@ -129,11 +133,10 @@ const strmAssistantCommandSource = {
                     (['zh-hk', 'zh-tw'].includes(locale) ? '\u6E05\u9664\u7AE0\u7BC0\u5716' : 'Clear Chapter Images');
                 result.push({ name: commandName, id: 'clear_chapter', icon: 'hide_image' });
             }
-            if ((options.items[0].Type === 'Movie' || options.items[0].Type === 'Episode') &&
+            if (['Movie', 'Episode', 'Series', 'Season'].includes(options.items[0].Type) &&
                 (options.user && options.user.Policy.IsAdministrator || false)) {
-                const commandName = locale === 'zh-cn' ? '\u6E05\u9664\u5A92\u4F53\u4FE1\u606F' :
-                    (['zh-hk', 'zh-tw'].includes(locale) ? '\u6E05\u9664\u5A92\u9AD4\u8CC7\u8A0A' : 'Clear Media Info');
-                result.push({ name: commandName, id: 'clear_mediainfo', icon: 'delete_sweep' });
+                result.push({ name: extractMediaInfoName, id: 'extract_mediainfo', icon: 'manage_search' });
+                result.push({ name: deleteMediaInfoName, id: 'delete_mediainfo', icon: 'delete' });
             }
             return result;
         }
@@ -143,7 +146,7 @@ const strmAssistantCommandSource = {
             const types = [...new Set(options.items.map(item => item.Type))];
             const allMovies = types.length === 1 && types[0] === 'Movie';
             const allSeriesScope = types.every(t => t === 'Series' || t === 'Season');
-            const allVideoScope = types.every(t => t === 'Movie' || t === 'Episode');
+            const allMediaScope = types.every(t => ['Movie', 'Episode', 'Series', 'Season'].includes(t));
             const allClearScope = types.every(t => ['Movie', 'Episode', 'Series', 'Season'].includes(t));
 
             if (allMovies) {
@@ -159,10 +162,9 @@ const strmAssistantCommandSource = {
                     (['zh-hk', 'zh-tw'].includes(locale) ? '\u6E05\u9664\u7AE0\u7BC0\u5716' : 'Clear Chapter Images');
                 result.push({ name: commandName, id: 'clear_chapter', icon: 'hide_image' });
             }
-            if (allVideoScope) {
-                const commandName = locale === 'zh-cn' ? '\u6E05\u9664\u5A92\u4F53\u4FE1\u606F' :
-                    (['zh-hk', 'zh-tw'].includes(locale) ? '\u6E05\u9664\u5A92\u9AD4\u8CC7\u8A0A' : 'Clear Media Info');
-                result.push({ name: commandName, id: 'clear_mediainfo', icon: 'delete_sweep' });
+            if (allMediaScope) {
+                result.push({ name: extractMediaInfoName, id: 'extract_mediainfo', icon: 'manage_search' });
+                result.push({ name: deleteMediaInfoName, id: 'delete_mediainfo', icon: 'delete' });
             }
             result.push({ name: lockCommandName, id: 'lock', icon: 'lock' });
             result.push({ name: unlockCommandName, id: 'unlock', icon: 'lock_open' });
@@ -204,6 +206,11 @@ const strmAssistantCommandSource = {
             });
         }
         if (command === 'clear_intro' || command === 'clear_chapter' || command === 'clear_mediainfo') {
+            return require(['components/strmassistant/strmassistant']).then(responses => {
+                return responses[0][command](items.map(item => item.Id));
+            });
+        }
+        if (command === 'extract_mediainfo' || command === 'delete_mediainfo') {
             return require(['components/strmassistant/strmassistant']).then(responses => {
                 return responses[0][command](items.map(item => item.Id));
             });

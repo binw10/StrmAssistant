@@ -883,16 +883,18 @@ namespace StrmAssistant.Common
             }
         }
 
-        public async Task<bool?> OrchestrateMediaInfoProcessAsync(BaseItem taskItem, string source, CancellationToken cancellationToken)
+        public async Task<bool?> OrchestrateMediaInfoProcessAsync(BaseItem taskItem, string source,
+            CancellationToken cancellationToken, bool forceProbe = false, bool? persistOverride = null)
         {
             var persistMediaInfoMode = Plugin.Instance.MediaInfoExtractStore.GetOptions().MediaInfoPersist.PersistMediaInfoMode;
-            var persistMediaInfo = taskItem is Video && persistMediaInfoMode != PersistMediaInfoOption.None.ToString();
+            var persistMediaInfo = taskItem is Video &&
+                (persistOverride ?? (persistMediaInfoMode != PersistMediaInfoOption.None.ToString()));
             var mediaInfoRestoreMode = persistMediaInfoMode == PersistMediaInfoOption.Restore.ToString();
             var enableImageCapture = Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCapture.EnableImageCapture;
 
             ExclusiveExtract.AllowExtractInstance(taskItem);
 
-            if (persistMediaInfo) ChapterChangeTracker.BypassInstance(taskItem);
+            if (persistMediaInfo || forceProbe) ChapterChangeTracker.BypassInstance(taskItem);
 
             var filePath = taskItem.Path;
             if (taskItem.IsShortcut)
@@ -928,7 +930,7 @@ namespace StrmAssistant.Common
                 option.MetadataFetchers = Array.Empty<string>();
             }
 
-            if (!extractSkip && enableImageCapture && !taskItem.HasImage(ImageType.Primary) &&
+            if ((forceProbe || !extractSkip) && enableImageCapture && !taskItem.HasImage(ImageType.Primary) &&
                 ImageCaptureEnabled(taskItem, libraryOptions))
             {
                 EnableImageCapture.AllowImageCaptureInstance(taskItem);
@@ -944,7 +946,7 @@ namespace StrmAssistant.Common
             }
             else
             {
-                if (persistMediaInfo)
+                if (!forceProbe && persistMediaInfo)
                 {
                     // 被「清除媒体信息」标记的条目不走捷径：DeserializeMediaInfo 开头有
                     // HasMediaInfo(DB) 为 true 即返回 true 的短路，会让清缓存后的重提取被跳过
@@ -967,7 +969,7 @@ namespace StrmAssistant.Common
                     }
                 }
 
-                if (extractSkip) return null;
+                if (!forceProbe && extractSkip) return null;
 
                 foreach (var option in dummyLibraryOptions.TypeOptions)
                 {

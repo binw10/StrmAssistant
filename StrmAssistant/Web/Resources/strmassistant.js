@@ -408,6 +408,20 @@ define([
             batchClear(itemIds, 'ClearMediaInfo', commandName);
         },
 
+        extract_mediainfo: function (itemIds) {
+            const locale = globalize.getCurrentLocale().toLowerCase();
+            const commandName = locale === 'zh-cn' ? '提取媒体信息' :
+                    (['zh-hk', 'zh-tw'].includes(locale) ? '提取媒體訊息' : 'Extract Media Info');
+            batchMediaInfo(itemIds, 'StrmAssistant/Items/ExtractMediaInfo', commandName, false);
+        },
+
+        delete_mediainfo: function (itemIds) {
+            const locale = globalize.getCurrentLocale().toLowerCase();
+            const commandName = locale === 'zh-cn' ? '删除媒体信息' :
+                    (['zh-hk', 'zh-tw'].includes(locale) ? '刪除媒體訊息' : 'Delete Media Info');
+            batchMediaInfo(itemIds, 'StrmAssistant/Items/DeleteMediaInfo', commandName, true);
+        },
+
         badges: (function () {
             let initialized = false;
             let enabled = null;
@@ -949,6 +963,61 @@ define([
         })()
     };
 
+
+    function batchMediaInfo(itemIds, endpoint, commandName, isDelete) {
+        const ids = Array.isArray(itemIds) ? itemIds : [itemIds];
+        if (!ids.length) return;
+
+        const locale = globalize.getCurrentLocale().toLowerCase();
+        const isZh = locale === 'zh-cn';
+        const isZhHant = ['zh-hk', 'zh-tw'].includes(locale);
+
+        const run = function() {
+            loading.show();
+            const apiClient = connectionManager.currentApiClient();
+            return apiClient.ajax({
+                type: "POST",
+                url: apiClient.getUrl(endpoint),
+                data: JSON.stringify({ Ids: ids }),
+                contentType: "application/json",
+                dataType: "json"
+            }).then(function(res) {
+                loading.hide();
+                const total = res && (res.Total !== undefined ? res.Total : res.total);
+                const queued = res && (res.Queued !== undefined ? res.Queued : res.queued);
+                const succeeded = res && (res.Succeeded !== undefined ? res.Succeeded : res.succeeded);
+                const failed = res && (res.Failed !== undefined ? res.Failed : res.failed);
+                const skipped = res && (res.Skipped !== undefined ? res.Skipped : res.skipped);
+                let message;
+                if (isDelete) {
+                    message = isZh ? `删除完成：成功 ${succeeded || 0}，失败 ${failed || 0}，跳过 ${skipped || 0}` :
+                        (isZhHant ? `刪除完成：成功 ${succeeded || 0}，失敗 ${failed || 0}，跳過 ${skipped || 0}` :
+                            `Deleted: ${succeeded || 0} succeeded, ${failed || 0} failed, ${skipped || 0} skipped`);
+                } else {
+                    const count = queued || total || ids.length;
+                    message = isZh ? `已加入提取队列：${count} 项` :
+                        (isZhHant ? `已加入提取佇列：${count} 項` : `Queued ${count} item(s) for extraction`);
+                }
+                toast(message);
+            }).catch(function() {
+                loading.hide();
+            });
+        };
+
+        if (isDelete) {
+            const text = isZh ? '删除媒体信息会清除 DB 中的媒体流、时长、容器和本地 JSON；季/剧会处理其下所有集，之后需要重新提取。' :
+                (isZhHant ? '刪除媒體訊息會清除 DB 中的媒體串流、時長、容器和本地 JSON；季/劇會處理其下所有集，之後需要重新提取。' :
+                    'Deleting media info clears DB media streams, runtime, container and local JSON; Season/Series selections process all episodes. Re-extraction is required afterwards.');
+            confirm({
+                text: text,
+                title: commandName,
+                confirmText: isZh ? '删除' : (isZhHant ? '刪除' : 'Delete'),
+                primary: 'cancel'
+            }).then(run);
+        } else {
+            run();
+        }
+    }
 
     function batchClear(itemIds, endpoint, commandName) {
         const ids = Array.isArray(itemIds) ? itemIds : [itemIds];
