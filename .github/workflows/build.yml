@@ -1,9 +1,7 @@
 name: Build Plugin
 
 on:
-  push:
-    branches: [myp015]
-  workflow_dispatch:  # 支持手动触发
+  workflow_dispatch:  # 仅手动触发
 
 permissions:
   contents: write
@@ -60,7 +58,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: StrmAssistantPlus_v${{ steps.version.outputs.value }}-${{ github.run_number }}
+          name: StrmAssistantPlus_v${{ steps.version.outputs.value }}
           path: artifact/*
           compression-level: 0  # DLL已经是二进制，不需要压缩
           retention-days: 30
