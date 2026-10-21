@@ -465,7 +465,8 @@ namespace StrmAssistant.Common
             var items = Array.Empty<BaseItem>();
             var extras = Array.Empty<BaseItem>();
 
-            if (!libraryIds.Any() || libraryIds.Any(id => id != "-1"))
+            if (!libraryIds.Any() || (libraryIds.Any(id => id != "-1") &&
+                                       libraries.Any(l => l.Locations != null && l.Locations.Any(p => !string.IsNullOrWhiteSpace(p)))))
             {
                 var itemsMediaInfoQuery = new InternalItemsQuery
                 {
@@ -474,9 +475,9 @@ namespace StrmAssistant.Common
                     MediaTypes = new[] { MediaType.Video, MediaType.Audio }
                 };
 
-                if (libraryIds.Any(id => id != "-1") && libraries.Any())
+                if (libraryIds.Any(id => id != "-1"))
                 {
-                    itemsMediaInfoQuery.PathStartsWithAny = libraries.SelectMany(l => l.Locations).Select(ls =>
+                    itemsMediaInfoQuery.PathStartsWithAny = libraries.SelectMany(l => l.Locations ?? Array.Empty<string>()).Where(p => !string.IsNullOrWhiteSpace(p)).Select(ls =>
                         ls.EndsWith(Path.DirectorySeparatorChar.ToString())
                             ? ls
                             : ls + Path.DirectorySeparatorChar).ToArray();
@@ -547,6 +548,18 @@ namespace StrmAssistant.Common
                 if (missing.Count > 0)
                     _logger.Warn("MediaInfoExtract - {0} force-re-extract id(s) not found: {1}",
                         missing.Count, string.Join(",", missing));
+
+                if (libraryIds.Any())
+                {
+                    var selectedPaths = libraries.SelectMany(l => l.Locations ?? Array.Empty<string>())
+                        .Where(p => !string.IsNullOrWhiteSpace(p))
+                        .Select(p => p.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar)
+                        .ToArray();
+                    var favoriteIds = new HashSet<long>(favoritesWithExtra.Select(i => i.InternalId));
+                    forcedItems = forcedItems.Where(i => favoriteIds.Contains(i.InternalId) ||
+                        (!string.IsNullOrEmpty(i.Path) && selectedPaths.Any(p =>
+                            i.Path.StartsWith(p, Path.DirectorySeparatorChar == '\\' ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)))).ToArray();
+                }
 
                 combined = combined.Concat(forcedItems).GroupBy(i => i.InternalId)
                     .Select(g => g.First()).ToList();

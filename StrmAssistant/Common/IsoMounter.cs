@@ -244,6 +244,13 @@ namespace StrmAssistant.Common
         {
             if (string.IsNullOrEmpty(isoUrl)) return null;
 
+            TryGetRemoteChapters(isoUrl, out _);
+            if (RemoteChapters.TryGetValue(isoUrl, out var title) && !string.IsNullOrEmpty(title.UnsupportedReason))
+            {
+                Plugin.Instance?.Logger?.Warn("IsoExtraction - " + title.UnsupportedReason);
+                return null;
+            }
+
             try
             {
                 EnsureSweeper();
@@ -298,76 +305,52 @@ namespace StrmAssistant.Common
         /// 成功（含部分）返回 true。
         /// </summary>
         private static bool DownloadRange(string url, long from, long to, string destFile)
+            => DownloadRangeWithTimeout(url, from, to, destFile, RemoteDownloadTimeoutMs, ReadIdleTimeoutMs);
+
+        private static bool DownloadRangeWithTimeout(string url, long from, long to, string destFile,
+            int overallTimeoutMs, int idleTimeoutMs)
         {
             var total = 0L;
             try
             {
-                var handler = new System.Net.Http.HttpClientHandler
+                // One budget covers DNS/connect/response headers and the entire response body.
+                using var overall = new CancellationTokenSource(overallTimeoutMs);
+                using var client = new System.Net.Http.HttpClient(new System.Net.Http.HttpClientHandler
                 {
                     AllowAutoRedirect = true,
                     AutomaticDecompression = System.Net.DecompressionMethods.None
-                };
-                using var client = new System.Net.Http.HttpClient(handler)
-                {
-                    Timeout = Timeout.InfiniteTimeSpan // 交由下方看门狗控制
-                };
+                }) { Timeout = Timeout.InfiniteTimeSpan };
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("Emby/4.10 StrmAssistant");
-
                 using var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
                 request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(from, to);
-
-                using var response = client.Send(request, System.Net.Http.HttpCompletionOption.ResponseHeadersRead);
+                using var response = client.Send(request,
+                    System.Net.Http.HttpCompletionOption.ResponseHeadersRead, overall.Token);
                 if (!response.IsSuccessStatusCode)
                 {
-                    Plugin.Instance?.Logger?.Warn(
-                        $"IsoExtraction - range request returned {(int)response.StatusCode}");
+                    Plugin.Instance?.Logger?.Warn($"IsoExtraction - range request returned {(int)response.StatusCode}");
                     return false;
                 }
-
-                using var src = response.Content.ReadAsStream();
+                using var src = response.Content.ReadAsStream(overall.Token);
                 using var dst = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.Read, 1 << 20);
-
                 var buffer = new byte[1 << 20];
-                var want = to - from + 1;
-                var deadlineUtc = DateTime.UtcNow.AddMilliseconds(RemoteDownloadTimeoutMs);
-
+                var want = checked(to - from + 1);
                 while (total < want)
                 {
-                    if (DateTime.UtcNow >= deadlineUtc)
-                    {
-                        Plugin.Instance?.Logger?.Warn(
-                            $"IsoExtraction - range download reached overall timeout ({RemoteDownloadTimeoutMs}ms), " +
-                            $"aborting with {total} bytes");
-                        break;
-                    }
-
-                    // 异步读 + 空闲看门狗：任一先到即继续；空闲超时视为流已停滞
-                    var readTask = src.ReadAsync(buffer, 0, buffer.Length);
-                    var completed = Task.WhenAny(readTask, Task.Delay(ReadIdleTimeoutMs)).GetAwaiter().GetResult();
-
-                    if (completed != readTask)
-                    {
-                        Plugin.Instance?.Logger?.Warn(
-                            $"IsoExtraction - range download idle {ReadIdleTimeoutMs}ms, aborting with {total} bytes");
-                        break;
-                    }
-
-                    var read = readTask.GetAwaiter().GetResult();
+                    using var idle = CancellationTokenSource.CreateLinkedTokenSource(overall.Token);
+                    idle.CancelAfter(idleTimeoutMs);
+                    var count = (int)Math.Min(buffer.Length, want - total);
+                    var read = src.ReadAsync(buffer.AsMemory(0, count), idle.Token).AsTask().GetAwaiter().GetResult();
                     if (read <= 0) break;
-
                     dst.Write(buffer, 0, read);
                     total += read;
                 }
-
                 dst.Flush();
             }
             catch (Exception e)
             {
-                Plugin.Instance?.Logger?.Warn("IsoExtraction - range download error: " + e.Message);
+                Plugin.Instance?.Logger?.Warn("IsoExtraction - range download error or timeout: " + e.Message);
             }
-
             if (total >= MinAcceptableBytes) return true;
-
             Plugin.Instance?.Logger?.Warn(
                 $"IsoExtraction - range download produced only {total} bytes (< {MinAcceptableBytes}); discarding");
             return false;
@@ -438,6 +421,12 @@ namespace StrmAssistant.Common
         private static string ResolveMountedTitle(string isoPath, string driveRoot)
         {
             var info = UdfTitleResolver.ResolveFromMount(driveRoot);
+            if (!string.IsNullOrEmpty(info?.UnsupportedReason))
+            {
+                TitleChapters.TryRemove(isoPath, out _);
+                Plugin.Instance?.Logger?.Warn("IsoExtraction - " + info.UnsupportedReason);
+                return null;
+            }
 
             RememberChapters(isoPath, info);
 
@@ -476,6 +465,12 @@ namespace StrmAssistant.Common
 
             var info = UdfTitleResolver.Resolve(isoPath);
             var logger = Plugin.Instance?.Logger;
+            if (!string.IsNullOrEmpty(info?.UnsupportedReason))
+            {
+                TitleChapters.TryRemove(isoPath, out _);
+                logger?.Warn("IsoExtraction - " + info.UnsupportedReason);
+                return;
+            }
             if (logger == null) return;
 
             RememberChapters(isoPath, info);
@@ -496,6 +491,11 @@ namespace StrmAssistant.Common
         /// </summary>
         private static void RememberChapters(string isoPath, UdfTitleResolver.TitleInfo info)
         {
+            if (!string.IsNullOrEmpty(info?.UnsupportedReason))
+            {
+                if (!string.IsNullOrEmpty(isoPath)) TitleChapters.TryRemove(isoPath, out _);
+                return;
+            }
             if (string.IsNullOrEmpty(isoPath) || info?.Chapters == null || info.Chapters.Count == 0) return;
 
             try
@@ -530,6 +530,7 @@ namespace StrmAssistant.Common
 
         private sealed class RemoteChapterEntry
         {
+            public string UnsupportedReason;
             public List<double> Chapters;
             public DateTime LastUsedUtc;
         }
@@ -574,7 +575,9 @@ namespace StrmAssistant.Common
                     using (stream)
                     {
                         var info = UdfTitleResolver.Resolve(stream, isoUrl);
-                        var resolved = info?.Chapters;
+                        if (!string.IsNullOrEmpty(info?.UnsupportedReason))
+                            Plugin.Instance?.Logger?.Warn("IsoExtraction - " + info.UnsupportedReason);
+                        var resolved = string.IsNullOrEmpty(info?.UnsupportedReason) ? info?.Chapters : null;
 
                         if (resolved != null && resolved.Count > 0)
                         {
@@ -591,6 +594,7 @@ namespace StrmAssistant.Common
                         RemoteChapters[isoUrl] = new RemoteChapterEntry
                         {
                             Chapters = resolved,
+                            UnsupportedReason = info?.UnsupportedReason,
                             LastUsedUtc = DateTime.UtcNow
                         };
 

@@ -140,7 +140,8 @@ namespace StrmAssistant.Mod
                 postfix: nameof(SupportsImageCapturePostfix));
             PatchUnpatch(PatchTracker, apply, _getImage, prefix: nameof(GetImagePrefix));
             PatchUnpatch(PatchTracker, apply, _supportsThumbnailsGetter,
-                prefix: nameof(SupportsThumbnailsGetterPrefix), postfix: nameof(SupportsThumbnailsGetterPostfix));
+                prefix: nameof(SupportsThumbnailsGetterPrefix), postfix: nameof(SupportsThumbnailsGetterPostfix),
+                finalizer: nameof(SupportsThumbnailsGetterFinalizer));
             PatchUnpatch(PatchTracker, apply, _runExtraction, prefix: nameof(RunExtractionPrefix));
             PatchUnpatch(PatchTracker, apply, _getExtraInputArguments, postfix: nameof(GetExtraInputArgumentsPostfix));
             PatchUnpatch(PatchTracker, apply, _logThumbnailImageExtractionFailure,
@@ -608,20 +609,28 @@ namespace StrmAssistant.Mod
         private static void SupportsThumbnailsGetterPostfix(BaseItem __instance, ref bool __result,
             (bool, ExtraType?) __state)
         {
-            if (__state.Item1)
-            {
-                UnpatchIsShortcutInstance(__instance);
-            }
-
+            RestoreThumbnailState(__instance, __state);
             if (__result && __state.Item2.HasValue)
             {
-                __instance.ExtraType = __state.Item2;
-
                 if (__state.Item2 == ExtraType.Trailer || __state.Item2 == ExtraType.ThemeVideo)
                 {
                     __result = false;
                 }
             }
+        }
+
+        private static void RestoreThumbnailState(BaseItem item, (bool, ExtraType?) state)
+        {
+            item.ExtraType = state.Item2;
+            if (state.Item1) UnpatchIsShortcutInstance(item);
+        }
+
+        [HarmonyFinalizer]
+        private static Exception SupportsThumbnailsGetterFinalizer(BaseItem __instance,
+            (bool, ExtraType?) __state, Exception __exception)
+        {
+            if (__exception != null) RestoreThumbnailState(__instance, __state);
+            return __exception;
         }
 
         [HarmonyPrefix]

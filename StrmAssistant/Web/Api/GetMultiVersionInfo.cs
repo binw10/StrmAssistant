@@ -4,7 +4,7 @@ using MediaBrowser.Model.Services;
 namespace StrmAssistant.Web.Api
 {
     [Route("/MultiVersion/Info", "GET", IsHidden = true)]
-    [Unauthenticated]
+    [Authenticated]
     public class GetMultiVersionInfo
     {
         [ApiMember(Name = "Id", Description = "Item id for full media source list", IsRequired = false,

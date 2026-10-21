@@ -178,6 +178,7 @@ namespace StrmAssistant
             NetworkProxyStore = new NetworkProxyOptionsStore(applicationHost, Logger,
                 ConfigName + "_" + nameof(NetworkProxyOptions));
 
+            MigrateLegacyOptionGroups();
             MigrateChineseSearchOptions();
             InitializeOptionCache();
 
@@ -365,6 +366,32 @@ namespace StrmAssistant
                 }
             }
 
+            if (MainOptionsStore.GetOptions().TaskConcurrency.CatchupMode) QueueManager.Initialize();
+            if (IntroSkipStore.GetOptions().Playback.EnableIntroSkip) PlaySessionMonitor.Initialize();
+            if (ExperienceEnhanceStore.GetOptions().Playback.EnableAutoMarkWatched) AutoMarkWatched.Initialize();
+            MemoryGuard.Apply(Logger,
+                MainOptionsStore.GetOptions().Memory.EnableMemoryAutoRestart,
+                MainOptionsStore.GetOptions().Memory.MemoryAutoRestartThresholdMB);
+
+            MigrateImageCaptureExcludeContainers();
+
+            _libraryManager.ItemAdded += OnItemAdded;
+            _libraryManager.ItemUpdated += OnItemUpdated;
+            _libraryManager.ItemRemoved += OnItemRemoved;
+            _providerManager.RefreshCompleted += OnRefreshCompleted;
+            _sessionManager.PlaybackStopped += OnPlaybackStopped;
+            _userManager.UserCreated += OnUserCreated;
+            _userManager.UserDeleted += OnUserDeleted;
+            _userManager.UserConfigurationUpdated += OnUserConfigurationUpdated;
+            _userDataManager.UserDataSaved += OnUserDataSaved;
+            CollectionFolder.LibraryOptionsUpdated += OnLibraryOptionsUpdated;
+        }
+
+        /// <summary>
+        /// Restore persisted legacy groups before any cache or background feature reads the options.
+        /// </summary>
+        private void MigrateLegacyOptionGroups()
+        {
             // 拍平旧版容器：TaskConcurrency / Memory 原本包在 GeneralOptions 里、
             // ChineseSearch 包在 ModOptions 里，页面上会多出一层只有标题的容器（任务与内存 / 搜索）。
             // 这里把已有配置提到顶层并落盘，之后 JSON 里不再有这两个节点。
@@ -407,31 +434,8 @@ namespace StrmAssistant
                     $"TaskConcurrency - migrated CatchupMinWaitMinutes to CatchupMinWaitSeconds ({taskConcurrency.CatchupMinWaitSeconds} s)");
             }
 
-            if (MainOptionsStore.GetOptions().TaskConcurrency.CatchupMode) QueueManager.Initialize();
-            if (IntroSkipStore.GetOptions().Playback.EnableIntroSkip) PlaySessionMonitor.Initialize();
-            if (ExperienceEnhanceStore.GetOptions().Playback.EnableAutoMarkWatched) AutoMarkWatched.Initialize();
-            MemoryGuard.Apply(Logger,
-                MainOptionsStore.GetOptions().Memory.EnableMemoryAutoRestart,
-                MainOptionsStore.GetOptions().Memory.MemoryAutoRestartThresholdMB);
-
-            MigrateImageCaptureExcludeContainers();
-
-            _libraryManager.ItemAdded += OnItemAdded;
-            _libraryManager.ItemUpdated += OnItemUpdated;
-            _libraryManager.ItemRemoved += OnItemRemoved;
-            _providerManager.RefreshCompleted += OnRefreshCompleted;
-            _sessionManager.PlaybackStopped += OnPlaybackStopped;
-            _userManager.UserCreated += OnUserCreated;
-            _userManager.UserDeleted += OnUserDeleted;
-            _userManager.UserConfigurationUpdated += OnUserConfigurationUpdated;
-            _userDataManager.UserDataSaved += OnUserDataSaved;
-            CollectionFolder.LibraryOptionsUpdated += OnLibraryOptionsUpdated;
         }
 
-        /// <summary>
-        /// 老配置迁移：新版 ffmpeg 对 ts/m2ts 截图已可靠，移出截图默认排除列表
-        /// （仅当存量配置仍为旧默认值时重置，自定义值不动）。
-        /// </summary>
         private void MigrateImageCaptureExcludeContainers()
         {
             try

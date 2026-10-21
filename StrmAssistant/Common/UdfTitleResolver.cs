@@ -12,9 +12,8 @@ namespace StrmAssistant.Common
     /// 碟片正片解析（跨平台，进程内读 UDF，不依赖任何 OS 挂载能力）。
     ///
     /// 蓝光：遍历 <c>BDMV\PLAYLIST\*.mpls</c>，按 PlayItem 时长求和取「总时长最长的 playlist」，
-    /// 再取其中时长最长的 PlayItem 的 5 位号 → <c>BDMV\STREAM\&lt;5 位号&gt;.m2ts</c>
-    /// （MPLS 的 Clip_Information_file_name 与 STREAM 内 m2ts 同名，符合 BD 规范）。
-    /// 按 playlist 求和选片，多 m2ts 分段 / 无缝分支碟才不会选错；MPLS 时间戳为 45kHz。
+    /// 仅单 PlayItem 时可直接选取对应 m2ts。多片段/无缝分支返回明确的不支持标志，
+    /// 调用方保留原 ISO 交给宿主处理，不能以最长片段冒充完整标题。
     /// DVD：<c>VIDEO_TS\VTS_01_1.VOB</c>，缺失则取最大 .VOB。
     ///
     /// 两种来源共用同一套选片逻辑：<see cref="IDiscFs"/> 分别由进程内 UDF 与已挂载卷实现。
@@ -38,6 +37,9 @@ namespace StrmAssistant.Common
 
             /// <summary>选中的 playlist 名（如 00001.mpls）或 VOB 名，仅用于日志。</summary>
             public string SourceName;
+
+            /// <summary>非空时禁止选择单文件及注入章节，由宿主继续处理原始 ISO。</summary>
+            public string UnsupportedReason;
 
             /// <summary>蓝光为 playlist 总时长（秒）；无法计算时为 0。</summary>
             public double DurationSeconds;
@@ -208,7 +210,18 @@ namespace StrmAssistant.Common
 
             if (best != null)
             {
-                var clip = best.Clips.OrderByDescending(c => c.Duration).First();
+                if (best.Clips.Count != 1)
+                {
+                    return new TitleInfo
+                    {
+                        IsBluray = true,
+                        SourceName = best.Name,
+                        DurationSeconds = best.TotalSeconds,
+                        UnsupportedReason = "Multi-clip Blu-ray playlists require complete title/branch handling; " +
+                            "plugin extraction is unavailable for this title. Keeping the original ISO for the host."
+                    };
+                }
+                var clip = best.Clips[0];
                 var relative = BlurayStreamDir + "\\" + clip.Name + ".m2ts";
 
                 // 选中的 playlist 携带的 STN_table / 章节，供上层补全音轨、字幕与章节

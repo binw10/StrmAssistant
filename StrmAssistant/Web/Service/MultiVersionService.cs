@@ -1,3 +1,4 @@
+using MediaBrowser.Controller.Api;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Dto;
@@ -11,7 +12,7 @@ using static StrmAssistant.Options.MultipleVersionsOptions;
 
 namespace StrmAssistant.Web.Service
 {
-    public class MultiVersionService : IService
+    public class MultiVersionService : BaseApiService
     {
         public class MultiVersionSource
         {
@@ -22,7 +23,6 @@ namespace StrmAssistant.Web.Service
             public string Label { get; set; }
             public string Hdr { get; set; }
             public long? Bitrate { get; set; }
-            public string Path { get; set; }
         }
 
         public class MultiVersionItemInfo : MultiVersionSource
@@ -49,6 +49,8 @@ namespace StrmAssistant.Web.Service
             if (!Plugin.IsPluginEnabled) return null;
 
             var response = new MultiVersionResponse();
+            var user = GetUserForRequest(null, true);
+            if (user == null) return response;
 
             if (!Plugin.Instance.ExperienceEnhanceStore.GetOptions().Display.EnableMultiVersionEnhance)
             {
@@ -61,9 +63,9 @@ namespace StrmAssistant.Web.Service
             {
                 var item = _libraryManager.GetItemById(itemId);
 
-                if (item != null)
+                if (item != null && item.IsVisible(user))
                 {
-                    response.Sources = GetSources(item);
+                    response.Sources = GetSources(item, user);
                 }
 
                 return response;
@@ -82,9 +84,9 @@ namespace StrmAssistant.Web.Service
                 {
                     var item = _libraryManager.GetItemById(long.Parse(id));
 
-                    if (item == null) continue;
+                    if (item == null || !item.IsVisible(user)) continue;
 
-                    var sources = GetSources(item);
+                    var sources = GetSources(item, user);
                     var primary = sources.FirstOrDefault();
 
                     if (primary == null) continue;
@@ -106,12 +108,13 @@ namespace StrmAssistant.Web.Service
             return response;
         }
 
-        private List<MultiVersionSource> GetSources(BaseItem item)
+        private List<MultiVersionSource> GetSources(BaseItem item, User user)
         {
             var libraryOptions = Plugin.LibraryManager.GetLibraryOptions(item);
             var uiOptions = Plugin.Instance.ExperienceEnhanceStore.GetOptions();
 
             var sources = item.GetMediaSources(false, false, libraryOptions)
+                .Where(source => IsSourceVisible(source, item, user))
                 .Select(source =>
                 {
                     var video = source.MediaStreams?.FirstOrDefault(s => s.Type == MediaStreamType.Video);
@@ -121,23 +124,26 @@ namespace StrmAssistant.Web.Service
                     {
                         MultiVersionDisplayOption.FileNameWithoutExtension => string.IsNullOrEmpty(path)
                             ? null
-                            : System.IO.Path.GetFileNameWithoutExtension(path),
+                            : GetFileNameLabel(path),
                         MultiVersionDisplayOption.SystemDefault => null,
                         MultiVersionDisplayOption.MediaInfoExtended =>
                             BuildMediaInfoLabel(video, source.Bitrate, source.Size),
                         _ => GetQualityLabel(video?.Height) // MediaInfo（默认）
                     };
 
-                    return new MultiVersionSource
+                    return new
                     {
+                        Path = path,
+                        Source = new MultiVersionSource
+                        {
                         Container = source.Container,
                         Size = source.Size,
                         Width = video?.Width,
                         Height = video?.Height,
                         Label = label,
                         Hdr = GetHdrLabel(source.MediaStreams),
-                        Bitrate = source.Bitrate,
-                        Path = path
+                        Bitrate = source.Bitrate
+                        }
                     };
                 })
                 .ToList();
@@ -145,17 +151,34 @@ namespace StrmAssistant.Web.Service
             sources = uiOptions.Display.MultiVersionSortOption switch
             {
                 MultiVersionSortOption.HighToLowQuality => sources
-                    .OrderByDescending(s => QualityScore(s.Height, s.Hdr))
+                    .OrderByDescending(s => QualityScore(s.Source.Height, s.Source.Hdr))
                     .ToList(),
                 MultiVersionSortOption.LowToHighQuality => sources
-                    .OrderBy(s => QualityScore(s.Height, s.Hdr))
+                    .OrderBy(s => QualityScore(s.Source.Height, s.Source.Hdr))
                     .ToList(),
                 MultiVersionSortOption.PathAscending => sources.OrderBy(s => s.Path, StringComparer.OrdinalIgnoreCase).ToList(),
                 MultiVersionSortOption.PathDescending => sources.OrderByDescending(s => s.Path, StringComparer.OrdinalIgnoreCase).ToList(),
                 _ => sources // SystemDefault：保持 Emby 原始顺序
             };
 
-            return sources;
+            return sources.Select(s => s.Source).ToList();
+        }
+
+        private static string GetFileNameLabel(string path)
+        {
+            if (Uri.TryCreate(path, UriKind.Absolute, out var uri) &&
+                (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+                path = uri.AbsolutePath;
+            return System.IO.Path.GetFileNameWithoutExtension(path);
+        }
+
+        private bool IsSourceVisible(MediaSourceInfo source, BaseItem owner, User user)
+        {
+            // Local alternate versions may belong to another library. Respect their own visibility too.
+            var sourceItemId = string.IsNullOrEmpty(source.ItemId) ? source.Id : source.ItemId;
+            if (!long.TryParse(sourceItemId, out var id) || id == owner.InternalId) return true;
+            var sourceItem = _libraryManager.GetItemById(id);
+            return sourceItem != null && sourceItem.IsVisible(user);
         }
 
         /// <summary>
