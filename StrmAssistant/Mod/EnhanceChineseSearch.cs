@@ -50,7 +50,7 @@ namespace StrmAssistant.Mod
 
         private static string _tokenizerPath;
         private static readonly object _lock = new object();
-        private static bool _patchPhase2Initialized;
+        private static volatile bool _patchPhase2Initialized;
         private static int _phase2Queued;
         private static string _libraryDbPath;
         private static readonly string RebuildMarkerPath = Path.Combine(Plugin.Instance.ApplicationPaths.PluginConfigurationsPath, "strmassistant_chinese_search_rebuild.pending");
@@ -273,6 +273,11 @@ namespace StrmAssistant.Mod
                         // 尝试获取 CreateConnection 方法，处理可能的重载
                         var createConnectionMethods = baseSqliteRepository.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
                             .Where(m => m.Name == "CreateConnection")
+                            .Where(m =>
+                            {
+                                try { GetWriteConnectionArguments(m); return true; }
+                                catch (NotSupportedException) { return false; }
+                            })
                             .ToArray();
                         
                         if (createConnectionMethods.Length == 1)
@@ -462,7 +467,7 @@ namespace StrmAssistant.Mod
         /// </summary>
         private static void QueuePhase2()
         {
-            if (Interlocked.Exchange(ref _phase2Queued, 1) == 1) return;
+            if (_patchPhase2Initialized || Interlocked.CompareExchange(ref _phase2Queued, 1, 0) != 0) return;
 
             Task.Run(async () =>
             {
@@ -480,8 +485,8 @@ namespace StrmAssistant.Mod
                         return;
                     }
 
-                    LoadTokenizerExtension(connection);
-                    PatchPhase2(connection);
+                    if (!LoadTokenizerExtension(connection)) return;
+                    _patchPhase2Initialized = PatchPhase2(connection);
                 }
                 catch (Exception e)
                 {
@@ -497,6 +502,8 @@ namespace StrmAssistant.Mod
                     {
                         // 释放失败不影响后续
                     }
+                    // Queued means in flight, not completed. Failed attempts can retry on the next checkout.
+                    Interlocked.Exchange(ref _phase2Queued, 0);
                 }
             });
         }
@@ -509,7 +516,7 @@ namespace StrmAssistant.Mod
                 var repository = BaseItem.ItemRepository;
                 if (repository == null || _createConnection == null) return null;
 
-                return _createConnection.Invoke(repository, new object[] { false, CancellationToken.None })
+                return _createConnection.Invoke(repository, GetWriteConnectionArguments(_createConnection))
                     as IDatabaseConnection;
             }
             catch (Exception e)
@@ -519,7 +526,23 @@ namespace StrmAssistant.Mod
             }
         }
 
-        private static void PatchPhase2(IDatabaseConnection connection)
+        private static object[] GetWriteConnectionArguments(MethodInfo method)
+        {
+            var parameters = method.GetParameters();
+            if (parameters.Length == 0) return Array.Empty<object>();
+            if (parameters.Length == 1)
+            {
+                if (parameters[0].ParameterType == typeof(bool)) return new object[] { false };
+                if (parameters[0].ParameterType == typeof(CancellationToken))
+                    return new object[] { CancellationToken.None };
+            }
+            if (parameters.Length == 2 && parameters[0].ParameterType == typeof(bool) &&
+                parameters[1].ParameterType == typeof(CancellationToken))
+                return new object[] { false, CancellationToken.None };
+            throw new NotSupportedException("Unsupported repository CreateConnection signature");
+        }
+
+        private static bool PatchPhase2(IDatabaseConnection connection)
         {
             var ftsTableName = "fts_search9";
 
@@ -541,6 +564,7 @@ namespace StrmAssistant.Mod
 
             try
             {
+                CurrentTokenizerName = "unknown";
                 using (var statement = connection.PrepareStatement(tokenizerCheckQuery))
                 {
                     if (statement.MoveNext())
@@ -571,7 +595,15 @@ namespace StrmAssistant.Mod
                             Plugin.Instance.Logger.Info("EnhanceChineseSearch - Restore Success");
                         }
                     }
-                    ResetOptions();
+                    // Preserve the restore request on failure so the next connection can retry.
+                    if (!tokenizerUnknown && rebuildFtsResult)
+                    {
+                        Plugin.Instance.MainOptionsStore.GetOptions().ChineseSearch.EnhanceChineseSearch = false;
+                        Plugin.Instance.MainOptionsStore.GetOptions().ChineseSearch.EnhanceChineseSearchRestore = false;
+                        Plugin.Instance.MainOptionsStore.SavePluginOptionsSuppress();
+                        return true;
+                    }
+                    return false;
                 }
                 else if (Plugin.Instance.MainOptionsStore.GetOptions().ChineseSearch.EnhanceChineseSearch)
                 {
@@ -681,37 +713,13 @@ namespace StrmAssistant.Mod
                         Plugin.Instance.Logger.Debug($"Inner exception: {e.InnerException.GetType().Name}: {e.InnerException.Message}");
                     }
                 }
+                return false;
             }
 
-            // 只有在真正失败时才重置选项
-            // 如果 patch 失败但 tokenizer 已经是 simple，说明之前已经成功启用过，不应该重置
-            // 只有在 tokenizer 仍然是 unicode61 且 patch 失败时，才认为是真正的失败
-            if (!patchSearchFunctionsResult)
-            {
-                if (string.Equals(CurrentTokenizerName, "unicode61 remove_diacritics 2", StringComparison.Ordinal))
-                {
-                    // Patch 失败且 tokenizer 未切换，说明功能无法启用
-                    if (!PatchManager.IsArm64)
-                    {
-                        Plugin.Instance.Logger.Warn("EnhanceChineseSearch: Patch failed and tokenizer not switched, resetting options");
-                    }
-                    ResetOptions();
-                }
-                else if (string.Equals(CurrentTokenizerName, "simple", StringComparison.Ordinal))
-                {
-                    // Tokenizer 已经是 simple，说明之前已经成功启用过
-                    // 即使 patch 失败（可能因为使用 Reflection），功能仍然可用
-                    if (!PatchManager.IsArm64)
-                    {
-                        Plugin.Instance.Logger.Info("EnhanceChineseSearch: Patch failed but tokenizer is already 'simple', keeping options enabled");
-                    }
-                }
-            }
-            else if (!rebuildFtsResult || string.Equals(CurrentTokenizerName, "unknown", StringComparison.Ordinal))
-            {
-                // Patch 成功但重建 FTS 失败，或者 tokenizer 状态未知：保留设置，等待下次重启重建
-                Plugin.Instance.Logger.Warn("EnhanceChineseSearch: Patch succeeded but rebuild pending/failed, keep settings and retry on next restart");
-            }
+            // A transient connection, patch or rebuild failure must not disable the requested feature.
+            // Success requires both active search patches and a successfully built simple index.
+            return patchSearchFunctionsResult && rebuildFtsResult &&
+                   string.Equals(CurrentTokenizerName, "simple", StringComparison.Ordinal);
         }
 
         private static bool RebuildFts(IDatabaseConnection connection, string ftsTableName, string tokenizerName)
@@ -1487,7 +1495,6 @@ namespace StrmAssistant.Mod
 
                     if (tokenizerLoaded && !_patchPhase2Initialized)
                     {
-                        _patchPhase2Initialized = true;
                         // Phase2 含全量索引重建，绝不能跑在 CreateConnection 的调用栈里：
                         // 写路径此时持有写信号量 + _lock，重建会把整个库冻住甚至死锁。
                         QueuePhase2();

@@ -153,10 +153,8 @@ namespace StrmAssistant.Mod
 
                 // ① 远程/流式 ISO（strm → http/https）：拉取头部窗口到本地临时文件
                 //
-                // 注意：**远程 ISO 不补写章节**。窗口只有头部若干 MB（且 strm 代理常限流），
-                // DiscUtils.Udf 会因「分区长度超出流长度」直接拒绝构造（实测 ArgumentException:
-                // Substream extends beyond end of parent stream），且实测样本的 .mpls 内容
-                // 也不在头部窗口内 → 无法解析 PlayListMark。章节仅对本地 .iso（可完整读取）生效。
+                // Window probing and Range metadata resolution are separate. Unsupported multi-clip
+                // titles keep their original ISO path and must not receive a single clip's metadata.
                 if (IsoMounter.TryNormalizeRemoteIso(inputPath, out var isoUrl))
                 {
                     var tempPath = IsoMounter.GetRemoteProbePath(isoUrl);
@@ -273,6 +271,13 @@ namespace StrmAssistant.Mod
             {
                 if (mediaInfo != null)
                 {
+                    if (!mediaInfo.RunTimeTicks.HasValue || mediaInfo.RunTimeTicks.Value <= 0 ||
+                        chapters.Any(c => c.StartPositionTicks < 0 ||
+                            c.StartPositionTicks > mediaInfo.RunTimeTicks.Value))
+                    {
+                        Plugin.Instance.Logger.Warn("IsoExtraction - playlist chapters do not fit the probed title; injection skipped");
+                        return mediaInfo;
+                    }
                     mediaInfo.Chapters = chapters.ToArray();
 
                     Plugin.Instance.Logger.Info(

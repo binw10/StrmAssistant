@@ -1,4 +1,4 @@
-﻿using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Model.Logging;
 using System;
@@ -22,6 +22,7 @@ namespace StrmAssistant.Common
         private static DateTime _episodeRefreshProcessLastRunTime = DateTime.MinValue;
         private static readonly TimeSpan ThrottleInterval = TimeSpan.FromSeconds(30);
         private static readonly Random Random = new Random();
+        private static readonly object ConcurrencySettingsLock = new object();
         private static int _currentMasterMaxConcurrentCount;
         private static int _currentTier2MaxConcurrentCount;
 
@@ -29,13 +30,13 @@ namespace StrmAssistant.Common
         public static CancellationTokenSource IntroSkipTokenSource;
         public static CancellationTokenSource FingerprintTokenSource;
         public static CancellationTokenSource EpisodeRefreshTokenSource;
-        public static SemaphoreSlim MasterSemaphore;
-        public static SemaphoreSlim Tier2Semaphore;
+        public static AdjustableSemaphore MasterSemaphore;
+        public static AdjustableSemaphore Tier2Semaphore;
         /// <summary>
         /// 并行声纹计算专用信号量（CPU 核数），仅在 ParallelMarkerComputation 开启时由
         /// ExtractIntroFingerprintTask 使用，绕过为 ffprobe 设计的 MasterSemaphore 限流。
         /// </summary>
-        public static SemaphoreSlim ParallelMarkerSemaphore;
+        public static AdjustableSemaphore ParallelMarkerSemaphore;
         public static ConcurrentQueue<BaseItem> MediaInfoExtractItemQueue = new ConcurrentQueue<BaseItem>();
         public static ConcurrentQueue<Episode> IntroSkipItemQueue = new ConcurrentQueue<Episode>();
         public static ConcurrentQueue<BaseItem> FingerprintItemQueue = new ConcurrentQueue<BaseItem>();
@@ -53,9 +54,9 @@ namespace StrmAssistant.Common
             _currentMasterMaxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.MaxConcurrentCount;
             _currentTier2MaxConcurrentCount = Plugin.Instance.MainOptionsStore.GetOptions().TaskConcurrency.Tier2MaxConcurrentCount;
 
-            MasterSemaphore = new SemaphoreSlim(_currentMasterMaxConcurrentCount);
-            Tier2Semaphore = new SemaphoreSlim(_currentTier2MaxConcurrentCount);
-            ParallelMarkerSemaphore = new SemaphoreSlim(Math.Max(1, Environment.ProcessorCount));
+            MasterSemaphore = new AdjustableSemaphore(_currentMasterMaxConcurrentCount);
+            Tier2Semaphore = new AdjustableSemaphore(_currentTier2MaxConcurrentCount);
+            ParallelMarkerSemaphore = new AdjustableSemaphore(Math.Max(1, Environment.ProcessorCount));
         }
 
         public static void Initialize()
@@ -135,27 +136,19 @@ namespace StrmAssistant.Common
 
         public static void UpdateMasterSemaphore(int maxConcurrentCount)
         {
-            if (_currentMasterMaxConcurrentCount != maxConcurrentCount)
+            lock (ConcurrencySettingsLock)
             {
+                MasterSemaphore.Resize(maxConcurrentCount);
                 _currentMasterMaxConcurrentCount = maxConcurrentCount;
-
-                var newMasterSemaphore = new SemaphoreSlim(maxConcurrentCount);
-                var oldMasterSemaphore = MasterSemaphore;
-                MasterSemaphore = newMasterSemaphore;
-                oldMasterSemaphore.Dispose();
             }
         }
 
         public static void UpdateTier2Semaphore(int maxConcurrentCount)
         {
-            if (_currentTier2MaxConcurrentCount != maxConcurrentCount)
+            lock (ConcurrencySettingsLock)
             {
+                Tier2Semaphore.Resize(maxConcurrentCount);
                 _currentTier2MaxConcurrentCount = maxConcurrentCount;
-
-                var newTier2Semaphore = new SemaphoreSlim(maxConcurrentCount);
-                var oldTier2Semaphore = Tier2Semaphore;
-                Tier2Semaphore = newTier2Semaphore;
-                oldTier2Semaphore.Dispose();
             }
         }
 
