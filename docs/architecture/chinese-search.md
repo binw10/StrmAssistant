@@ -61,27 +61,63 @@ Phase 2（必须搬出 Postfix，后台 Task）
 2. **Phase 2 绝不能留在 Postfix 里**。写路径的 Postfix 持有 `_writeConnectionPool` 信号量 + 静态 `_lock`，
    就地重建 = 全库冻结，甚至死锁。实测搬到后台 Task + 写连接后，重建耗时 0.45~2.1s。
 
-## 增量维护
+## 索引怎么保持同步
 
-- **`ItemAdded` 事件** → `_pendingFtsRefresh` 队列 → 后台批量刷新。
-- **启动 catch-up**：补齐服务器关闭期间外部工具入库的条目。
-- **智能启动**：tokenizer 已是目标值时**跳过全量重建**（`RebuildFts` 走事务保证原子性，
-  tokenizer 匹配即说明上次已完整提交）。避免 O(N) 全表扫描阻塞启动。
-- 后续新增/更新条目由事件 + 增量队列覆盖。
+**不需要插件维护增量**：重建时把 Emby 自己用的那张 FTS 表（`fts_search9`）用新分词器
+重建一次，之后 Emby 的条目写入路径照常往里写，索引自然是最新的。
+
+所以插件只在两种时机做全量重建：
+
+- 首次启用中文搜索；
+- 版本/归一化方案变更（靠标记文件判断，见下）。
+
+> 上游 OneManJS 的分支另有一套增量 catch-up 循环（`_pendingFtsRefresh` + 定期刷新 +
+> 扫描期让路），那是它自己的架构，本仓不需要，也不要去搬。
+
+## 标记文件
+
+三个标记放在 `programdata/plugins/configurations/`：
+
+| 文件 | 作用 |
+|---|---|
+| `strmassistant_chinese_search_norm2.done` | 归一化方案 v2 已应用（删掉可复现重建） |
+| `strmassistant_chinese_search_tokenizer.done` | 记录分词器文件的 SHA1 |
+| `strmassistant_chinese_search_rebuild.pending` | 有待执行的重建 |
+
+**智能跳过**：若当前 tokenizer 已是目标值、且标记齐全，启动时跳过重建 ——
+重建走事务保证原子性，tokenizer 匹配即说明上次已完整提交，不必再全表扫一遍。
 
 ## 当前参数（改动前先看这里）
 
 | 项 | 值 | 说明 |
 |---|---|---|
 | `busy_timeout` | 5000 ms | 与 Emby 写连接争锁时的等待上限 |
-| 事务模式 | `BeginTransaction(Deferred)` | 惰性拿写锁 |
-| 扫描期让路 | **无** | 大库扫库期间 catch-up 仍会抢 `library.db` |
-| 自适应调度 | **无** | 刷新间隔固定 |
+| 事务模式 | **`BEGIN IMMEDIATE`** | 重建是纯写事务，在 BEGIN 处直接抢写锁；拿不到立即失败交由上层重试 |
+| 增量刷新 | **无** | FTS 表由 Emby 自己的写入路径维护，插件只在启用/版本变更时做一次性全量重建 |
+| 扫描期让路 | **无** | 没有增量循环，无从挂载 |
 | 拼音召回 | **无** | 不支持 chong/zhong 多音字互搜 |
 
-> 上游 OneManJS 的版本在这四点上都做了优化（`busy_timeout=1000`、批量路径 `BEGIN IMMEDIATE`、
-> 扫描期跳过 catch-up、空闲 3s / 积压 15s / 扫描中 60s 自适应）。我们的索引架构是自己重写的，
-> 只能取调度策略，不能整段合并。评估见 `history/2026-10/` 相关记录。
+### 为什么事务要用 IMMEDIATE 而不是 Deferred
+
+重建的第一条语句就是 `DROP TABLE`，是纯写事务。`Deferred` 会以**读事务**开局，
+在首次写入时才升级成写锁；WAL 模式下如果这期间别的连接提交过，
+升级会返回 `SQLITE_BUSY_SNAPSHOT` —— 这个错误**不受 `busy_timeout` 约束**，
+等多久都没用，只能整个事务重来。`IMMEDIATE` 在 `BEGIN` 处就把写锁抢下来，
+拿不到立刻失败，交给重试逻辑处理。
+
+### 上游那套参数为什么不照抄
+
+上游 OneManJS 的分支有**增量 catch-up 循环**（`_pendingFtsRefresh` 队列 + 定期刷新），
+所以它会：`busy_timeout` 降到 1000ms 及时让路、扫描期跳过 catch-up、
+刷新间隔自适应（空闲 3s / 积压 15s / 扫描中 60s）。
+
+本仓没有这个循环 —— 我们只是把 Emby 用的 FTS 表重建一次换成 `simple` 分词器，
+之后由 Emby 自身的写入维护。所以：
+
+- 降 `busy_timeout` 只会让**一次性重建**更容易失败，是回退；
+- 「扫描期跳过」「自适应间隔」没有挂载点。
+
+评估过程见 `history/2026-10/` 与提交 `2b88024`。
 
 ## 关闭与还原
 

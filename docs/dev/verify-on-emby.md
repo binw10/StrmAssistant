@@ -58,7 +58,48 @@ curl -s --noproxy '*' -o /dev/null -w "%{http_code}\n" \
 | **`.strm` / ISO 探测** | `POST /emby/ScheduledTasks/Running/f84e5d989aa8a8b6ab1a3a8c0848faab` | 🔴 **`/Items/{id}/Refresh` 无效**：shortcut 条目会被 `BaseMediaInfoProber.Probe` 跳过，只有插件流程才置 `EnableRemoteContentProbe` |
 | **追更队列批处理** | `POST /emby/Users/{uid}/FavoriteItems/{itemId}` 然后 `DELETE` 同一个 URL 还原 | 触发 `OnUserDataSaved` → 入队。`UnlockIntroSkip=false` 时 Episode 会进 `MediaInfoExtractItemQueue` |
 | 截图 | 先删海报，再 `imageRefreshMode=FullRefresh&replaceAllImages=true`，并临时开 `EnableImageCapture` | 改 JSON + 重启 |
+| **片头片尾 / 播放会话** | `POST /emby/Sessions/Playing`、`/Playing/Progress`、`/Playing/Stopped` | 见下方配方，无需真的播放 |
+| **设置页保存 / 选项即时生效** | `POST /emby/UI/Command`，`CommandId=PageSave` | `Data` 必须是 JSON 字符串，见下方配方 |
 | 查看任务列表 | `GET /emby/ScheduledTasks` | 用 `Category` 过滤（插件任务是「神医助手 Plus」） |
+
+### 配方：模拟一次播放会话
+
+不用真的播放，直接打 Emby 的会话上报接口：
+
+```bash
+PSID="ps-test-$(date +%s)"
+BODY='{"ItemId":"901","PlaySessionId":"'$PSID'","PositionTicks":0,
+       "CanSeek":true,"IsPaused":false,"IsMuted":false,"PlayMethod":"DirectStream"}'
+for s in Playing Playing/Progress Playing/Stopped; do
+  curl -s --noproxy '*' -o /dev/null -w "$s -> %{http_code}\n" \
+    -X POST "http://127.0.0.1:8096/emby/Sessions/$s?api_key=$TOKEN" \
+    -H "Content-Type: application/json" --data-binary "$BODY"
+done
+```
+
+- `PositionTicks` 保持 0，避免触发 `UpdateCreditsTask` 真的写章节标记。
+- 想验证「条目缺 `RunTimeTicks`」的分支，挑一个 `MediaItems.RunTimeTicks is null` 的条目。
+- 期望：三个都是 204，插件日志无 Warn/Error，`Chapters3` 计数不变。
+
+### 配方：改设置项并验证即时生效
+
+```python
+# 1. GET 页面，取 EditObjectContainer.Object
+# 2. 只改目标字段
+obj['AboutOptions']['DefaultUICulture'] = 'en-US'
+# 3. Data 必须是 JSON 字符串（前端 stringify 了两次）
+payload = {"PageId": "63c322:Settings", "CommandId": "PageSave",
+           "Data": json.dumps(obj, ensure_ascii=False), "ClientLocale": "zh-cn"}
+```
+
+```bash
+curl -s -X POST "http://127.0.0.1:8096/emby/UI/Command" \
+  -H "X-Emby-Token: $TOKEN" -H "Content-Type: application/json" \
+  --data-binary @payload.json
+```
+
+> 🔴 改之前**务必备份** `StrmAssistant.json`。`Data` 传成嵌套对象会返回 200 但把整页落成默认值。
+> 回读 JSON 时顺手核对其它组的取值有没有被清掉。
 
 **页面 id 对照**
 

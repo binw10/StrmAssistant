@@ -45,7 +45,7 @@ Emby 插件（`BasePlugin` + `IService` 装配）。核心思路是**不重写 E
   ├─ 内存管理
   ├─ 中文搜索
   ├─ 运行状态与维护   ← 含重启服务器，按「危险操作居末」放最后
-  └─ 关于
+  └─ 关于             ← 版本链接 + 界面语言（auto / zh-CN / zh-Hant / en-US）
 高级功能（ExperienceEnhancePageView）
   ├─ 多版本合并 → 多版本展示 → 播放与清理 → 通知
   ├─ 条目显示        ItemDisplayOptions
@@ -64,6 +64,19 @@ Emby 插件（`BasePlugin` + `IService` 装配）。核心思路是**不重写 E
 2. **嵌套 `EditableOptionsBase` 属性 → 折叠组**，组标题取父属性的 `DisplayName`。
 3. **`[VisibleCondition]` / `[EnabledCondition]` 按同级路径解析**，引用的 helper 必须与消费方**同组**，
    否则前端 `getValue` 拿到 `undefined`，控件会莫名隐藏。
+
+### 界面语言
+
+`AboutOptions.DefaultUICulture` 控制插件文案语言，取值 `auto` / `zh-CN` / `zh-Hant` / `en-US`。
+
+实现方式是设置进程级的 `Resources.Culture`：
+
+- `auto` → 设为 `null`，`ResourceManager` 回退到**请求线程**的 `CurrentUICulture`，即跟随客户端；
+- 其余 → 固定语言。
+
+因此**选项文案改完立即生效**（下一次请求就按新语言渲染），
+但 **Tab 标题需要重启** —— 它在 `MainPageController` 构造时求值，随插件加载缓存。
+
 
 ## 数据落盘位置
 
