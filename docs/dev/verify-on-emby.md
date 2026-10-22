@@ -100,6 +100,12 @@ curl -s -X POST "http://127.0.0.1:8096/emby/UI/Command" \
 
 > 🔴 改之前**务必备份** `StrmAssistant.json`。`Data` 传成嵌套对象会返回 200 但把整页落成默认值。
 > 回读 JSON 时顺手核对其它组的取值有没有被清掉。
+>
+> ⚠️ **保存会把当前语言的展示文案写进 JSON**：`CatchupTaskList`、`SearchItemTypeList`、
+> `VersionInfoList`、`DisclaimerButton.Caption` 这些 `[Browsable(false)]` 的列表数据源
+> 虽然不出现在 `EditorItems` 里，但会进 `Object` 并被原样落盘。在 `en-US` 状态下保存，
+> 这些中文文案就变成英文写进配置文件了（下次页面加载会重建，属自愈残留，但看着像被改坏）。
+> **验完用备份还原**，别把别的语言的文案留在盘上。
 
 **页面 id 对照**
 

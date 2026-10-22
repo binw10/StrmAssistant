@@ -131,6 +131,17 @@ pattern 里的 `\.` 是转义，替换串里写 `\.` 会原样落进代码，编
 
 父类必须手工委派（`ValidateChildGroup`）。拍平后 `PluginOptions` 加了 `Validate` 覆写来委派 `TaskConcurrency`。
 
+**6. 保存设置页会把 `[Browsable(false)]` 的列表项文案一起落盘**
+
+`GenericItemList` / `List<EditorSelectOption>` 这类下拉数据源虽然标了 `[Browsable(false)]`（不进 `EditorItems`），
+但**会进 `Object` JSON**，页面保存时被原样写回配置文件。
+
+后果：如果你在 `en-US` 状态下保存过设置页，`CatchupTaskList`、`SearchItemTypeList`、
+`VersionInfoList`、`DisclaimerButton.Caption` 这些**展示文案**会被固化成英文写进 JSON。
+
+这些字段在下次页面加载时会被 `Initialize()` 重建，属于自愈的残留，但会让人误以为配置被改坏。
+**改完语言想验证的话，验完记得用备份还原配置文件**，别把英文文案留在盘上。
+
 ## 选项文件是怎么拆的
 
 `PluginOptionsStore` 只是主 Store，其余按 Tab 拆成独立 Store，各自一个 JSON：
