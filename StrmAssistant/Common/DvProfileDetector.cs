@@ -1,4 +1,4 @@
-using MediaBrowser.Model.Entities;
+﻿using MediaBrowser.Model.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +8,7 @@ namespace StrmAssistant.Common
     /// <summary>
     /// 双层杜比 Vision Profile 7（BL + EL）检测。
     ///
-    /// 判定逐条对齐 PRO 反编译实现（<c>_pro_tmp/decompiled_v2/A----------\A----------.cs:60063-60245</c>）：
+    /// 判定顺序与参考实现一致：
     /// 纯「媒体流几何 + 色彩」启发式，**不依赖自定义 ffprobe，也不解析 DOVI side data**。
     ///
     /// 1. 视频流按像素面积降序取前二，必须至少两条；
@@ -17,7 +17,7 @@ namespace StrmAssistant.Common
     /// 4. 宽比、高比均 ≈2.0（容差 0.1）；
     /// 5. 命中 → 面积小者即增强层（EL）。
     ///
-    /// 注意：PRO 用 <c>Take(2)</c> 后判数量，因此实际门槛是「≥2 条视频流」而非「恰好 2 条」，
+    /// 注意：参考实现用 <c>Take(2)</c> 后判数量，因此实际门槛是「≥2 条视频流」而非「恰好 2 条」，
     /// 多出的流（如画中画/花絮轨）不参与判定。此处保持同样行为。
     /// </summary>
     public static class DvProfileDetector

@@ -1,4 +1,4 @@
-using Emby.Web.GenericEdit;
+﻿using Emby.Web.GenericEdit;
 using Emby.Web.GenericEdit.Elements;
 using MediaBrowser.Model.LocalizationAttributes;
 using StrmAssistant.Properties;
@@ -7,7 +7,7 @@ using System.ComponentModel;
 namespace StrmAssistant.Options
 {
     /// <summary>
-    /// 品牌信息：组头显示插件名；版本行用 LabelItem（PRO 同款），
+    /// 品牌信息：组头显示插件名；版本行用 LabelItem（参考实现同款），
     /// 渲染为区块内全宽文本，不套列表项，因而没有左侧缩进。
     /// </summary>
     public class BrandOptions : EditableOptionsBase

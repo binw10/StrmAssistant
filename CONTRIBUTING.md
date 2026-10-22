@@ -46,8 +46,8 @@ Task.WhenAll 返回，大批量刮削期间 RSS 持续上涨。
 
 ## 不要做的事
 
-- **不要合并上游 `OneManJS/main`**。上游把 SDK 从 `mediabrowser.server.core 4.9.1.90` 降回 `4.8.10.0`，
-  还带了 `StrmAssistantPro.dll` 二进制；本仓已分叉 190+ 提交，合并等于回退。
+- **不要合并外部主分支**。对方把 SDK 从 `mediabrowser.server.core 4.9.1.90` 降回 `4.8.10.0`，
+  还带了闭源二进制；本仓已分叉 190+ 提交，合并等于回退。
 - **不要给 `StrmAssistant.Tests` 加 `ProjectReference`**，会触发 ILRepack 并把半成品部署到 Emby。
 - **不要用空字符串"省略"分组标题**，会渲染成没有标题的折叠块（`[DisplayNameL]` 的 resx 值为空串时，
   页面上是一块没有标题的缩进区域）。要去掉标题必须把那层容器拆掉。

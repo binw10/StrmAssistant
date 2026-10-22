@@ -1,29 +1,26 @@
 # 更新日志 / Changelog
 
-## [未发布] - 2026-10-22
+## [3.0.0.59] - 2026-10-22
 
 ### ✨ 功能新增
 
-- **界面语言可选**：「关于」新增语言下拉（跟随客户端 / 简体中文 / 繁體中文 / English）。此前该字段是硬编码的 `zh-CN`，导致客户端语言是英文时插件页面仍返回中文。选项文案改完立即生效，Tab 标题需重启。
+- **界面语言可选**：「关于」新增语言下拉（跟随客户端 / 简体中文 / 繁體中文 / English）。此前该字段固定为 `zh-CN`，导致客户端语言是英文时插件页面仍返回中文。选项文案改完立即生效，Tab 标题需重启。
 
 ### 🐛 修复
 
 - **片头片尾重复写入**：去重字典的键由 `Episode` 实例改为 `InternalId`，同一集的不同实例不再被当成两个键。播放停止的两处提前返回补上会话清理，异常结束的播放不再永久占用会话字典；不在扫描范围内时也会清理时间戳记录，避免旧记录误伤下次播放的 10 秒节流。
 - **中文索引重建改用 `BEGIN IMMEDIATE`**：`Deferred` 以读事务开局、首次写入才升级写锁，WAL 模式下若期间有其它连接提交会返回 `SQLITE_BUSY_SNAPSHOT`（`busy_timeout` 对它无效），重建只能整体重来。
 
-### 🔧 性能优化（移植上游 OneManJS/main 三项）
+### 🔧 性能优化
 
 - **队列批处理内存回收**：媒体信息提取 / 声纹提取 / 剧集刷新三条批处理链路，任务列表超过 100 条即剔除已完成的 task（释放闭包捕获的 `BaseItem`），每 500 条与每批结束时各触发一次内存归还。大库批量刮削期间 RSS 持续上涨的问题应明显缓解。
 - **媒体信息反序列化省两次 DB 往返**：调用方已确认条目无媒体信息时，可跳过 `GetItemById` + `GetMediaStreams`。已接入「入库事件」与「扫描期独占提取」两处热路径。
 - **排除容器 / 扩展名解析缓存**：原实现逐条 `Split` + `Enum.TryParse` + LINQ，改为按「设置字符串 + ISO 提取开关」缓存，设置变更自动失效。
 
-### 🧹 其它修复
+### 🧹 其它
 
 - `QueueManager.Dispose()` 漏掉 `IntroSkipTokenSource` 的取消；四个 CancellationTokenSource 现在都会取消、释放并置空，反复开关追更模式不再累积未释放实例。
-
-### 📖 文档
-
-- 重整文档结构：`architecture/` / `decisions/` / `dev/` / `history/`，25 篇历史文档按 `YYYY-MM-DD-<主题>` 归档。新增架构说明、4 篇 ADR、开发者手册（构建 / 测试 / 实机验证 / 选项约定）。
+- 源码注释中的外部产品名统一改为中性表述。
 
 ## [3.0.0.58] - 2026-10-21
 
@@ -67,7 +64,7 @@
 
 - **备份范围**：备份 / 外挂字幕扫描改用 `HasMediaInfo`，纳入纯视频条目（如杜比视界 ISO）；备份任务改为覆盖刷新已有 JSON，不再因文件已存在而全部跳过。
 - **设置页**：基础设置的任务并发 / 内存管理 / 中文搜索改为顶层分组；运行状态与维护移到页面末尾；「UI 功能」拆分为条目显示 / 媒体库与排序 / 搜索与日志。
-- **品牌行**：版本行改用 PRO 同款 `LabelItem`，去除列表缩进，左对齐。
+- **品牌行**：版本行改用 `LabelItem`，去除列表缩进，左对齐。
 - **构建质量**：资源键漏同步时构建前自动补齐；异常日志按级别收敛。
 
 ### 🐛 修复
@@ -110,8 +107,8 @@
 - **DOM 扫描合并**：豆瓣徽章 / 多版本 / 界面功能三个子模块原先各自持有 `MutationObserver` + 600ms 防抖计时器，一次 DOM 变更会触发三次全量扫描。→ 合并为单一 observer + 单一防抖，各模块串行执行。
 
 ### 🔧 功能优化
-- **HDR Vivid 支持（对齐 PRO）**：补齐此前缺失的上游检测——探测 postfix 读取 ffprobe `side_data_list` 中含 `CUVA`（`HDR Dynamic Metadata CUVA 005.1 2021 (Vivid)`）的视频流，命中后写入 `MediaStream.Comment = "HDR Vivid"`；同时覆写 `GenerateVideoRange` 使 Emby 原生媒体信息区显示 `HDR Vivid`；多版本标签改为读 `Comment` 并**优先于 DV / HDR10+ / HDR** 分支。此前读 `VideoRange` 的 Vivid 分支属死代码（Emby 只会算出 `HDR` / `SDR`）。
-- **截图后处理改为多选（对齐 PRO）**：原「强制海报为竖图」「确保集图像比例 16:9」两个开关合并为多选 `ImageCapturePostProcessMode`，并新增「生成背景图」——电影截帧后若尚无背景图，自动从截帧生成一张 16:9 背景图。升级时旧开关自动折叠进新选项（配置备份 `*.postprocess.bak`）。
+- **HDR Vivid 支持**：补齐此前缺失的检测——探测 postfix 读取 ffprobe `side_data_list` 中含 `CUVA`（`HDR Dynamic Metadata CUVA 005.1 2021 (Vivid)`）的视频流，命中后写入 `MediaStream.Comment = "HDR Vivid"`；同时覆写 `GenerateVideoRange` 使 Emby 原生媒体信息区显示 `HDR Vivid`；多版本标签改为读 `Comment` 并**优先于 DV / HDR10+ / HDR** 分支。此前读 `VideoRange` 的 Vivid 分支属死代码（Emby 只会算出 `HDR` / `SDR`）。
+- **截图后处理改为多选**：原「强制海报为竖图」「确保集图像比例 16:9」两个开关合并为多选 `ImageCapturePostProcessMode`，并新增「生成背景图」——电影截帧后若尚无背景图，自动从截帧生成一张 16:9 背景图。升级时旧开关自动折叠进新选项（配置备份 `*.postprocess.bak`）。
 - **设置页选项搜索面板**：左上角注入浮动搜索框，输入即按选项 label 实时过滤分组，`/` 唤起、ESC 清空、回车跳转首个匹配项并高亮。
 - **设置页操作失败提示**：服务端重启后旧页面点保存/启动会报 `No active setup stage`（500）→ 前端拦截并提示「服务器已重启，请刷新页面后再试」。
 - **强制重新提取标记**：`ClearMediaInfo` 后把被清理条目标记为「需要重新提取」并落盘 `strmassistant_force_reextract.txt`；提取任务取数时补回标记条目、探测时跳过「DB 已有媒体信息」捷径，修复清缓存后报 `Number of items: 0` 的问题。

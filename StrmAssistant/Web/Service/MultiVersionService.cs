@@ -1,4 +1,4 @@
-using MediaBrowser.Controller.Api;
+﻿using MediaBrowser.Controller.Api;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Dto;
@@ -299,7 +299,7 @@ namespace StrmAssistant.Web.Service
 
             if (videos == null || videos.Count == 0) return null;
 
-            // HDR Vivid 由插件探测后固化在 MediaStream.Comment 上（对齐 PRO：Comment 优先于类型分支）
+            // HDR Vivid 由插件探测后固化在 MediaStream.Comment 上（对齐 参考实现：Comment 优先于类型分支）
             if (videos.Any(v => string.Equals(v.Comment, "HDR Vivid", StringComparison.Ordinal)))
             {
                 return "HDR Vivid";

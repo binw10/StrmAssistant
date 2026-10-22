@@ -786,7 +786,7 @@ define([
                     c.reverseLogLines || c.blockSearchRecommend || c.showMediaInfo;
             }
 
-            // ShowMediaInfo（PRO 同构）：在搜索结果页，按当前搜索 tab 类型为结果项追加显示字段
+            // ShowMediaInfo：在搜索结果页，按当前搜索 tab 类型为结果项追加显示字段
             // （评分 / 容器格式等），使搜索结果直接呈现媒体信息。包裹 ItemsView.getViewSettingDefaults。
             let mediaInfoPatched = false;
 

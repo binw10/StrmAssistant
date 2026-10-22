@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Model.Entities;
@@ -13,7 +13,7 @@ using static StrmAssistant.Mod.PatchManager;
 namespace StrmAssistant.Mod
 {
     /// <summary>
-    /// 媒体项目显示顺序优化（PRO 的 <c>OptimizeItemOrderPreferences</c> 四选）：
+    /// 媒体项目显示顺序优化（参考实现的 <c>OptimizeItemOrderPreferences</c> 四选）：
     ///   - NaturalSort                    → 由 PinyinSortName 的 SortName 数字补零实现（本模块不处理）
     ///   - ReverseSeasonOrder             → 剧集页「季」倒序（Series.SetAutoSorting 后翻转 IndexNumber）
     ///   - ReverseEpisodeOrder            → 季页「集」倒序（Season 继承 Folder.SetAutoSorting，翻转 IndexNumber）
@@ -123,7 +123,7 @@ namespace StrmAssistant.Mod
                 if (query == null) return;
                 if (!Has(nameof(LibraryOrderOptions.ItemOrderOption.CollectionPerItemDateCreated))) return;
 
-                // 合集条目按创建日期升序（PRO 语义未给出方向，此处取“创建时间顺序”）
+                // 合集条目按创建日期升序（参考实现语义未给出方向，此处取“创建时间顺序”）
                 query.OrderBy = new[] { (ItemSortBy.DateCreated, SortOrder.Ascending) };
             }
             catch

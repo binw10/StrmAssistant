@@ -1,4 +1,4 @@
-using Emby.Media.Model.ProbeModel;
+﻿using Emby.Media.Model.ProbeModel;
 using HarmonyLib;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.MediaInfo;
@@ -11,18 +11,18 @@ using static StrmAssistant.Mod.PatchManager;
 namespace StrmAssistant.Mod
 {
     /// <summary>
-    /// HDR Vivid 标注 —— 对齐 PRO 的「探测 CUVA side_data → 落库 Comment → 覆写显示」三段链路。
+    /// HDR Vivid 标注 —— 对齐 参考实现的「探测 CUVA side_data → 落库 Comment → 覆写显示」三段链路。
     ///
     /// ① 探测：挂 <c>ProbeResultNormalizer.GetMediaInfo</c> 的 Postfix，读取 ffprobe 原始
     ///    <c>ProbeResult.streams</c> 中视频流的 <c>side_data_list</c>；命中 CUVA HDR Vivid 动态元数据
     ///    （side_data_type 含 "CUVA"）即把对应 <see cref="MediaStream.Comment"/> 写为 "HDR Vivid"。
     /// ② 覆写显示：挂 <see cref="MediaStream.GenerateVideoRange(bool)"/> 的 Postfix，当 isForDisplay
-    ///    且 Comment 命中时把显示值改为 "HDR Vivid"，与 PRO 的 MediaStream 显示 Prefix 行为一致。
+    ///    且 Comment 命中时把显示值改为 "HDR Vivid"，与 参考实现的 MediaStream 显示 Prefix 行为一致。
     ///
     /// 为什么必须自建探测：Emby 的 <c>VideoRange</c> 是计算属性，只依据 <c>ExtendedVideoType</c>
     /// （仅有 None/Hdr10/Hdr10Plus/HyperLogGamma/DolbyVision），不含 Vivid；CUVA side_data 属未知类型，
     /// Emby 不会写进任何可读字段。实测 library.db 的 MediaStreams2 表存在 Comment 列、且不存在
-    /// SideDataJson 列，因此 <c>Comment</c> 是本仓唯一可持久化的落库载体（与 PRO 选型一致）。
+    /// SideDataJson 列，因此 <c>Comment</c> 是本仓唯一可持久化的落库载体（与参考实现选型一致）。
     ///
     /// 安全性：
     /// - 只在命中 CUVA 时改写 <c>MediaStream.Comment</c>（Emby 定义为可写），未命中一律不动。

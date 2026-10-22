@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
@@ -11,7 +11,7 @@ using static StrmAssistant.Mod.PatchManager;
 namespace StrmAssistant.Mod
 {
     /// <summary>
-    /// 剧集页显示合集时同时考虑季的合集归属（PRO 的 <c>ShowCollectionsFromSeasons</c>）。
+    /// 剧集页显示合集时同时考虑季的合集归属（参考实现的 <c>ShowCollectionsFromSeasons</c>）。
     ///
     /// 挂钩 <c>Emby.Api.UserLibrary.ItemsService.GetQueryResult(GetItems, ...)</c>（项查询入口）。
     /// 当客户端以 <c>IncludeItemTypes=BoxSet</c>、<c>Limit=12</c>、<c>ListItemIds=单个 id</c>

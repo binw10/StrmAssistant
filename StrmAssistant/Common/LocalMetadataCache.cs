@@ -1,4 +1,4 @@
-using MediaBrowser.Common.Net;
+﻿using MediaBrowser.Common.Net;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,9 +11,9 @@ namespace StrmAssistant.Common
 {
     /// <summary>
     /// 本地 TMDB 语义化缓存（v2）：把 MovieDb 的元数据请求按 TMDB 实体（电影/剧集/季/集/合集）
-    /// 映射到 PRO 同构的目录布局，实现「override 优先 + 被动缓存」。
+    /// 映射到参考实现同构的目录布局，实现「override 优先 + 被动缓存」。
     ///
-    /// 目录布局（与 PRO 同名，可直接复用 PRO 的 override 资源）：
+    /// 目录布局（可直接复用既有的 override 资源）：
     ///   &lt;root&gt;\override\tmdb-movies2\&lt;tmdbid&gt;\all.json          （覆盖缓存，恒 P1，用户自定义）
     ///   &lt;root&gt;\override\tmdb-tv\&lt;tmdbid&gt;\series.json
     ///   &lt;root&gt;\override\tmdb-tv\&lt;tmdbid&gt;\season-&lt;n&gt;.json
@@ -29,7 +29,7 @@ namespace StrmAssistant.Common
     ///   /3/tv/{id}/season/{s}/episode/{e}    -> tmdb-tv / season-{s}-episode-{e}.json
     ///   /3/collection/{id}                   -> tmdb-collections / all.json
     ///
-    /// 注意：PRO 的缓存是「备选语言刮削处理后的综合结果」，本实现按实体落盘、不区分 language，
+    /// 注意：参考实现的缓存是「备选语言刮削处理后的综合结果」，本实现按实体落盘、不区分 language，
     /// 与用户固定的备选语言顺序一致；若需多语言并存，需在 v3 引入语言后缀。
     /// </summary>
     public static class LocalMetadataCache
@@ -84,7 +84,7 @@ namespace StrmAssistant.Common
             if (!string.IsNullOrEmpty(winDir) && trimmed.StartsWith(winDir, StringComparison.OrdinalIgnoreCase))
                 return (false, "ROOT_NOT_ALLOWED");
 
-            // Emby programdata 本身（与 PRO 语义一致：不允许把数据目录当缓存根）
+            // Emby programdata 本身（与参考实现语义一致：不允许把数据目录当缓存根）
             try
             {
                 var dataPath = Plugin.Instance?.ApplicationPaths?.ProgramDataPath;

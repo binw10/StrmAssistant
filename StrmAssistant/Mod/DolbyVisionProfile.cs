@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.MediaInfo;
 using StrmAssistant.Common;
@@ -11,12 +11,12 @@ namespace StrmAssistant.Mod
     /// <summary>
     /// 双层杜比 Vision Profile 7 标注（Wiki「提取 ISO 媒体信息」第 3 条）。
     ///
-    /// 挂点与 PRO 的 MonoMod 补丁同源：<c>ProbeResultNormalizer.GetMediaInfo</c> 是 Emby 把
+    /// 挂点与 参考实现的 MonoMod 补丁同源：<c>ProbeResultNormalizer.GetMediaInfo</c> 是 Emby 把
     /// ffprobe 原始输出归一化为 <see cref="MediaInfo"/>（继承 <c>MediaSourceInfo</c>）的位置，
     /// 此处对该结果做 Postfix，写回媒体流标注。
     ///
     /// 命中条件见 <see cref="DvProfileDetector"/>（面积前二 + 均 hevc + BL 为 Hdr10 + 宽高各 2 倍）。
-    /// 命中后把**增强层（面积较小者）**写为 Dolby Vision Profile 7 —— 与 PRO 的写入目标流一致，
+    /// 命中后把**增强层（面积较小者）**写为 Dolby Vision Profile 7 —— 与 参考实现的写入目标流一致，
     /// 也与 Wiki「显示增强层」的表述一致。
     ///
     /// 安全性：
