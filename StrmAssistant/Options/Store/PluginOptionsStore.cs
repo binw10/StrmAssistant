@@ -1,4 +1,4 @@
-using Emby.Media.Common.Extensions;
+﻿using Emby.Media.Common.Extensions;
 using Emby.Web.GenericEdit.Elements;
 using Emby.Web.GenericEdit.PropertyDiff;
 using MediaBrowser.Common;
@@ -67,15 +67,6 @@ namespace StrmAssistant.Options.Store
 
                 var changes = PropertyChangeDetector.DetectObjectPropertyChanges(PluginOptions, options);
                 var changedProperties = new HashSet<string>(changes.Select(c => c.PropertyName));
-
-                // 界面语言：Resources.Culture 是进程级静态，改完后续页面渲染立即按新语言出文案，
-                // 不需要重启。注意设置页 Tab 标题是 MainPageController 构造时求值的（随插件加载），
-                // 要等重启才会跟着变。
-                if (changedProperties.Contains(nameof(PluginOptions.AboutOptions.DefaultUICulture)))
-                {
-                    AboutOptions.ApplyUICulture(options.AboutOptions.DefaultUICulture);
-                    _logger.Info("DefaultUICulture is set to {0}", options.AboutOptions.DefaultUICulture);
-                }
 
                 // 插件总开关需重启生效：保存时立即提示管理员重启，
                 // 避免「点了关闭但功能还在跑」的困惑（Emby 顶部会弹出重启提示）。

@@ -192,10 +192,9 @@ namespace StrmAssistant
                 Logger.Warn($"ISO mount reconcile on startup failed: {ex.Message}");
             }
 
-            // 界面语言必须在任何 Resources.* 读取之前应用：
-            // auto → Resources.Culture = null，由请求线程的 CurrentUICulture 决定（跟随客户端）；
-            // 其余 → 固定语言。设置页保存时会再次应用，无需重启。
-            AboutOptions.ApplyUICulture(MainOptionsStore.GetOptions().AboutOptions.DefaultUICulture);
+            // 插件界面语言固定「跟随客户端」：Resources.Culture 置空后，ResourceManager 会回退到
+            // 请求线程的 CurrentUICulture，页面文案随客户端语言自动切换。
+            Resources.Culture = null;
 
             if (MainOptionsStore.GetOptions().AboutOptions.DebugMode)
             {
@@ -994,12 +993,9 @@ namespace StrmAssistant
         public string UserAgent => $"{Name}/{CurrentVersion}";
 
         /// <summary>
-        /// 插件界面语言。<c>auto</c> 时返回当前线程文化（跟随客户端），否则返回固定语言。
-        /// 永远不抛 <c>CultureNotFoundException</c>。
+        /// 插件界面语言：固定跟随客户端，即当前请求线程的文化。
         /// </summary>
-        public CultureInfo DefaultUICulture =>
-            AboutOptions.ResolveCulture(MainOptionsStore.GetOptions().AboutOptions.DefaultUICulture) ??
-            CultureInfo.CurrentUICulture;
+        public CultureInfo DefaultUICulture => CultureInfo.CurrentUICulture;
 
         public bool DebugMode;
 

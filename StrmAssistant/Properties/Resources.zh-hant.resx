@@ -149,15 +149,6 @@
   <data name="AboutOptions_EditorTitle_About" xml:space="preserve">
     <value>關於</value>
   </data>
-  <data name="AboutOptions_DefaultUICulture_Language" xml:space="preserve">
-    <value>介面語言</value>
-  </data>
-  <data name="AboutOptions_DefaultUICulture_Description" xml:space="preserve">
-    <value>外掛介面使用的語言。「跟隨客戶端」依請求語言自動切換；其餘為固定語言。設定頁 Tab 標題與通知文案即時生效，無需重啟。</value>
-  </data>
-  <data name="AboutOptions_DefaultUICulture_Auto" xml:space="preserve">
-    <value>跟隨客戶端</value>
-  </data>
   <data name="IntroSkipOptions_UserScope_User_Scope" xml:space="preserve">
     <value>允許的用戶</value>
   </data>

@@ -239,15 +239,6 @@
   <data name="AboutOptions_EditorTitle_About" xml:space="preserve">
     <value>About</value>
   </data>
-  <data name="AboutOptions_DefaultUICulture_Language" xml:space="preserve">
-    <value>Language</value>
-  </data>
-  <data name="AboutOptions_DefaultUICulture_Description" xml:space="preserve">
-    <value>Language used by the plugin UI. "Auto" follows the client request language; other values force a fixed language. Tab titles and notification texts are affected immediately, no restart needed.</value>
-  </data>
-  <data name="AboutOptions_DefaultUICulture_Auto" xml:space="preserve">
-    <value>Follow client</value>
-  </data>
   <data name="IntroSkipOptions_UserScope_User_Scope" xml:space="preserve">
     <value>Allowed Users</value>
   </data>
