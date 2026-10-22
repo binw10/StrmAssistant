@@ -6,15 +6,24 @@
 
 ## [English](README.en.md)
 
+## 文档
+
+- **完整文档**：[docs/index.md](docs/index.md)（架构 / 决策记录 / 开发者手册 / 历史实施记录）
+- **更新日志**：[CHANGELOG.md](CHANGELOG.md)
+- **贡献指南**：[CONTRIBUTING.md](CONTRIBUTING.md)
+- 安装与使用说明见 [Wiki](https://github.com/sjtuross/StrmAssistant/wiki)
+
 ## 版本信息
 
-- **插件版本**: 26.3.25
-- **最低Emby版本**: 4.9.1
-- **推荐Emby版本**: 4.9.1.90 或更高
-- **测试通过版本**: 4.9.1.90、4.10.0.29
+- **插件版本**: 3.0.0.58
+- **最低Emby版本**: 4.9.1.90
+- **推荐Emby版本**: 4.10.1.0
+- **测试通过版本**: 4.9.1.90、4.10.0.29、4.10.1.0
 - **目标框架**: .NET 6.0
 
-### 最新优化 (v26.3.25)
+> 各版本的详细变更见 [CHANGELOG.md](CHANGELOG.md)。
+
+### 历史优化 (v26.3.25)
 
 ✅ **arm64/aarch64 全面支持（2026-09 新增）**
 - **Harmony 2.4.2**：升级 Lib.Harmony 2.3.6 → 2.4.2，修复 arm64 下所有补丁抛 `NotImplementedException` 的问题，全部模块在 arm64 上恢复真正的 Harmony 补丁
