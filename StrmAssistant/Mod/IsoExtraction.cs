@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.MediaInfo;
 using StrmAssistant.Common;
@@ -141,7 +141,7 @@ namespace StrmAssistant.Mod
         }
 
         [HarmonyPrefix]
-        private static void GetMediaInfoInternalPrefix(ref string inputPath, out List<ChapterInfo> __state)
+        private static void GetMediaInfoInternalPrefix(ref string inputPath, out IsoMounter.TitleHint __state)
         {
             __state = null;
 
@@ -170,7 +170,7 @@ namespace StrmAssistant.Mod
 
                     // 章节：远程 ISO 走 Range 流 + 进程内 UDF（不落盘、按需取 UDF 元数据区）。
                     // 失败（不支持 Range / 无 mpls / 超时）静默回退，不影响探测本身。
-                    __state = BuildRemoteChapterState(isoUrl);
+                    __state = BuildRemoteHint(isoUrl);
 
                     return;
                 }
@@ -187,7 +187,7 @@ namespace StrmAssistant.Mod
                         // ★ 章节补写（本地）：m2ts 无章节原子，ffprobe 即便带 -show_chapters 也取不到；
                         //   这里把 MPLS PlayListMark 解析出的章节带出，由 postfix 注入探测结果，
                         //   使 Emby 能把它落库到 Chapters3（BaseMediaInfoProber → metadataResult.Chapters）。
-                        __state = BuildChapterState(isoPath);
+                        __state = BuildLocalHint(isoPath);
                     }
 
                     return;
@@ -207,30 +207,19 @@ namespace StrmAssistant.Mod
         }
 
         /// <summary>
-        /// 取该 ISO（以本地 <c>.iso</c> 路径为键）解析出的 MPLS 章节，转换为 Emby <see cref="ChapterInfo"/> 列表。
-        /// 无缓存 / 为空时返回 null（postfix 据此跳过注入）。
+        /// 本地 ISO 的补充信息（章节 / 音轨字幕语言 / 总时长）。无缓存返回 null。
         /// </summary>
-        private static List<ChapterInfo> BuildChapterState(string isoKey)
+        private static IsoMounter.TitleHint BuildLocalHint(string isoPath)
         {
-            if (!IsoMounter.TryGetTitleChapters(isoKey, out var chapterSeconds))
-            {
-                return null;
-            }
-
-            return ToChapterInfos(chapterSeconds);
+            return IsoMounter.TryGetTitleHint(isoPath, out var hint) ? hint : null;
         }
 
         /// <summary>
-        /// 远程 ISO（strm → http）的章节：走 Range 流 + 进程内 UDF，失败静默返回 null。
+        /// 远程 ISO（strm → http）的补充信息：走 Range 流 + 进程内 UDF，失败静默返回 null。
         /// </summary>
-        private static List<ChapterInfo> BuildRemoteChapterState(string isoUrl)
+        private static IsoMounter.TitleHint BuildRemoteHint(string isoUrl)
         {
-            if (!IsoMounter.TryGetRemoteChapters(isoUrl, out var chapterSeconds))
-            {
-                return null;
-            }
-
-            return ToChapterInfos(chapterSeconds);
+            return IsoMounter.TryGetRemoteHint(isoUrl, out var hint) ? hint : null;
         }
 
         private static List<ChapterInfo> ToChapterInfos(List<double> chapterSeconds)
@@ -247,51 +236,129 @@ namespace StrmAssistant.Mod
         }
 
         /// <summary>
-        /// 把 MPLS 章节补写进 ffprobe 探测结果。
+        /// 把 playlist 解析出的补充信息写进 ffprobe 探测结果。
         ///
         /// <c>GetMediaInfoInternal</c> 返回 <c>Task&lt;MediaInfo&gt;</c>，Harmony 的 <c>__result</c>
-        /// 是 Task 本身（不会自动解包），因此这里**换包**成一个先 await 原任务、再写入
-        /// <c>Chapters</c> 的新任务返回，调用方 await 到即是补写后的结果。
+        /// 是 Task 本身（不会自动解包），因此这里**换包**成一个先 await 原任务、再写入的新任务返回，
+        /// 调用方 await 到即是补写后的结果。
         /// </summary>
         [HarmonyPostfix]
         private static void GetMediaInfoInternalPostfix(ref Task<ProbeMediaInfo> __result,
-            List<ChapterInfo> __state)
+            IsoMounter.TitleHint __state)
         {
-            if (__state == null || __state.Count == 0 || __result == null) return;
+            if (__state == null || __state.IsEmpty || __result == null) return;
 
-            __result = InjectChaptersAsync(__result, __state);
+            __result = ApplyHintsAsync(__result, __state);
         }
 
-        private static async Task<ProbeMediaInfo> InjectChaptersAsync(Task<ProbeMediaInfo> probeTask,
-            List<ChapterInfo> chapters)
+        private static async Task<ProbeMediaInfo> ApplyHintsAsync(Task<ProbeMediaInfo> probeTask,
+            IsoMounter.TitleHint hint)
         {
             var mediaInfo = await probeTask.ConfigureAwait(false);
+            if (mediaInfo == null) return null;
 
             try
             {
-                if (mediaInfo != null)
-                {
-                    if (!mediaInfo.RunTimeTicks.HasValue || mediaInfo.RunTimeTicks.Value <= 0 ||
-                        chapters.Any(c => c.StartPositionTicks < 0 ||
-                            c.StartPositionTicks > mediaInfo.RunTimeTicks.Value))
-                    {
-                        Plugin.Instance.Logger.Warn("IsoExtraction - playlist chapters do not fit the probed title; injection skipped");
-                        return mediaInfo;
-                    }
-                    mediaInfo.Chapters = chapters.ToArray();
-
-                    Plugin.Instance.Logger.Info(
-                        $"IsoExtraction - injected {chapters.Count} playlist chapter(s) into probe result");
-                }
+                // 顺序有意义：先补时长，章节校验才有依据（远程 ISO 的 ffprobe 给不出时长）
+                ApplyRuntime(mediaInfo, hint);
+                ApplyChapters(mediaInfo, hint);
+                ApplyLanguages(mediaInfo, hint);
             }
             catch (Exception e)
             {
-                // 章节注入失败 = 用户看不到章节，但探测本身已成功；用 Warn 让它可被定位
-                Plugin.Instance.Logger.Warn("IsoExtraction - chapter injection failed: " + e.Message);
+                // 补写失败 = 用户少看到章节/语言，但探测本身已成功；用 Warn 让它可被定位
+                Plugin.Instance.Logger.Warn("IsoExtraction - hint injection failed: " + e.Message);
                 Plugin.Instance.Logger.Debug(e.StackTrace);
             }
 
             return mediaInfo;
         }
+
+        /// <summary>探测结果没有时长时，用 playlist 各 PlayItem 时长之和补上。</summary>
+        private static void ApplyRuntime(ProbeMediaInfo mediaInfo, IsoMounter.TitleHint hint)
+        {
+            if (mediaInfo.RunTimeTicks.HasValue && mediaInfo.RunTimeTicks.Value > 0) return;
+            if (hint.DurationSeconds <= 0) return;
+
+            mediaInfo.RunTimeTicks = (long)(hint.DurationSeconds * TimeSpan.TicksPerSecond);
+            Plugin.Instance.Logger.Info(
+                $"IsoExtraction - filled runtime from playlist: {hint.DurationSeconds:F1}s");
+        }
+
+        private static void ApplyChapters(ProbeMediaInfo mediaInfo, IsoMounter.TitleHint hint)
+        {
+            var chapters = ToChapterInfos(hint.Chapters);
+            if (chapters == null || chapters.Count == 0) return;
+
+            if (!mediaInfo.RunTimeTicks.HasValue || mediaInfo.RunTimeTicks.Value <= 0 ||
+                chapters.Any(c => c.StartPositionTicks < 0 ||
+                    c.StartPositionTicks > mediaInfo.RunTimeTicks.Value))
+            {
+                Plugin.Instance.Logger.Warn(
+                    "IsoExtraction - playlist chapters do not fit the probed title; injection skipped");
+                return;
+            }
+
+            mediaInfo.Chapters = chapters.ToArray();
+
+            Plugin.Instance.Logger.Info(
+                $"IsoExtraction - injected {chapters.Count} playlist chapter(s) into probe result");
+        }
+
+        /// <summary>
+        /// 用 playlist 的 STN_table 补音轨/字幕的**语言**。
+        ///
+        /// 背景：ffprobe 探测的是挂载出来的 <c>.m2ts</c>，而语言标签写在 MPLS 的 STN_table 里，
+        /// 码流里不一定带 —— 不补的话 Emby 里音轨全显示"未知语言"。
+        /// </summary>
+        private static void ApplyLanguages(ProbeMediaInfo mediaInfo, IsoMounter.TitleHint hint)
+        {
+            var streams = mediaInfo.MediaStreams;
+            if (streams == null || streams.Count == 0) return;
+            if (hint.AudioStreams.Count == 0 && hint.SubtitleStreams.Count == 0) return;
+
+            var filled =
+                FillMissingLanguages(streams.Where(s => s.Type == MediaStreamType.Audio).ToList(),
+                    hint.AudioStreams) +
+                FillMissingLanguages(streams.Where(s => s.Type == MediaStreamType.Subtitle).ToList(),
+                    hint.SubtitleStreams);
+
+            if (filled > 0)
+            {
+                Plugin.Instance.Logger.Info(
+                    $"IsoExtraction - filled {filled} stream language(s) from playlist STN");
+            }
+        }
+
+        /// <summary>
+        /// 按顺序把 STN 里的语言补到探测结果上。
+        ///
+        /// 只补**缺失**的（null / 空 / <c>und</c>），已有语言不覆盖；
+        /// 两边数量不等则整体放弃 —— ffprobe 输出里没有 PID，无法精确匹配，
+        /// **宁可标不出也不能标错**。
+        /// </summary>
+        internal static int FillMissingLanguages(List<MediaStream> probed,
+            List<UdfTitleResolver.MplsStreamInfo> fromPlaylist)
+        {
+            if (probed == null || fromPlaylist == null || probed.Count == 0 ||
+                fromPlaylist.Count != probed.Count) return 0;
+
+            var filled = 0;
+
+            for (var i = 0; i < probed.Count; i++)
+            {
+                if (!IsUnknownLanguage(probed[i].Language)) continue;
+                if (IsUnknownLanguage(fromPlaylist[i].Language)) continue;
+
+                probed[i].Language = fromPlaylist[i].Language;
+                filled++;
+            }
+
+            return filled;
+        }
+
+        private static bool IsUnknownLanguage(string language) =>
+            string.IsNullOrWhiteSpace(language) ||
+            string.Equals(language, "und", StringComparison.OrdinalIgnoreCase);
     }
 }

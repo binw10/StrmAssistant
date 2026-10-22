@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -71,12 +71,27 @@ namespace StrmAssistant.Common
             new ConcurrentDictionary<string, MountEntry>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// 按 ISO 路径缓存 MPLS PlayListMark 解析出的章节（标题内偏移秒）。
-        /// 由 <see cref="ResolveMountedTitle"/> / <see cref="ResolveInProcessTitle"/> 写入，
-        /// 供 <c>IsoExtraction</c> 在 ffprobe 结果上补写章节（Emby 对 m2ts 无法从 ffprobe 得到章节）。
+        /// 一次 playlist 解析能提供给探测结果的补充信息。
+        ///
+        /// 由 <see cref="ResolveMountedTitle"/> / <see cref="ResolveInProcessTitle"/> / 远程解析写入，
+        /// 供 <c>IsoExtraction</c> 在 ffprobe 结果上补写：章节、音轨/字幕语言、总时长。
+        ///
+        /// 为什么不只存章节：m2ts 码流里不带语言标签（语言写在 MPLS 的 STN_table 里），
+        /// 只靠 ffprobe 会让所有音轨显示"未知语言"；总时长在远程 ISO 上 ffprobe 也给不出。
         /// </summary>
-        private static readonly ConcurrentDictionary<string, List<double>> TitleChapters =
-            new ConcurrentDictionary<string, List<double>>(StringComparer.OrdinalIgnoreCase);
+        internal sealed class TitleHint
+        {
+            public List<double> Chapters = new List<double>();
+            public List<UdfTitleResolver.MplsStreamInfo> AudioStreams = new List<UdfTitleResolver.MplsStreamInfo>();
+            public List<UdfTitleResolver.MplsStreamInfo> SubtitleStreams = new List<UdfTitleResolver.MplsStreamInfo>();
+            public double DurationSeconds;
+
+            public bool IsEmpty => Chapters.Count == 0 && AudioStreams.Count == 0 &&
+                                   SubtitleStreams.Count == 0 && DurationSeconds <= 0;
+        }
+
+        private static readonly ConcurrentDictionary<string, TitleHint> TitleHints =
+            new ConcurrentDictionary<string, TitleHint>(StringComparer.OrdinalIgnoreCase);
 
         private static Timer _sweeper;
         private static bool? _supported;
@@ -244,8 +259,8 @@ namespace StrmAssistant.Common
         {
             if (string.IsNullOrEmpty(isoUrl)) return null;
 
-            TryGetRemoteChapters(isoUrl, out _);
-            if (RemoteChapters.TryGetValue(isoUrl, out var title) && !string.IsNullOrEmpty(title.UnsupportedReason))
+            TryGetRemoteHint(isoUrl, out _);
+            if (RemoteHints.TryGetValue(isoUrl, out var title) && !string.IsNullOrEmpty(title.UnsupportedReason))
             {
                 Plugin.Instance?.Logger?.Warn("IsoExtraction - " + title.UnsupportedReason);
                 return null;
@@ -423,12 +438,12 @@ namespace StrmAssistant.Common
             var info = UdfTitleResolver.ResolveFromMount(driveRoot);
             if (!string.IsNullOrEmpty(info?.UnsupportedReason))
             {
-                TitleChapters.TryRemove(isoPath, out _);
+                TitleHints.TryRemove(isoPath, out _);
                 Plugin.Instance?.Logger?.Warn("IsoExtraction - " + info.UnsupportedReason);
                 return null;
             }
 
-            RememberChapters(isoPath, info);
+            RememberTitle(isoPath, info);
 
             if (!string.IsNullOrEmpty(info?.RelativePath))
             {
@@ -467,13 +482,13 @@ namespace StrmAssistant.Common
             var logger = Plugin.Instance?.Logger;
             if (!string.IsNullOrEmpty(info?.UnsupportedReason))
             {
-                TitleChapters.TryRemove(isoPath, out _);
+                TitleHints.TryRemove(isoPath, out _);
                 logger?.Warn("IsoExtraction - " + info.UnsupportedReason);
                 return;
             }
             if (logger == null) return;
 
-            RememberChapters(isoPath, info);
+            RememberTitle(isoPath, info);
 
             if (info == null)
             {
@@ -489,22 +504,44 @@ namespace StrmAssistant.Common
         /// <summary>
         /// 记录一次解析得到的章节（仅当有内容时覆盖；解析失败/为空时不覆盖既有缓存）。
         /// </summary>
-        private static void RememberChapters(string isoPath, UdfTitleResolver.TitleInfo info)
+        private static void RememberTitle(string isoPath, UdfTitleResolver.TitleInfo info)
         {
             if (!string.IsNullOrEmpty(info?.UnsupportedReason))
             {
-                if (!string.IsNullOrEmpty(isoPath)) TitleChapters.TryRemove(isoPath, out _);
+                if (!string.IsNullOrEmpty(isoPath)) TitleHints.TryRemove(isoPath, out _);
                 return;
             }
-            if (string.IsNullOrEmpty(isoPath) || info?.Chapters == null || info.Chapters.Count == 0) return;
+            if (info == null) return;
+
+            var hint = new TitleHint
+            {
+                Chapters = info.Chapters != null ? new List<double>(info.Chapters) : new List<double>(),
+                AudioStreams = info.AudioStreams ?? new List<UdfTitleResolver.MplsStreamInfo>(),
+                SubtitleStreams = info.SubtitleStreams ?? new List<UdfTitleResolver.MplsStreamInfo>(),
+                DurationSeconds = info.DurationSeconds
+            };
+
+            // 什么都没解析出来时不要覆盖既有缓存（避免一次失败把上一轮的好结果清掉）
+            if (hint.IsEmpty) return;
 
             try
             {
-                TitleChapters[isoPath] = new List<double>(info.Chapters);
+                TitleHints[isoPath] = hint;
 
-                Plugin.Instance?.Logger?.Info(
-                    $"IsoExtraction - playlist chapters resolved for {isoPath}: {info.Chapters.Count} " +
-                    $"(first={info.Chapters[0]:F3}s, last={info.Chapters[info.Chapters.Count - 1]:F3}s)");
+                if (hint.Chapters.Count > 0)
+                {
+                    Plugin.Instance?.Logger?.Info(
+                        $"IsoExtraction - playlist chapters resolved for {isoPath}: {hint.Chapters.Count} " +
+                        $"(first={hint.Chapters[0]:F3}s, last={hint.Chapters[hint.Chapters.Count - 1]:F3}s)");
+                }
+
+                if (hint.AudioStreams.Count > 0 || hint.SubtitleStreams.Count > 0)
+                {
+                    Plugin.Instance?.Logger?.Info(
+                        $"IsoExtraction - playlist STN resolved for {isoPath}: " +
+                        $"{hint.AudioStreams.Count} audio, {hint.SubtitleStreams.Count} subtitle, " +
+                        $"{hint.DurationSeconds:F1}s");
+                }
             }
             catch
             {
@@ -520,23 +557,36 @@ namespace StrmAssistant.Common
         public static bool TryGetTitleChapters(string isoPath, out List<double> chapters)
         {
             chapters = null;
-            if (string.IsNullOrEmpty(isoPath)) return false;
-            if (!TitleChapters.TryGetValue(isoPath, out var cached) || cached == null || cached.Count == 0)
-                return false;
+            if (!TryGetTitleHint(isoPath, out var hint)) return false;
+            if (hint.Chapters.Count == 0) return false;
 
-            chapters = cached;
+            chapters = hint.Chapters;
             return true;
         }
 
-        private sealed class RemoteChapterEntry
+        /// <summary>
+        /// 取该 ISO 最近一次解析出的完整补充信息（章节 + 音轨/字幕语言 + 总时长）。
+        /// 无缓存或全部为空时返回 false。
+        /// </summary>
+        internal static bool TryGetTitleHint(string isoPath, out TitleHint hint)
+        {
+            hint = null;
+            if (string.IsNullOrEmpty(isoPath)) return false;
+            if (!TitleHints.TryGetValue(isoPath, out var cached) || cached == null || cached.IsEmpty) return false;
+
+            hint = cached;
+            return true;
+        }
+
+        private sealed class RemoteHintEntry
         {
             public string UnsupportedReason;
-            public List<double> Chapters;
+            public TitleHint Hint;
             public DateTime LastUsedUtc;
         }
 
-        private static readonly ConcurrentDictionary<string, RemoteChapterEntry> RemoteChapters =
-            new ConcurrentDictionary<string, RemoteChapterEntry>(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, RemoteHintEntry> RemoteHints =
+            new ConcurrentDictionary<string, RemoteHintEntry>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// 远程 ISO（strm → http）的章节解析：用 <see cref="HttpRangeStream"/> 提供真实长度的可 Seek 流，
@@ -549,14 +599,26 @@ namespace StrmAssistant.Common
         public static bool TryGetRemoteChapters(string isoUrl, out List<double> chapters)
         {
             chapters = null;
+            if (!TryGetRemoteHint(isoUrl, out var hint) || hint.Chapters.Count == 0) return false;
+
+            chapters = hint.Chapters;
+            return true;
+        }
+
+        /// <summary>
+        /// 远程 ISO 的完整补充信息（章节 + 音轨/字幕语言 + 总时长）。语义同 <see cref="TryGetTitleHint"/>。
+        /// </summary>
+        internal static bool TryGetRemoteHint(string isoUrl, out TitleHint hint)
+        {
+            hint = null;
             if (string.IsNullOrEmpty(isoUrl)) return false;
 
-            if (RemoteChapters.TryGetValue(isoUrl, out var cached) &&
+            if (RemoteHints.TryGetValue(isoUrl, out var cached) &&
                 DateTime.UtcNow - cached.LastUsedUtc < RemoteCacheTtl)
             {
                 cached.LastUsedUtc = DateTime.UtcNow;
-                chapters = cached.Chapters;
-                return chapters != null && chapters.Count > 0;
+                hint = cached.Hint;
+                return hint != null && !hint.IsEmpty;
             }
 
             try
@@ -568,7 +630,7 @@ namespace StrmAssistant.Common
                         Plugin.Instance?.Logger?.Info(
                             $"IsoExtraction - remote iso does not support Range, chapters skipped: {error}");
 
-                        RemoteChapters[isoUrl] = new RemoteChapterEntry { Chapters = null, LastUsedUtc = DateTime.UtcNow };
+                        RemoteHints[isoUrl] = new RemoteHintEntry { Hint = null, LastUsedUtc = DateTime.UtcNow };
                         return false;
                     }
 
@@ -577,13 +639,23 @@ namespace StrmAssistant.Common
                         var info = UdfTitleResolver.Resolve(stream, isoUrl);
                         if (!string.IsNullOrEmpty(info?.UnsupportedReason))
                             Plugin.Instance?.Logger?.Warn("IsoExtraction - " + info.UnsupportedReason);
-                        var resolved = string.IsNullOrEmpty(info?.UnsupportedReason) ? info?.Chapters : null;
 
-                        if (resolved != null && resolved.Count > 0)
+                        var usable = string.IsNullOrEmpty(info?.UnsupportedReason);
+                        var resolved = usable
+                            ? new TitleHint
+                            {
+                                Chapters = info.Chapters ?? new List<double>(),
+                                AudioStreams = info.AudioStreams ?? new List<UdfTitleResolver.MplsStreamInfo>(),
+                                SubtitleStreams = info.SubtitleStreams ?? new List<UdfTitleResolver.MplsStreamInfo>(),
+                                DurationSeconds = info.DurationSeconds
+                            }
+                            : null;
+
+                        if (resolved != null && resolved.Chapters.Count > 0)
                         {
                             Plugin.Instance?.Logger?.Info(
                                 $"IsoExtraction - remote playlist chapters resolved for {SafeShorten(isoUrl)}: " +
-                                $"{resolved.Count} (first={resolved[0]:F3}s, last={resolved[resolved.Count - 1]:F3}s)");
+                                $"{resolved.Chapters.Count} (first={resolved.Chapters[0]:F3}s, last={resolved.Chapters[resolved.Chapters.Count - 1]:F3}s)");
                         }
                         else
                         {
@@ -591,15 +663,23 @@ namespace StrmAssistant.Common
                                 $"IsoExtraction - remote iso has no resolvable playlist chapters: {SafeShorten(isoUrl)}");
                         }
 
-                        RemoteChapters[isoUrl] = new RemoteChapterEntry
+                        if (resolved != null && (resolved.AudioStreams.Count > 0 || resolved.SubtitleStreams.Count > 0))
                         {
-                            Chapters = resolved,
+                            Plugin.Instance?.Logger?.Info(
+                                $"IsoExtraction - remote playlist STN resolved for {SafeShorten(isoUrl)}: " +
+                                $"{resolved.AudioStreams.Count} audio, {resolved.SubtitleStreams.Count} subtitle, " +
+                                $"{resolved.DurationSeconds:F1}s");
+                        }
+
+                        RemoteHints[isoUrl] = new RemoteHintEntry
+                        {
+                            Hint = resolved,
                             UnsupportedReason = info?.UnsupportedReason,
                             LastUsedUtc = DateTime.UtcNow
                         };
 
-                        chapters = resolved;
-                        return chapters != null && chapters.Count > 0;
+                        hint = resolved;
+                        return resolved != null && !resolved.IsEmpty;
                     }
                 }
             }
@@ -608,7 +688,7 @@ namespace StrmAssistant.Common
                 Plugin.Instance?.Logger?.Warn(
                     $"IsoExtraction - remote chapter resolution failed: {e.Message}");
 
-                RemoteChapters[isoUrl] = new RemoteChapterEntry { Chapters = null, LastUsedUtc = DateTime.UtcNow };
+                RemoteHints[isoUrl] = new RemoteHintEntry { Hint = null, LastUsedUtc = DateTime.UtcNow };
                 return false;
             }
         }
@@ -766,11 +846,11 @@ namespace StrmAssistant.Common
                     RemoteIsos.TryRemove(kv.Key, out _);
                 }
 
-                // 远程 ISO 章节缓存：超过 TTL 清理
-                foreach (var kv in RemoteChapters.ToArray())
+                // 远程 ISO 解析结果缓存：超过 TTL 清理
+                foreach (var kv in RemoteHints.ToArray())
                 {
                     if (DateTime.UtcNow - kv.Value.LastUsedUtc < RemoteCacheTtl) continue;
-                    RemoteChapters.TryRemove(kv.Key, out _);
+                    RemoteHints.TryRemove(kv.Key, out _);
                 }
             }
             catch
