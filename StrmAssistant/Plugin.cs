@@ -586,8 +586,9 @@ namespace StrmAssistant
 
                     if (!deserializeResult)
                     {
+                        // 上面刚查过 HasMediaInfo(e.Item)==false，传 skipHasMediaInfoCheck=true 省掉重复的 DB 查询
                         deserializeResult = await MediaInfoApi.DeserializeMediaInfo(e.Item, directoryService,
-                            "OnItemAdded Restore", true).ConfigureAwait(false);
+                            "OnItemAdded Restore", true, true).ConfigureAwait(false);
                     }
                     else
                     {

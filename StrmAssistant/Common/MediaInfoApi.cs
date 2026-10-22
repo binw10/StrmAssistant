@@ -486,13 +486,41 @@ namespace StrmAssistant.Common
             return await SerializeMediaInfo(workItem, ds, overwrite, source).ConfigureAwait(false);
         }
 
-        public async Task<bool> DeserializeMediaInfo(BaseItem item, IDirectoryService directoryService, string source,
+        public Task<bool> DeserializeMediaInfo(BaseItem item, IDirectoryService directoryService, string source,
             bool ignoreFileChange, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var workItem = _libraryManager.GetItemById(item.InternalId);
+            return DeserializeMediaInfo(item, directoryService, source, ignoreFileChange, false, cancellationToken);
+        }
 
-            if (Plugin.LibraryApi.HasMediaInfo(workItem)) return true;
+        /// <summary>
+        /// 调用方**已经确认** <c>HasMediaInfo(item) == false</c>（OnItemAdded、扫描期的 ExclusiveExtract）时，
+        /// 传 <paramref name="skipHasMediaInfoCheck"/> = true，省掉 GetItemById + GetMediaStreams 两次 DB 往返。
+        /// 扫库高频场景下能明显降低 library.db 压力。
+        /// </summary>
+        public Task<bool> DeserializeMediaInfo(BaseItem item, IDirectoryService directoryService, string source,
+            bool ignoreFileChange, bool skipHasMediaInfoCheck)
+        {
+            return DeserializeMediaInfo(item, directoryService, source, ignoreFileChange, skipHasMediaInfoCheck,
+                CancellationToken.None);
+        }
+
+        private async Task<bool> DeserializeMediaInfo(BaseItem item, IDirectoryService directoryService, string source,
+            bool ignoreFileChange, bool skipHasMediaInfoCheck, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            BaseItem workItem;
+
+            if (skipHasMediaInfoCheck)
+            {
+                workItem = item;
+            }
+            else
+            {
+                workItem = _libraryManager.GetItemById(item.InternalId);
+
+                if (Plugin.LibraryApi.HasMediaInfo(workItem)) return true;
+            }
 
             var mediaInfoJsonPath = GetMediaInfoJsonReadPath(item, directoryService);
             var file = directoryService.GetFile(mediaInfoJsonPath);

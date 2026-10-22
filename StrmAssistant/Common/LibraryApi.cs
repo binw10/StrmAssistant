@@ -143,55 +143,89 @@ namespace StrmAssistant.Common
             }
         }
 
+        private static readonly object ExcludeMediaCacheLock = new object();
+        private static bool _excludeMediaCacheValid;
+        private static string _excludeMediaCacheSetting;
+        private static bool _excludeMediaCacheIsoExtraction;
+        private static MediaContainers[] _cachedExcludeMediaContainers = Array.Empty<MediaContainers>();
+        private static string[] _cachedExcludeMediaExtensions = Array.Empty<string>();
+
+        /// <summary>
+        /// 排除容器 / 扩展名的解析结果按「设置字符串 + ISO 提取开关」缓存。
+        /// 这两个属性在刮削热路径上被逐条调用，原实现每次都 Split + Enum.TryParse + LINQ，
+        /// 大库扫库时是纯浪费。设置保存后 key 变化会自动失效，不需要显式清理。
+        /// <para>
+        /// ISO 默认被排除（Emby 原生 ffprobe 通常无法直接读取）；当用户开启「ISO 提取」时不再强制排除：
+        /// Windows 由挂载卷上的正片作答，Linux/Docker 交由 <c>CustomProbePath</c> 指定的自定义 ffprobe 直读 ISO。
+        /// </para>
+        /// </summary>
+        private static void EnsureExcludeMediaCache()
+        {
+            var options = Plugin.Instance.MediaInfoExtractStore.GetOptions();
+            var setting = options.ImageCapture.ImageCaptureExcludeMediaContainers ?? string.Empty;
+            var isoExtraction = options.IsoTool.EnableIsoExtraction;
+
+            if (_excludeMediaCacheValid &&
+                isoExtraction == _excludeMediaCacheIsoExtraction &&
+                string.Equals(setting, _excludeMediaCacheSetting, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            lock (ExcludeMediaCacheLock)
+            {
+                if (_excludeMediaCacheValid &&
+                    isoExtraction == _excludeMediaCacheIsoExtraction &&
+                    string.Equals(setting, _excludeMediaCacheSetting, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                var parts = setting.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                var containers = new List<MediaContainers>(parts.Length + 1);
+                var extensions = new List<string>(parts.Length * 2 + 2);
+
+                foreach (var part in parts)
+                {
+                    if (!Enum.TryParse<MediaContainers>(part.Trim(), true, out var container)) continue;
+
+                    containers.Add(container);
+                    extensions.AddRange(container.GetAliases() ?? Array.Empty<string>());
+                }
+
+                if (!isoExtraction)
+                {
+                    containers.Add(MediaContainers.Iso);
+                    extensions.AddRange(MediaContainers.Iso.GetAliases() ?? Array.Empty<string>());
+                }
+
+                _cachedExcludeMediaContainers = containers.Distinct().ToArray();
+                _cachedExcludeMediaExtensions = extensions
+                    .Where(alias => !string.IsNullOrWhiteSpace(alias))
+                    .Distinct()
+                    .ToArray();
+
+                _excludeMediaCacheSetting = setting;
+                _excludeMediaCacheIsoExtraction = isoExtraction;
+                _excludeMediaCacheValid = true;
+            }
+        }
+
         public static MediaContainers[] ExcludeMediaContainers
         {
             get
             {
-                return Plugin.Instance.MediaInfoExtractStore.GetOptions().ImageCapture.ImageCaptureExcludeMediaContainers
-                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(c =>
-                        Enum.TryParse<MediaContainers>(c.Trim(), true, out var container)
-                            ? container
-                            : (MediaContainers?)null)
-                    .Where(container => container.HasValue)
-                    .Select(container => container.Value)
-                    .Concat(IsoContainersIfExcluded)
-                    .Distinct()
-                    .ToArray();
+                EnsureExcludeMediaCache();
+                return _cachedExcludeMediaContainers;
             }
         }
-
-        /// <summary>
-        /// ISO 默认被排除（Emby 原生 ffprobe 通常无法直接读取）；当用户开启「ISO 提取」时不再强制排除：
-        /// Windows 由挂载卷上的正片作答，Linux/Docker 交由 <c>CustomProbePath</c> 指定的自定义 ffprobe 直读 ISO。
-        /// </summary>
-        private static IEnumerable<MediaContainers> IsoContainersIfExcluded =>
-            Plugin.Instance.MediaInfoExtractStore.GetOptions().IsoTool.EnableIsoExtraction
-                ? Enumerable.Empty<MediaContainers>()
-                : new[] { MediaContainers.Iso };
 
         public static string[] ExcludeMediaExtensions
         {
             get
             {
-                return Plugin.Instance.MediaInfoExtractStore.GetOptions()
-                    .ImageCapture.ImageCaptureExcludeMediaContainers.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                    .SelectMany(c =>
-                    {
-                        if (Enum.TryParse<MediaContainers>(c.Trim(), true, out var container))
-                        {
-                            var aliases = container.GetAliases();
-                            return aliases?.Where(a => !string.IsNullOrWhiteSpace(a)) ?? Array.Empty<string>();
-                        }
-
-                        return Array.Empty<string>();
-                    })
-                    .Concat(Plugin.Instance.MediaInfoExtractStore.GetOptions().IsoTool.EnableIsoExtraction
-                        ? Array.Empty<string>()
-                        : MediaContainers.Iso.GetAliases())
-                    .Where(alias => !string.IsNullOrWhiteSpace(alias))
-                    .Distinct()
-                    .ToArray();
+                EnsureExcludeMediaCache();
+                return _cachedExcludeMediaExtensions;
             }
         }
 

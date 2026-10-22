@@ -1,6 +1,7 @@
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Model.Logging;
+using StrmAssistant.Core;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -21,6 +22,18 @@ namespace StrmAssistant.Common
         private static DateTime _fingerprintProcessLastRunTime = DateTime.MinValue;
         private static DateTime _episodeRefreshProcessLastRunTime = DateTime.MinValue;
         private static readonly TimeSpan ThrottleInterval = TimeSpan.FromSeconds(30);
+
+        /// <summary>
+        /// 批处理中 task 列表的剔除阈值：超过该数量就把已完成的 task 移除，
+        /// 否则闭包捕获的 BaseItem 会一直活到 Task.WhenAll 返回，大批量刮削时 RSS 持续上涨。
+        /// </summary>
+        private const int TaskPruneThreshold = 100;
+
+        /// <summary>
+        /// 批内触发内存归还的间隔（每处理这么多条触发一次，实际是否执行由 MemoryCleaner 自身节流决定）。
+        /// </summary>
+        private const int MidBatchCleanupInterval = 500;
+
         private static readonly Random Random = new Random();
         private static readonly object ConcurrencySettingsLock = new object();
         private static int _currentMasterMaxConcurrentCount;
@@ -343,12 +356,32 @@ namespace StrmAssistant.Common
                                 }
                             }, cancellationToken);
                             tasks.Add(task);
+
+                            // 周期性剔除已完成的 task，释放闭包捕获的 BaseItem 引用，
+                            // 避免大批量刮削期间整批引用堆积导致 RSS 持续上涨
+                            if (tasks.Count >= TaskPruneThreshold)
+                            {
+                                tasks.RemoveAll(t => t.IsCompleted);
+                            }
+
+                            // 中段尝试一次内存归还（受 MemoryCleaner 自身节流约束，不会过频）
+                            if (tasks.Count > 0 && tasks.Count % MidBatchCleanupInterval == 0)
+                            {
+                                MemoryCleaner.RequestCleanup("MediaInfoExtract Mid-Batch");
+                            }
                         }
 
                         await Task.WhenAll(tasks).ConfigureAwait(false);
                         tasks.Clear();
 
+                        // 显式释放本批所有元素，下一批之前不再钉住引用
+                        mediaInfoItems.Clear();
+                        dedupQueueItems.Clear();
+
                         IsMediaInfoProcessTaskRunning = false;
+
+                        // 一批刮削完成后，触发一次内存归还
+                        MemoryCleaner.RequestCleanup("MediaInfoExtract Batch");
                     }
 
                     Logger.Info("MediaInfoExtract - Clear Item Queue Stopped");
@@ -628,11 +661,23 @@ namespace StrmAssistant.Common
                                     }
                                 }, cancellationToken);
                                 seasonTasks.Add(seasonTask);
+
+                                // 大型剧集库下 seasonTasks 也会累积，闭包会钉住整季 Episode 引用
+                                if (seasonTasks.Count >= TaskPruneThreshold)
+                                {
+                                    seasonTasks.RemoveAll(t => t.IsCompleted);
+                                }
                             }
                         }
                         await Task.WhenAll(seasonTasks).ConfigureAwait(false);
+                        seasonTasks.Clear();
+                        episodes.Clear();
+                        dequeueItems.Clear();
 
                         IsMediaInfoProcessTaskRunning = false;
+
+                        // 指纹提取通常伴随大量 PCM/JSON 缓冲，结束后立即触发清理
+                        MemoryCleaner.RequestCleanup("IntroFingerprintExtract Batch");
                     }
 
                     Logger.Info("IntroFingerprintExtract - Clear Item Queue Stopped");
@@ -831,12 +876,26 @@ namespace StrmAssistant.Common
                                 }
                             }, cancellationToken);
                             tasks.Add(task);
+
+                            // 周期性剔除已完成的 task，释放它们捕获的 Episode 闭包
+                            if (tasks.Count >= TaskPruneThreshold)
+                            {
+                                tasks.RemoveAll(t => t.IsCompleted);
+                            }
+
+                            if (tasks.Count > 0 && tasks.Count % MidBatchCleanupInterval == 0)
+                            {
+                                MemoryCleaner.RequestCleanup("EpisodeRefresh Mid-Batch");
+                            }
                         }
 
                         await Task.WhenAll(tasks).ConfigureAwait(false);
                         tasks.Clear();
+                        itemsToRefresh.Clear();
 
                         IsEpisodeRefreshProcessTaskRunning = false;
+
+                        MemoryCleaner.RequestCleanup("EpisodeRefresh Batch");
                     }
 
                     Logger.Info("EpisodeRefresh - Clear Item Queue Stopped");
@@ -858,8 +917,20 @@ namespace StrmAssistant.Common
         public static void Dispose()
         {
             MediaInfoTokenSource?.Cancel();
+            MediaInfoTokenSource?.Dispose();
+            MediaInfoTokenSource = null;
+
+            IntroSkipTokenSource?.Cancel();
+            IntroSkipTokenSource?.Dispose();
+            IntroSkipTokenSource = null;
+
             FingerprintTokenSource?.Cancel();
+            FingerprintTokenSource?.Dispose();
+            FingerprintTokenSource = null;
+
             EpisodeRefreshTokenSource?.Cancel();
+            EpisodeRefreshTokenSource?.Dispose();
+            EpisodeRefreshTokenSource = null;
         }
     }
 }

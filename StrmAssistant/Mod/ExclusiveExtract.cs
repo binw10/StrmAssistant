@@ -536,9 +536,10 @@ namespace StrmAssistant.Mod
                     {
                         if (!Plugin.LibraryApi.HasMediaInfo(__instance))
                         {
+                            // 刚查过无媒体信息，跳过 DeserializeMediaInfo 内部的重复检查
                             _ = Plugin.MediaInfoApi
                                 .DeserializeMediaInfo(__instance, directoryService, "Exclusive Restore",
-                                    ignoreFileChange).ConfigureAwait(false);
+                                    ignoreFileChange, true).ConfigureAwait(false);
                         }
                         else if (!CurrentRefreshContext.Value.IsFileChanged)
                         {
