@@ -27,10 +27,12 @@ namespace StrmAssistant.IntroSkip
 
         private readonly TimeSpan _updateInterval = TimeSpan.FromSeconds(10);
         private readonly ConcurrentDictionary<string, PlaySessionData> _playSessionData = new ConcurrentDictionary<string, PlaySessionData>();
-        private readonly ConcurrentDictionary<Episode, Task> _ongoingIntroUpdates = new ConcurrentDictionary<Episode, Task>();
-        private readonly ConcurrentDictionary<Episode, Task> _ongoingCreditsUpdates = new ConcurrentDictionary<Episode, Task>();
-        private readonly ConcurrentDictionary<Episode, DateTime> _lastIntroUpdateTimes = new ConcurrentDictionary<Episode, DateTime>();
-        private readonly ConcurrentDictionary<Episode, DateTime> _lastCreditsUpdateTimes = new ConcurrentDictionary<Episode, DateTime>();
+        // 以 InternalId 作键：不依赖 BaseItem 的相等性实现，字典也不再持有 Episode 引用。
+        // 此前用 Episode 实例作键，同一集的不同实例会被当成两个键，去重失效 → 重复写章节。
+        private readonly ConcurrentDictionary<long, Task> _ongoingIntroUpdates = new ConcurrentDictionary<long, Task>();
+        private readonly ConcurrentDictionary<long, Task> _ongoingCreditsUpdates = new ConcurrentDictionary<long, Task>();
+        private readonly ConcurrentDictionary<long, DateTime> _lastIntroUpdateTimes = new ConcurrentDictionary<long, DateTime>();
+        private readonly ConcurrentDictionary<long, DateTime> _lastCreditsUpdateTimes = new ConcurrentDictionary<long, DateTime>();
         private readonly object _introLock = new object();
         private readonly object _creditsLock = new object();
 
@@ -313,12 +315,19 @@ namespace StrmAssistant.IntroSkip
 
         private void OnPlaybackStopped(object sender, PlaybackStopEventArgs e)
         {
-            if (!(e.Item is Episode episode) || !e.PlaybackPositionTicks.HasValue || !episode.RunTimeTicks.HasValue) return;
+            if (!(e.Item is Episode episode) || !e.PlaybackPositionTicks.HasValue || !episode.RunTimeTicks.HasValue)
+            {
+                // 提前返回也必须清理会话数据，否则异常结束的播放会永久留在字典里
+                RemovePlaySession(e.PlaySessionId);
+                return;
+            }
 
             var playSessionData = GetPlaySessionData(e);
-            if (playSessionData is null) return;
 
-            if (!playSessionData.CreditsStart.HasValue)
+            // 注意：playSessionData 为 null（不在范围内）时不能直接 return ——
+            // 后面的清理必须照常执行，否则 _lastIntroUpdateTimes 等会残留到下次播放，
+            // 导致「10 秒内不重复写」的节流被旧记录误伤。
+            if (playSessionData != null && !playSessionData.CreditsStart.HasValue)
             {
                 var currentPositionTicks = e.PlaybackPositionTicks.Value;
                 if (currentPositionTicks > episode.RunTimeTicks - playSessionData.MaxCreditsDurationTicks)
@@ -331,26 +340,25 @@ namespace StrmAssistant.IntroSkip
                 }
             }
 
-            _playSessionData.TryRemove(e.PlaySessionId, out _);
-            _lastIntroUpdateTimes.TryRemove(episode, out _);
-            _lastCreditsUpdateTimes.TryRemove(episode, out _);
+            RemovePlaySession(e.PlaySessionId);
+
+            var episodeId = episode.InternalId;
+            _lastIntroUpdateTimes.TryRemove(episodeId, out _);
+            _lastCreditsUpdateTimes.TryRemove(episodeId, out _);
+        }
+
+        private void RemovePlaySession(string playSessionId)
+        {
+            if (!string.IsNullOrEmpty(playSessionId)) _playSessionData.TryRemove(playSessionId, out _);
         }
 
         private PlaySessionData GetPlaySessionData(PlaybackProgressEventArgs e)
         {
             if (!IsLibraryInScope(e.Item) || !IsUserInScope(e.Session.UserInternalId) ||
                 !IsClientInScope(e.ClientName)) return null;
-            
-            var playSessionId = e.PlaySessionId;
 
-            if (!_playSessionData.ContainsKey(playSessionId))
-            {
-                _playSessionData[playSessionId] = new PlaySessionData(e.Item);
-            }
-
-            var playSessionData = _playSessionData[playSessionId];
-
-            return playSessionData;
+            // GetOrAdd 而不是 ContainsKey + 索引器：后者在并发播放同一会话时会重复构造
+            return _playSessionData.GetOrAdd(e.PlaySessionId, _ => new PlaySessionData(e.Item));
         }
 
         public bool IsLibraryInScope(BaseItem item)
@@ -378,15 +386,16 @@ namespace StrmAssistant.IntroSkip
             long introEndPositionTicks)
         {
             var now = DateTime.UtcNow;
+            var episodeId = episode.InternalId;
 
             lock (_introLock)
             {
-                if (_ongoingIntroUpdates.ContainsKey(episode))
+                if (_ongoingIntroUpdates.ContainsKey(episodeId))
                 {
                     return;
                 }
 
-                if (_lastIntroUpdateTimes.TryGetValue(episode, out var lastUpdateTime))
+                if (_lastIntroUpdateTimes.TryGetValue(episodeId, out var lastUpdateTime))
                 {
                     if (now - lastUpdateTime < _updateInterval)
                     {
@@ -410,11 +419,11 @@ namespace StrmAssistant.IntroSkip
                     }
                 });
 
-                if (_ongoingIntroUpdates.TryAdd(episode, task))
+                if (_ongoingIntroUpdates.TryAdd(episodeId, task))
                 {
-                    task.ContinueWith(t => { _ongoingIntroUpdates.TryRemove(episode, out _); },
+                    task.ContinueWith(t => { _ongoingIntroUpdates.TryRemove(episodeId, out _); },
                         TaskContinuationOptions.ExecuteSynchronously);
-                    _lastIntroUpdateTimes[episode] = now;
+                    _lastIntroUpdateTimes[episodeId] = now;
                     task.Start();
                 }
             }
@@ -424,15 +433,16 @@ namespace StrmAssistant.IntroSkip
             long creditsDurationTicks)
         {
             var now = DateTime.UtcNow;
+            var episodeId = episode.InternalId;
 
             lock (_creditsLock)
             {
-                if (_ongoingCreditsUpdates.ContainsKey(episode))
+                if (_ongoingCreditsUpdates.ContainsKey(episodeId))
                 {
                     return;
                 }
 
-                if (_lastCreditsUpdateTimes.TryGetValue(episode, out var lastUpdateTime))
+                if (_lastCreditsUpdateTimes.TryGetValue(episodeId, out var lastUpdateTime))
                 {
                     if (now - lastUpdateTime < _updateInterval)
                     {
@@ -454,11 +464,11 @@ namespace StrmAssistant.IntroSkip
                     }
                 });
 
-                if (_ongoingCreditsUpdates.TryAdd(episode, task))
+                if (_ongoingCreditsUpdates.TryAdd(episodeId, task))
                 {
-                    task.ContinueWith(t => { _ongoingCreditsUpdates.TryRemove(episode, out _); },
+                    task.ContinueWith(t => { _ongoingCreditsUpdates.TryRemove(episodeId, out _); },
                         TaskContinuationOptions.ExecuteSynchronously);
-                    _lastCreditsUpdateTimes[episode] = now;
+                    _lastCreditsUpdateTimes[episodeId] = now;
                     task.Start();
                 }
             }

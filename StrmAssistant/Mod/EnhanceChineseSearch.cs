@@ -735,7 +735,12 @@ namespace StrmAssistant.Mod
                     "(select case when AlbumId is null then null else (select name from MediaItems where Id = AlbumId limit 1) end)") +
                 " from MediaItems";
 
-            connection.BeginTransaction(TransactionMode.Deferred);
+            // 用 IMMEDIATE 而不是 Deferred：重建是纯写事务（第一条就是 DROP TABLE），
+            // Deferred 会以读事务开局、在首次写入时才升级成写锁；WAL 模式下若这期间
+            // 别的连接提交过，升级会返回 SQLITE_BUSY_SNAPSHOT，而 busy_timeout 对它无效
+            // （等多久都没用，只能整个事务重来）。IMMEDIATE 在 BEGIN 处直接抢写锁，
+            // 拿不到就立即失败，交由上层重试。
+            connection.BeginTransaction(TransactionMode.Immediate);
             try
             {
                 var dropFtsTableQuery = $"DROP TABLE IF EXISTS {ftsTableName}";
