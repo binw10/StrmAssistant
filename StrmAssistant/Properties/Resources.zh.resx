@@ -152,6 +152,15 @@
   <data name="AboutOptions_EditorTitle_About" xml:space="preserve">
     <value>关于</value>
   </data>
+  <data name="AboutOptions_DefaultUICulture_Language" xml:space="preserve">
+    <value>界面语言</value>
+  </data>
+  <data name="AboutOptions_DefaultUICulture_Description" xml:space="preserve">
+    <value>插件界面使用的语言。「跟随客户端」按请求语言自动切换；其余为固定语言。设置页 Tab 标题与通知文案即时生效，无需重启。</value>
+  </data>
+  <data name="AboutOptions_DefaultUICulture_Auto" xml:space="preserve">
+    <value>跟随客户端</value>
+  </data>
   <data name="IntroSkipOptions_UserScope_User_Scope" xml:space="preserve">
     <value>允许的用户</value>
   </data>

@@ -4401,5 +4401,32 @@ namespace StrmAssistant.Properties {
             }
         }
 
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string AboutOptions_DefaultUICulture_Description {
+            get {
+                return ResourceManager.GetString("AboutOptions_DefaultUICulture_Description", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string AboutOptions_DefaultUICulture_Language {
+            get {
+                return ResourceManager.GetString("AboutOptions_DefaultUICulture_Language", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string AboutOptions_DefaultUICulture_Auto {
+            get {
+                return ResourceManager.GetString("AboutOptions_DefaultUICulture_Auto", resourceCulture);
+            }
+        }
+
     }
 }

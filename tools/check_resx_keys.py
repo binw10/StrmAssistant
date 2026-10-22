@@ -39,6 +39,10 @@ DESIGNER = os.path.join(PROPS, 'Resources.Designer.cs')
 
 KEY_ATTR = re.compile(r'(?:DisplayNameL|DescriptionL|NameL)\(\s*"([^"]+)"')
 KEY_GET = re.compile(r'Resources?\.ResourceManager\.GetString\(\s*"([^"]+)"')
+# 直接属性访问 Resources.Xxx：编译期就会报 CS0117，但 --fix 也该能把它补上
+KEY_PROP = re.compile(r'\bResources\.([A-Za-z_][A-Za-z0-9_]*)')
+# Resources 类里除资源键之外的成员（生成器自带），不能当成资源键
+NON_RESOURCE_MEMBERS = {'Culture', 'ResourceManager'}
 DESIGNER_PROP = re.compile(r'public\s+static\s+string\s+(\w+)\s*\{')
 
 # Visual Studio 设计器写入的占位键（Bitmap1 / Color1 / Icon1 / Name1），不是真实资源
@@ -63,6 +67,7 @@ def code_keys():
                 continue
             keys.update(KEY_ATTR.findall(src))
             keys.update(KEY_GET.findall(src))
+            keys.update(k for k in KEY_PROP.findall(src) if k not in NON_RESOURCE_MEMBERS)
     return keys
 
 
