@@ -92,6 +92,40 @@ remote playlist chapters resolved for ... : N
 
 落库确认：`Chapters3` 表（**不是 `Chapters2`**），`select count(*) from Chapters3 where ItemId=<id>`。
 
+## 与 PRO / wt 的方案对比
+
+三个项目解决的是同一个问题（Emby 不认 ISO 里的正片），但路线差别很大。
+调研时间 2026-10-22，依据：PRO `3.0.0.56` 反编译、wt `v1.0.0.45` 反编译、本仓源码。
+
+| | 本仓 | PRO `3.0.0.56` | wt `v1.0.0.45` |
+|---|---|---|---|
+| **读盘方式** | Windows 系统挂载（PowerShell `Mount-DiskImage`）→ 盘符；Linux/Docker 进程内 `DiscUtils.Udf` | `IsoMounter` / `BlurayMounter`（有 `CanMount` 判断）+ 进程内 `UdfReader(stream)` | **不读盘**，把读盘能力外包给用户自备的 `CustomFfprobePath` |
+| **媒体信息从哪来** | 挂载后交给 Emby 原生 ffprobe（编码/码率/HDR/音轨/字幕全有） | `BdInfoExaminer`（BDInfo 系）读 BDMV/MPLS/CLPI 得 playlist 结构；ffprobe 结果再覆写 `Container=Iso` | ffprobe 结果 + 自研 `BlurayStructureReader` / `BlurayMplsParser` 补章节与语言 |
+| **打点位置** | `MediaProbeManager.GetMediaInfoInternal` 的 Prefix/Postfix（注入章节） | `FFProbeProvider.IsSupported` + 文件打开补丁（`AsyncLocal<UdfReader>`） | `FFProbeProvider.IsSupported` + `FfRunnerBase.OnBeforeStartProcess`（换 ffprobe、改 `-i`）+ `MediaProbeManager.GetMediaInfo` |
+| **章节** | 自研 MPLS `PlayListMark` 解析 | BDInfo / MPLS | 自研 `BlurayMplsParser` |
+| **远程 ISO（strm→http）** | ✅ `HttpRangeStream` + DiscUtils，只补章节 | 未见 | 未见 |
+| **对用户的前置要求** | Windows 无；Linux/Docker 需自定义 ffprobe | 无（自带盘片解析） | **必须自备能读盘的 ffprobe** |
+
+### 各自的取舍
+
+- **PRO 最完整**：自带 `BdInfoExaminer`，不依赖 ffprobe 也能拿到 playlist 级的音轨/字幕/章节/时长，
+  所以它在 Linux/Docker 上也能出结果。代价是体量大、且要靠 `AsyncLocal<UdfReader>` 把
+  ISO 内部文件伪装成可读路径，侵入面广。
+- **wt 最轻**：三个 patch + 一个自研 MPLS 解析，但它把"能不能读盘"整个外包给用户的 ffprobe ——
+  用户配不对就等于没有这个功能。
+- **本仓最省事但最挑环境**：Windows 挂载后完全交给 Emby 原生 ffprobe，信息最全、实现最简单；
+  但 Linux/Docker 要用户配自定义 ffprobe，**远程 ISO 更是只补章节、没有媒体信息**。
+
+### 本仓的一个已知浪费
+
+`UdfTitleResolver` 其实**已经解析了 MPLS 的 STN_table**（`ParseStnTable` / `ParseStreamAttributes` /
+`MapCoding` / `MapSubtitleCoding`，含音轨语言、编码、声道与字幕语言），
+但 `IsoMounter.RememberChapters` 只把章节存进缓存，**音轨/字幕信息算完就丢了**，
+`IsoExtraction` 也只注入 `ChapterInfo`。
+
+也就是说：最难的解析已经有了，缺的是"把它接到探测结果上"。
+补上之后，远程 ISO 与 Linux 无 ffprobe 的场景都能给出结构完整的媒体信息。
+
 ## 相关决策
 
 - 为什么放弃 `bluray:` 协议 → [../decisions/0003-放弃-bluray-协议.md](../decisions/0003-放弃-bluray-协议.md)
