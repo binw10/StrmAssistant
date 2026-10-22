@@ -12,7 +12,7 @@ dotnet build StrmAssistant/StrmAssistant.csproj -c Release   # 自动部署到 E
 dotnet test  StrmAssistant.Tests/StrmAssistant.Tests.csproj -c Release
 ```
 
-顺序不能反：测试引用的是**构建产物**，不是源码。详见 [docs/dev/testing.md](docs/dev/testing.md)。
+顺序不能反：测试引用的是**构建产物**，不是源码。
 
 ## 提交前自查
 
@@ -46,21 +46,14 @@ Task.WhenAll 返回，大批量刮削期间 RSS 持续上涨。
 
 ## 不要做的事
 
-- **不要合并上游 `OneManJS/main`**。原因见 [docs/decisions/0001-不合并上游分支.md](docs/decisions/0001-不合并上游分支.md)。
+- **不要合并上游 `OneManJS/main`**。上游把 SDK 从 `mediabrowser.server.core 4.9.1.90` 降回 `4.8.10.0`，
+  还带了 `StrmAssistantPro.dll` 二进制；本仓已分叉 190+ 提交，合并等于回退。
 - **不要给 `StrmAssistant.Tests` 加 `ProjectReference`**，会触发 ILRepack 并把半成品部署到 Emby。
-- **不要用空字符串"省略"分组标题**，会渲染成没有标题的折叠块。见 [ADR 0004](docs/decisions/0004-resx-标题留空不等于隐藏.md)。
+- **不要用空字符串"省略"分组标题**，会渲染成没有标题的折叠块（`[DisplayNameL]` 的 resx 值为空串时，
+  页面上是一块没有标题的缩进区域）。要去掉标题必须把那层容器拆掉。
 - **涉及视觉的改动（对齐/缩进/配色）先截图确认再落码**，只凭 JSON 结构推断视觉会翻车。
 
 ## 文档
 
-改代码时顺手更新对应文档，别让 `docs/` 落后于实现：
-
-| 改动 | 要更新的文档 |
-|---|---|
-| 新增/删除补丁 | [docs/architecture/patching.md](docs/architecture/patching.md) 的清单 |
-| 改中文搜索链路 | [docs/architecture/chinese-search.md](docs/architecture/chinese-search.md) |
-| 改 ISO 链路 | [docs/architecture/iso.md](docs/architecture/iso.md) |
-| 适配新 Emby 版本 | [docs/architecture/emby-version.md](docs/architecture/emby-version.md) 的矩阵 |
-| 加选项 / 改单位 | 不需要改文档，但请遵守 [docs/dev/options-conventions.md](docs/dev/options-conventions.md) |
-| 做了架构级取舍 | 在 `docs/decisions/` 新增一篇 ADR |
-| 完成一个阶段 | 在 `docs/history/YYYY-MM/` 留一份记录（命名 `YYYY-MM-DD-<主题>.md`） |
+内部设计文档（架构说明、ADR、开发者手册、历史实施记录）**保留在本地 `docs/`，不发布到仓库**，
+已在 `.gitignore` 中忽略。修改代码时如果发现文档与实现不符，直接在本地更新即可，不要提交 `docs/`。

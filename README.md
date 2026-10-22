@@ -8,7 +8,6 @@
 
 ## 文档
 
-- **完整文档**：[docs/index.md](docs/index.md)（架构 / 决策记录 / 开发者手册 / 历史实施记录）
 - **更新日志**：[CHANGELOG.md](CHANGELOG.md)
 - **贡献指南**：[CONTRIBUTING.md](CONTRIBUTING.md)
 - 安装与使用说明见 [Wiki](https://github.com/sjtuross/StrmAssistant/wiki)
