@@ -262,7 +262,7 @@ namespace StrmAssistant.Mod
                 // 顺序有意义：先补时长，章节校验才有依据（远程 ISO 的 ffprobe 给不出时长）
                 ApplyRuntime(mediaInfo, hint);
                 ApplyChapters(mediaInfo, hint);
-                ApplyLanguages(mediaInfo, hint);
+                ApplyStreamDetails(mediaInfo, hint);
             }
             catch (Exception e)
             {
@@ -306,39 +306,41 @@ namespace StrmAssistant.Mod
         }
 
         /// <summary>
-        /// 用 playlist 的 STN_table 补音轨/字幕的**语言**。
+        /// 用 playlist 的 STN_table 补音轨/字幕的**语言**，以及音轨的**声道数 / 采样率**。
         ///
         /// 背景：ffprobe 探测的是挂载出来的 <c>.m2ts</c>，而语言标签写在 MPLS 的 STN_table 里，
         /// 码流里不一定带 —— 不补的话 Emby 里音轨全显示"未知语言"。
+        /// 声道/采样率同理：探测结果里缺（0）时才补，已有值不覆盖。
         /// </summary>
-        private static void ApplyLanguages(ProbeMediaInfo mediaInfo, IsoMounter.TitleHint hint)
+        private static void ApplyStreamDetails(ProbeMediaInfo mediaInfo, IsoMounter.TitleHint hint)
         {
             var streams = mediaInfo.MediaStreams;
             if (streams == null || streams.Count == 0) return;
             if (hint.AudioStreams.Count == 0 && hint.SubtitleStreams.Count == 0) return;
 
-            var filled =
-                FillMissingLanguages(streams.Where(s => s.Type == MediaStreamType.Audio).ToList(),
-                    hint.AudioStreams) +
-                FillMissingLanguages(streams.Where(s => s.Type == MediaStreamType.Subtitle).ToList(),
-                    hint.SubtitleStreams);
+            var audioFilled =
+                FillMissingStreamDetails(streams.Where(s => s.Type == MediaStreamType.Audio).ToList(),
+                    hint.AudioStreams, fillAudioDetails: true);
+            var subtitleFilled =
+                FillMissingStreamDetails(streams.Where(s => s.Type == MediaStreamType.Subtitle).ToList(),
+                    hint.SubtitleStreams, fillAudioDetails: false);
 
-            if (filled > 0)
+            if (audioFilled > 0 || subtitleFilled > 0)
             {
                 Plugin.Instance.Logger.Info(
-                    $"IsoExtraction - filled {filled} stream language(s) from playlist STN");
+                    $"IsoExtraction - filled {audioFilled} audio / {subtitleFilled} subtitle field(s) from playlist STN");
             }
         }
 
         /// <summary>
-        /// 按顺序把 STN 里的语言补到探测结果上。
+        /// 按顺序把 STN 里的字段补到探测结果上。
         ///
-        /// 只补**缺失**的（null / 空 / <c>und</c>），已有语言不覆盖；
+        /// 只补**缺失**的（语言 null/空/<c>und</c>；声道/采样率为 0），已有值不覆盖；
         /// 两边数量不等则整体放弃 —— ffprobe 输出里没有 PID，无法精确匹配，
         /// **宁可标不出也不能标错**。
         /// </summary>
-        internal static int FillMissingLanguages(List<MediaStream> probed,
-            List<UdfTitleResolver.MplsStreamInfo> fromPlaylist)
+        internal static int FillMissingStreamDetails(List<MediaStream> probed,
+            List<UdfTitleResolver.MplsStreamInfo> fromPlaylist, bool fillAudioDetails)
         {
             if (probed == null || fromPlaylist == null || probed.Count == 0 ||
                 fromPlaylist.Count != probed.Count) return 0;
@@ -347,11 +349,28 @@ namespace StrmAssistant.Mod
 
             for (var i = 0; i < probed.Count; i++)
             {
-                if (!IsUnknownLanguage(probed[i].Language)) continue;
-                if (IsUnknownLanguage(fromPlaylist[i].Language)) continue;
+                var target = probed[i];
+                var source = fromPlaylist[i];
 
-                probed[i].Language = fromPlaylist[i].Language;
-                filled++;
+                if (IsUnknownLanguage(target.Language) && !IsUnknownLanguage(source.Language))
+                {
+                    target.Language = source.Language;
+                    filled++;
+                }
+
+                if (!fillAudioDetails) continue;
+
+                if (target.Channels.GetValueOrDefault() <= 0 && source.Channels > 0)
+                {
+                    target.Channels = source.Channels;
+                    filled++;
+                }
+
+                if (target.SampleRate.GetValueOrDefault() <= 0 && source.SampleRate > 0)
+                {
+                    target.SampleRate = source.SampleRate;
+                    filled++;
+                }
             }
 
             return filled;
