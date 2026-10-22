@@ -155,6 +155,68 @@ DurationSeconds = best.TotalSeconds,
 
 ## 改进路线（方案，待批准）
 
+### P0 · 让 Linux 内置 ffprobe 真正读 ISO（新发现，优先于 P1）
+
+**先厘清一件事：不是 ffprobe 不能读，是我们没让它用正确的方式读。**
+
+ffprobe 读 ISO 有两条完全不同的路：
+
+| 输入 | 行为 |
+|---|---|
+| `ffprobe -i /path/movie.iso` | 把裸 ISO 当 **mpegts** 解 —— UDF 头不是合法 TS，基本拿不到东西 |
+| `ffprobe -i 'bluray:/path/movie.iso'` | 走 libbluray → libudfread 读 UDF → 按 playlist 选出正片，**这才是读盘** |
+
+Emby 内置 ffprobe（`5.1-emby_2023_06_25_p6`）的能力实测：
+
+```
+$ ffprobe -buildconf | grep bluray
+    --enable-libbluray
+$ ffprobe -protocols | grep bluray
+  bluray
+$ strings ffprobe.exe | grep udfread_ | sort -u
+udfread_file_openat
+udfread_opendir_at
+```
+
+也就是说**内置 ffprobe 同时具备 `bluray` 协议和 libudfread**。
+（Windows 版二进制里两者都在，但 ADR 0003 实测 `bluray:` 在 Windows 读不了 UDF —— 这是平台差异，
+不是能力缺失。Linux 上 libudfread 读普通文件是常规路径，同一套构建流水线大概率同样带这两个能力，
+**但需要一次 Linux 实机确认**。）
+
+**当前代码的实际行为**：
+
+1. `IsoExtraction.IsSupportedPrefix` 已经把 `.iso` 放行 → Emby 会尝试探测；
+2. 但 Linux 上 `IsoMounter.GetProbePath` 返回 `null`（只有 Windows 挂载成功才有值），
+   → **探测输入仍是裸 `.iso` 路径**，走的是上表第一行，必然读不出来。
+
+**并且这里有个已声明未实现的开关**：
+
+```csharp
+// Common/FfmpegPathOverride.cs
+/// IsoExtraction 据此决定是否把探测输入改写为 bluray:"{0}"
+public static bool? ProbeSupportsBluray { get; private set; }
+```
+
+`ProbeSupportsBluray` 有声明、有赋值（自检时探测 `--enable-libbluray`）、有注释说明用途，
+但 `grep ProbeSupportsBluray` 全文**只有这三处，没有任何消费点** ——
+`IsoExtraction` 从来没读过它。所以「按能力位决定是否改写成 `bluray:`」这条路**根本没接线**。
+
+**建议做法**：
+
+- Linux/Docker 分支：若探测到 ffprobe 支持 `bluray`（内置的按 buildconf 判定，或自定义的按
+  `ProbeSupportsBluray` 判定），把 `inputPath` 改写为 `bluray:"{isoPath}"`；
+- Windows 分支保持现状（挂载），不启用 `bluray:`（ADR 0003 已实测失败）；
+- 失败要能静默回退到裸路径，不能把 ISO 条目的探测整个搞挂。
+
+**收益**：Linux/Docker 用户**不需要配任何自定义 ffprobe** 就能提取 ISO 媒体信息 ——
+这比 P1 影响面大得多。
+
+**待确认**（必须先做，否则不能动代码）：
+
+1. 找一台 Linux（或 Docker）跑 `ffprobe -protocols | grep bluray` 与 `-buildconf`，确认内置版是否带 libbluray；
+2. 拿一个真 BD ISO 跑 `ffprobe -i 'bluray:/path/x.iso'`，确认能出正片流；
+3. 确认 libbluray 自带的章节与我们的 MPLS 解析是否冲突（两边都给章节，别重复注入）。
+
 ### 先划清能力边界：STN 能提供什么
 
 `MplsStreamInfo` 的字段只有：`Pid` / `Kind` / `Coding` / `CodingRaw` / `Language` / `Channels` / `SampleRate`。
@@ -187,11 +249,13 @@ ffprobe 输出里没有 PID，无法做精确匹配。
 
 **不做**：不合成 MediaStreams。没有视频流信息的情况下硬造流，会让 Emby 的转码/直连决策出错。
 
-### P3 · Linux/Docker 把话说清楚
+### P3 · Linux/Docker 把话说清楚（P0 落地后可取消）
 
-Linux 只有两条路：用户配自定义 ffprobe，或把 m2ts 导出（几十 GB，不现实）。
-所以不改实现，只改体验：检测到「ISO 条目 + 未配 `CustomProbePath`」时打一条 Info，
-说明"该平台需要配置自定义 ffprobe 才能提取 ISO 媒体信息"，避免用户以为功能坏了。
+Linux 只有两条路：让 ffprobe 用 `bluray:` 读（P0），或把 m2ts 导出来（几十 GB，不现实）。
+
+- **P0 成功** → P3 取消，不需要再要求用户配自定义 ffprobe；
+- **P0 失败**（内置 ffprobe 在 Linux 上也读不了） → 退回到只改体验：检测到
+  「ISO 条目 + 未配 `CustomProbePath`」时打一条 Info，说明为什么没有媒体信息，别让用户以为功能坏了。
 
 ### 明确不做
 
